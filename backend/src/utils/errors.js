@@ -1,0 +1,28 @@
+export class AppError extends Error {
+  constructor(code, statusCode = 400, message = "") {
+    super(message || code);
+    this.code = code;
+    this.statusCode = statusCode;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+export const ERROR_CODES = {
+  SOLD_OUT: "SOLD_OUT",
+  HOLD_EXPIRED: "HOLD_EXPIRED",
+  HOLD_NOT_FOUND: "HOLD_NOT_FOUND",
+  SALE_NOT_OPEN: "SALE_NOT_OPEN",
+  LIMIT_EXCEEDED: "LIMIT_EXCEEDED",
+  PAYMENT_FAILED: "PAYMENT_FAILED",
+  REFUND_NOT_ALLOWED: "REFUND_NOT_ALLOWED",
+  ALREADY_REFUNDED: "ALREADY_REFUNDED",
+  TICKET_ALREADY_USED: "TICKET_ALREADY_USED",
+  TICKET_INVALID: "TICKET_INVALID",
+  FORBIDDEN: "FORBIDDEN",
+  LOGIN_REQUIRED: "LOGIN_REQUIRED",
+  EMAIL_ALREADY_USED: "EMAIL_ALREADY_USED",
+  INVALID_CREDENTIALS: "INVALID_CREDENTIALS",
+  RATE_LIMITED: "RATE_LIMITED",
+  VALIDATION_ERROR: "VALIDATION_ERROR",
+  NOT_FOUND: "NOT_FOUND"
+};
