@@ -1,9 +1,15 @@
+import "./config/env.js";
 import { getBoss } from "./lib/pgboss.js";
 import { logger } from "./lib/logger.js";
 import { prisma } from "./lib/prisma.js";
 import { releaseHoldIfActive, sweepExpiredHolds } from "./modules/holds/hold.service.js";
 
-async function startWorker() {
+let isWorkerRunning = false;
+
+export async function startWorker() {
+  if (isWorkerRunning) {
+    return;
+  }
   logger.info("Initializing pg-boss background worker service");
 
   const boss = getBoss();
@@ -36,27 +42,39 @@ async function startWorker() {
     }
   });
 
+  isWorkerRunning = true;
   logger.info("Registered hold.release consumer and hold.sweep cron schedule");
 }
 
-startWorker().catch((err) => {
-  logger.error("Failed to start background worker", { error: err.message, stack: err.stack });
-  process.exit(1);
-});
-
-async function shutdownWorker(signal) {
-  logger.info(`Worker received ${signal}, shutting down`);
+export async function stopWorker() {
+  if (!isWorkerRunning) {
+    return;
+  }
   try {
     const boss = getBoss();
     await boss.stop();
-    await prisma.$disconnect();
-    logger.info("Worker and database disconnected cleanly");
-    process.exit(0);
+    isWorkerRunning = false;
+    logger.info("Background worker stopped cleanly");
   } catch (err) {
-    logger.error("Error shutting down worker", { error: err.message });
-    process.exit(1);
+    logger.error("Error stopping background worker", { error: err.message });
   }
 }
 
-process.on("SIGTERM", () => shutdownWorker("SIGTERM"));
-process.on("SIGINT", () => shutdownWorker("SIGINT"));
+// Standalone execution support: node src/worker.js
+const isDirectRun = process.argv[1] && (process.argv[1].endsWith("worker.js") || process.argv[1].endsWith("worker"));
+if (isDirectRun) {
+  startWorker().catch((err) => {
+    logger.error("Failed to start standalone background worker", { error: err.message, stack: err.stack });
+    process.exit(1);
+  });
+
+  async function shutdownStandalone(signal) {
+    logger.info(`Standalone worker received ${signal}, shutting down`);
+    await stopWorker();
+    await prisma.$disconnect();
+    process.exit(0);
+  }
+
+  process.on("SIGTERM", () => shutdownStandalone("SIGTERM"));
+  process.on("SIGINT", () => shutdownStandalone("SIGINT"));
+}

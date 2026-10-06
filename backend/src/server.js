@@ -2,12 +2,20 @@ import app from "./app.js";
 import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
 import { prisma } from "./lib/prisma.js";
+import { startWorker, stopWorker } from "./worker.js";
 
-const server = app.listen(env.PORT, () => {
+const server = app.listen(env.PORT, async () => {
   logger.info(`Server started listening on port ${env.PORT}`, {
     port: env.PORT,
     environment: env.NODE_ENV
   });
+
+  // Start background worker service inside the same instance
+  try {
+    await startWorker();
+  } catch (err) {
+    logger.error("Failed to start background worker service", { error: err.message });
+  }
 });
 
 async function gracefulShutdown(signal) {
@@ -16,11 +24,12 @@ async function gracefulShutdown(signal) {
   server.close(async () => {
     logger.info("HTTP server closed");
     try {
+      await stopWorker();
       await prisma.$disconnect();
-      logger.info("Prisma client disconnected successfully");
+      logger.info("Worker and database disconnected cleanly");
       process.exit(0);
     } catch (err) {
-      logger.error("Error during database disconnection", { error: err.message });
+      logger.error("Error during shutdown cleanup", { error: err.message });
       process.exit(1);
     }
   });
