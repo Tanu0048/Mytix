@@ -56,7 +56,19 @@ export async function changeUserPassword(userId, currentPassword, newPassword) {
     where: { id: userId }
   });
 
-  if (!user || !user.passwordHash) {
+  if (!user) {
+    throw new AppError("NOT_FOUND", 404, "User not found.");
+  }
+
+  if (user.role === "ORGANISER") {
+    throw new AppError(
+      "FORBIDDEN",
+      403,
+      "Organisers cannot change their own password. Password updates must be performed by the platform Admin."
+    );
+  }
+
+  if (!user.passwordHash) {
     throw new AppError("INVALID_CREDENTIALS", 400, "Cannot change password for external OAuth accounts without a set password. Use forgot password instead.");
   }
 

@@ -35,6 +35,10 @@ export const register = asyncHandler(async (req, res) => {
       email: result.user.email,
       name: result.user.name,
       role: result.user.role
+    },
+    tokens: {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken
     }
   });
 });
@@ -49,6 +53,10 @@ export const login = asyncHandler(async (req, res) => {
       email: result.user.email,
       name: result.user.name,
       role: result.user.role
+    },
+    tokens: {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken
     }
   });
 });
@@ -63,6 +71,10 @@ export const googleAuth = asyncHandler(async (req, res) => {
       email: result.user.email,
       name: result.user.name,
       role: result.user.role
+    },
+    tokens: {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken
     }
   });
 });

@@ -8,6 +8,7 @@ import { requestLogger } from "./middleware/requestLogger.js";
 import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import apiRoutes from "./routes.js";
+import { webhookRouter } from "./modules/webhooks/webhook.routes.js";
 
 const app = express();
 
@@ -20,7 +21,10 @@ app.use(
   })
 );
 
-// 2. Body Parsing & Cookies
+// 2. Stripe Webhook mounted BEFORE express.json() to preserve raw body buffer
+app.use("/api/v1/webhooks", webhookRouter);
+
+// 3. Body Parsing & Cookies for application routes
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 

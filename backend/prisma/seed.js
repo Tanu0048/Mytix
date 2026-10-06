@@ -183,6 +183,22 @@ async function main() {
     }
   });
 
+  // 7. Seed Sample Homepage Hero Banner
+  const existingBanner = await prisma.banner.findFirst();
+  if (!existingBanner) {
+    await prisma.banner.create({
+      data: {
+        title: "Coldplay: Music of the Spheres World Tour - Sydney",
+        imageUrl: "https://kfcocpzuzxpinqgnzhsq.supabase.co/storage/v1/object/public/event-images/banners/coldplay-hero-banner.webp",
+        targetUrl: `/events/${event1.slug}`,
+        eventId: event1.id,
+        displayOrder: 1,
+        isActive: true
+      }
+    });
+    logger.info("Created sample homepage hero banner");
+  }
+
   logger.info("Database seed completed successfully", {
     adminId: admin.id,
     eventId: event1.id,

@@ -55,3 +55,13 @@ export const listOrganiserEventsQuerySchema = {
     limit: z.coerce.number().min(1).max(100).default(20)
   })
 };
+
+export const issueComplimentaryTicketsSchema = {
+  body: z.object({
+    ticketTypeId: z.string().uuid("A valid ticket tier UUID is required."),
+    attendeeName: z.string().min(1, "Attendee name is required.").max(255),
+    attendeeEmail: z.string().email("Valid attendee email is required."),
+    quantity: z.number().int().min(1).max(50).default(1),
+    notes: z.string().max(255).optional()
+  })
+};

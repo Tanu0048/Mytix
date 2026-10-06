@@ -42,8 +42,35 @@ export async function startWorker() {
     }
   });
 
+  // Schedule payment reconciliation every 15 minutes for stuck pending orders
+  await boss.schedule("payment.reconcile", "*/15 * * * *");
+  await boss.work("payment.reconcile", async () => {
+    logger.info("Executing payment.reconcile cron task");
+    try {
+      const { reconcileStuckOrders } = await import("./modules/payments/reconcile.service.js");
+      await reconcileStuckOrders();
+    } catch (err) {
+      logger.error("Error running payment.reconcile task", { error: err.message });
+    }
+  });
+
+  // Worker consumer for ticket generation & order confirmation emails
+  await boss.work("ticket.generate", async (jobs) => {
+    const jobList = Array.isArray(jobs) ? jobs : [jobs];
+    for (const job of jobList) {
+      const { orderId, attendees } = job.data;
+      logger.info("Executing ticket.generate background job", { orderId });
+      try {
+        const { generateTicketsForOrder } = await import("./modules/tickets/ticket.service.js");
+        await generateTicketsForOrder(orderId, attendees);
+      } catch (err) {
+        logger.error("Error executing ticket.generate job", { orderId, error: err.message });
+      }
+    }
+  });
+
   isWorkerRunning = true;
-  logger.info("Registered hold.release consumer and hold.sweep cron schedule");
+  logger.info("Registered hold, payment, and ticket worker consumers and cron schedules");
 }
 
 export async function stopWorker() {
