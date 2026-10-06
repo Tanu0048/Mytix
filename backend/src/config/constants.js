@@ -20,3 +20,10 @@ export const CACHE_TTL = {
   CATALOG_SECONDS: env.CACHE_CATALOG_SECONDS,
   STATIC_PAGES_SECONDS: env.CACHE_STATIC_PAGES_SECONDS
 };
+
+export const MAX_FILE_SIZE_BYTES = env.MAX_FILE_SIZE_MB * 1024 * 1024;
+
+export const STORAGE_BUCKETS = {
+  IMAGES: "event-images",
+  TICKETS: "tickets"
+};

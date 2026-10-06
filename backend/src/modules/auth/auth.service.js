@@ -95,6 +95,14 @@ export async function requestPasswordReset(email) {
     where: { email }
   });
 
+  if (user && user.role === "ORGANISER") {
+    throw new AppError(
+      "FORBIDDEN",
+      403,
+      "Organisers cannot reset passwords via self-service. Please contact platform administration to reset your password."
+    );
+  }
+
   // Always return identical success message to prevent user enumeration
   if (!user) {
     return { message: "If an account with that email exists, a password reset link has been sent." };
@@ -139,6 +147,14 @@ export async function executePasswordReset(rawToken, newPassword) {
 
   if (!resetRecord || resetRecord.usedAt || resetRecord.expiresAt < new Date()) {
     throw new AppError("INVALID_CREDENTIALS", 400, "Password reset token is invalid or has expired.");
+  }
+
+  if (resetRecord.user.role === "ORGANISER") {
+    throw new AppError(
+      "FORBIDDEN",
+      403,
+      "Organisers cannot reset passwords via self-service. Please contact platform administration to reset your password."
+    );
   }
 
   const passwordHash = await hashPassword(newPassword);

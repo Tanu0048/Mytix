@@ -11,6 +11,7 @@ router.use(publicLimiter);
 
 router.get("/home", cacheHeaders(30), catalogController.getHome);
 router.get("/events", validate(getEventsQuerySchema), cacheHeaders(15), catalogController.getEvents);
+router.get("/events/upcoming", validate(getEventsQuerySchema), cacheHeaders(15), catalogController.getUpcomingEvents);
 router.get("/events/:slug", validate(slugParamSchema), cacheHeaders(15), catalogController.getEventBySlug);
 router.get("/events/:slug/availability", validate(slugParamSchema), cacheHeaders(5), catalogController.getAvailability);
 router.get("/artists/:slug", validate(slugParamSchema), cacheHeaders(30), catalogController.getArtistBySlug);

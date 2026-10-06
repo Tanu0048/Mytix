@@ -13,6 +13,11 @@ export const getEvents = asyncHandler(async (req, res) => {
   res.status(200).json(data);
 });
 
+export const getUpcomingEvents = asyncHandler(async (req, res) => {
+  const data = await catalogService.listUpcomingEvents(req.query);
+  res.status(200).json(data);
+});
+
 export const getEventBySlug = asyncHandler(async (req, res) => {
   const event = await catalogService.getEventDetails(req.params.slug);
   res.status(200).json(event);

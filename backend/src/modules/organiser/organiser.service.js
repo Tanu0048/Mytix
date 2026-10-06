@@ -1,7 +1,9 @@
+import crypto from "crypto";
 import { prisma } from "../../lib/prisma.js";
 import { generateSlug } from "../../utils/slug.js";
 import { AppError } from "../../utils/errors.js";
 import { parseCursorPagination, formatPaginatedResponse } from "../../utils/pagination.js";
+import { generateTicketsForOrder } from "../tickets/ticket.service.js";
 
 export async function applyForOrganiser(userId, data) {
   const existing = await prisma.organiser.findUnique({
@@ -20,14 +22,8 @@ export async function applyForOrganiser(userId, data) {
       contactEmail: data.contactEmail,
       contactPhone: data.contactPhone,
       payoutDetails: data.payoutDetails,
-      status: "APPROVED" // Auto-approve for streamlined onboarding in Phase 3
+      status: "PENDING"
     }
-  });
-
-  // Promote user role to ORGANISER
-  await prisma.user.update({
-    where: { id: userId },
-    data: { role: "ORGANISER" }
   });
 
   return organiser;
@@ -173,5 +169,169 @@ export async function getEventSalesStats(eventId) {
     totalSold,
     totalRevenueCents,
     ticketTiers: event.ticketTypes
+  };
+}
+
+function escapeCsvField(val) {
+  if (val === null || val === undefined) return '""';
+  const str = String(val).replace(/"/g, '""');
+  return `"${str}"`;
+}
+
+export async function exportEventAttendeesCsv(eventId) {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { id: true, title: true, slug: true }
+  });
+
+  if (!event) {
+    throw new AppError("NOT_FOUND", 404, "Event not found.");
+  }
+
+  const tickets = await prisma.ticket.findMany({
+    where: {
+      order: {
+        eventId,
+        status: "PAID"
+      }
+    },
+    include: {
+      order: {
+        select: {
+          orderNumber: true,
+          createdAt: true,
+          user: {
+            select: { name: true, email: true, phone: true }
+          },
+          items: {
+            include: {
+              ticketType: { select: { id: true, name: true } }
+            }
+          }
+        }
+      },
+      scanLogs: {
+        orderBy: { scannedAt: "desc" },
+        take: 1
+      }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  const headers = [
+    "Ticket ID",
+    "Order Number",
+    "Attendee Name",
+    "Attendee Email",
+    "Buyer Name",
+    "Buyer Email",
+    "Buyer Phone",
+    "Ticket Tier",
+    "Ticket Status",
+    "Used Gate",
+    "Scanned At",
+    "Purchased At"
+  ];
+
+  const rows = [headers.join(",")];
+
+  for (const t of tickets) {
+    const tierName = t.order.items[0]?.ticketType?.name || "General Admission";
+    const lastScan = t.scanLogs[0];
+    const row = [
+      escapeCsvField(t.id),
+      escapeCsvField(t.order.orderNumber),
+      escapeCsvField(t.attendeeName),
+      escapeCsvField(t.attendeeEmail),
+      escapeCsvField(t.order.user.name),
+      escapeCsvField(t.order.user.email),
+      escapeCsvField(t.order.user.phone || "N/A"),
+      escapeCsvField(tierName),
+      escapeCsvField(t.status),
+      escapeCsvField(t.usedGate || (lastScan ? lastScan.gate : "N/A")),
+      escapeCsvField(t.usedAt ? t.usedAt.toISOString() : (lastScan ? lastScan.scannedAt.toISOString() : "N/A")),
+      escapeCsvField(t.createdAt.toISOString())
+    ];
+    rows.push(row.join(","));
+  }
+
+  return {
+    slug: event.slug,
+    csv: rows.join("\r\n")
+  };
+}
+
+export async function issueComplimentaryTickets(userId, eventId, data) {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId }
+  });
+
+  if (!event) {
+    throw new AppError("NOT_FOUND", 404, "Event not found.");
+  }
+
+  const tier = await prisma.ticketType.findFirst({
+    where: { id: data.ticketTypeId, eventId }
+  });
+
+  if (!tier) {
+    throw new AppError("NOT_FOUND", 404, "Ticket tier not found for this event.");
+  }
+
+  // Atomically decrement tier inventory and increment sold count
+  const updatedTier = await prisma.ticketType.updateMany({
+    where: {
+      id: data.ticketTypeId,
+      eventId,
+      available: { gte: data.quantity }
+    },
+    data: {
+      available: { decrement: data.quantity },
+      sold: { increment: data.quantity }
+    }
+  });
+
+  if (updatedTier.count === 0) {
+    throw new AppError("INSUFFICIENT_INVENTORY", 400, "Insufficient ticket availability for complimentary issue.");
+  }
+
+  const orderNumber = `COMP-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+
+  const order = await prisma.order.create({
+    data: {
+      orderNumber,
+      userId,
+      eventId,
+      status: "PAID",
+      ticketTotalCents: 0,
+      buyerFeeCents: 0,
+      totalCents: 0,
+      currency: "AUD",
+      items: {
+        create: {
+          ticketTypeId: data.ticketTypeId,
+          quantity: data.quantity,
+          unitPriceCents: 0
+        }
+      }
+    }
+  });
+
+  const attendeesList = Array.from({ length: data.quantity }, () => ({
+    name: data.attendeeName.trim(),
+    email: data.attendeeEmail.toLowerCase().trim()
+  }));
+
+  const tickets = await generateTicketsForOrder(order.id, attendeesList);
+
+  return {
+    orderNumber: order.orderNumber,
+    eventId: event.id,
+    eventTitle: event.title,
+    recipientName: data.attendeeName,
+    recipientEmail: data.attendeeEmail,
+    quantity: data.quantity,
+    ticketTier: tier.name,
+    tickets
   };
 }

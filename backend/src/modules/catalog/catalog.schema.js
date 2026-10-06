@@ -11,6 +11,7 @@ export const getEventsQuerySchema = {
     startDate: z.string().datetime().optional(),
     endDate: z.string().datetime().optional(),
     sort: z.enum(["date_asc", "date_desc", "newest"]).default("date_asc"),
+    upcoming: z.coerce.boolean().optional(),
     cursor: z.string().uuid().optional(),
     limit: z.coerce.number().min(1).max(50).default(20)
   })

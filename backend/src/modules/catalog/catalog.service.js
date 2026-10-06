@@ -44,7 +44,10 @@ export async function listEvents(filters) {
     where.organiserId = organiserId;
   }
 
-  if (startDate || endDate) {
+  const now = new Date();
+  if (filters.upcoming === true || filters.upcoming === "true") {
+    where.startsAt = { ...(where.startsAt || {}), gte: now };
+  } else if (startDate || endDate) {
     where.startsAt = {};
     if (startDate) where.startsAt.gte = new Date(startDate);
     if (endDate) where.startsAt.lte = new Date(endDate);
@@ -74,6 +77,19 @@ export async function listEvents(filters) {
   });
 
   return formatPaginatedResponse(events, limit);
+}
+
+export async function listUpcomingEvents(filters) {
+  const now = new Date();
+  const effectiveStartDate = filters.startDate && new Date(filters.startDate) > now
+    ? filters.startDate
+    : now.toISOString();
+
+  return listEvents({
+    ...filters,
+    startDate: effectiveStartDate,
+    sort: filters.sort || "date_asc"
+  });
 }
 
 export async function getEventDetails(slug) {
