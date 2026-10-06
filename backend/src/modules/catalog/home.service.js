@@ -1,5 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { getCached, setCached } from "../../lib/cache.js";
+import { CACHE_TTL } from "../../config/constants.js";
 
 export async function getHomePageData() {
   const cacheKey = "catalog:home";
@@ -84,6 +85,6 @@ export async function getHomePageData() {
     cities: venues.map((v) => v.city)
   };
 
-  setCached(cacheKey, response, 30000); // 30 seconds TTL
+  setCached(cacheKey, response, CACHE_TTL.STATIC_PAGES_SECONDS * 1000);
   return response;
 }

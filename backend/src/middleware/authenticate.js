@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import { verifyAccessToken } from "../utils/jwt.js";
 import { AppError } from "../utils/errors.js";
 
 export function authenticate(req, _res, next) {
@@ -13,7 +13,7 @@ export function authenticate(req, _res, next) {
   }
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    const payload = verifyAccessToken(token);
     req.user = {
       id: payload.sub,
       role: payload.role,
@@ -21,6 +21,6 @@ export function authenticate(req, _res, next) {
     };
     next();
   } catch (err) {
-    return next(new AppError("LOGIN_REQUIRED", 401, "Session has expired or is invalid. Please log in again."));
+    next(err);
   }
 }

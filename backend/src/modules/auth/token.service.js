@@ -1,28 +1,23 @@
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { prisma } from "../../lib/prisma.js";
 import { hashToken, generateSecureToken } from "./password.service.js";
 import { AppError } from "../../utils/errors.js";
+import { signAccessToken } from "../../utils/jwt.js";
+import { env } from "../../config/env.js";
 
 export function generateAccessToken(user) {
-  return jwt.sign(
-    {
-      sub: user.id,
-      email: user.email,
-      role: user.role
-    },
-    process.env.JWT_ACCESS_SECRET,
-    {
-      expiresIn: process.env.JWT_ACCESS_EXPIRATION || "15m"
-    }
-  );
+  return signAccessToken({
+    sub: user.id,
+    email: user.email,
+    role: user.role
+  });
 }
 
 export async function createRefreshToken(userId, existingFamilyId = null) {
   const rawToken = generateSecureToken(40);
   const tokenHash = hashToken(rawToken);
   const familyId = existingFamilyId || crypto.randomUUID();
-  const days = parseInt(process.env.JWT_REFRESH_EXPIRATION_DAYS || "30", 10);
+  const days = parseInt(env.JWT_REFRESH_EXPIRATION_DAYS || "30", 10);
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
   await prisma.refreshToken.create({

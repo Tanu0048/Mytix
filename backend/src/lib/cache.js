@@ -1,8 +1,9 @@
 import { LRUCache } from "lru-cache";
+import { CACHE_TTL } from "../config/constants.js";
 
 export const memoryCache = new LRUCache({
   max: 2000,
-  ttl: 1000 * 15, // 15 seconds default TTL
+  ttl: 1000 * CACHE_TTL.CATALOG_SECONDS,
   allowStale: false,
   updateAgeOnGet: false,
   updateAgeOnHas: false

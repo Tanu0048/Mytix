@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { getCached, setCached } from "../../lib/cache.js";
 import { AppError } from "../../utils/errors.js";
+import { CACHE_TTL } from "../../config/constants.js";
 
 export async function getEventAvailability(slug) {
   const cacheKey = `availability:${slug}`;
@@ -59,6 +60,6 @@ export async function getEventAvailability(slug) {
     ticketTypes: tiers
   };
 
-  setCached(cacheKey, response, 5000); // 5 seconds TTL
+  setCached(cacheKey, response, CACHE_TTL.AVAILABILITY_SECONDS * 1000);
   return response;
 }

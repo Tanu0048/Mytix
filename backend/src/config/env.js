@@ -13,7 +13,14 @@ const envSchema = z.object({
   JWT_ACCESS_EXPIRATION: z.string().default("15m"),
   JWT_REFRESH_EXPIRATION_DAYS: z.string().default("30"),
   GOOGLE_CLIENT_ID: z.string().optional(),
-  LOG_LEVEL: z.enum(["error", "warn", "info", "http", "debug"]).default("info")
+  LOG_LEVEL: z.enum(["error", "warn", "info", "http", "debug"]).default("info"),
+  ORDER_MIN_TICKETS: z.coerce.number().int().positive().default(1),
+  ORDER_MAX_TICKETS: z.coerce.number().int().positive().default(10),
+  HOLD_DURATION_MINUTES: z.coerce.number().int().positive().default(10),
+  PASSWORD_RESET_EXPIRATION_MINUTES: z.coerce.number().int().positive().default(30),
+  CACHE_AVAILABILITY_SECONDS: z.coerce.number().int().nonnegative().default(5),
+  CACHE_CATALOG_SECONDS: z.coerce.number().int().nonnegative().default(15),
+  CACHE_STATIC_PAGES_SECONDS: z.coerce.number().int().nonnegative().default(30)
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
