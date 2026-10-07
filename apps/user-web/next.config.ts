@@ -11,7 +11,12 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "in.bmscdn.com",
       },
+      {
+        protocol: "https",
+        hostname: "kfcocpzuzxpinqgnzhsq.supabase.co",
+      },
     ],
+    dangerouslyAllowLocalIP: true,
   },
 };
 

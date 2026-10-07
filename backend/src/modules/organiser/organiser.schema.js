@@ -20,6 +20,7 @@ export const createEventSchema = {
     description: z.string().min(10),
     venueId: z.string().uuid("A valid venue UUID is required."),
     category: z.string().default("Concert"),
+    posterPath: z.string().max(512).optional(),
     startsAt: z.string().datetime(),
     doorsOpenAt: z.string().datetime().optional(),
     artists: z.array(z.object({
@@ -44,6 +45,8 @@ export const updateEventSchema = {
     description: z.string().min(10).optional(),
     venueId: z.string().uuid().optional(),
     category: z.string().optional(),
+    posterPath: z.string().max(512).optional(),
+    status: z.string().optional(),
     startsAt: z.string().datetime().optional(),
     doorsOpenAt: z.string().datetime().optional()
   })

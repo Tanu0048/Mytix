@@ -237,3 +237,17 @@ export async function getOrganiserDetails(idOrSlug) {
     events: organiser.events
   };
 }
+
+export async function listVenues() {
+  const venues = await prisma.venue.findMany({
+    orderBy: { name: 'asc' }
+  });
+  return venues;
+}
+
+export async function listArtists() {
+  const artists = await prisma.artist.findMany({
+    orderBy: { name: 'asc' }
+  });
+  return artists;
+}

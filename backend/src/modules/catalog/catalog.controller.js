@@ -42,3 +42,13 @@ export const getOrganiserBySlug = asyncHandler(async (req, res) => {
   const organiser = await catalogService.getOrganiserDetails(req.params.slug);
   res.status(200).json(organiser);
 });
+
+export const getVenues = asyncHandler(async (req, res) => {
+  const venues = await catalogService.listVenues();
+  res.status(200).json(venues);
+});
+
+export const getArtists = asyncHandler(async (req, res) => {
+  const artists = await catalogService.listArtists();
+  res.status(200).json(artists);
+});

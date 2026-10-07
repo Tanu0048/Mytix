@@ -6,7 +6,7 @@ import { AppError } from "../utils/errors.js";
 const memoryStorage = multer.memoryStorage();
 
 const imageFileFilter = (_req, file, cb) => {
-  const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
+  const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"];
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -14,7 +14,7 @@ const imageFileFilter = (_req, file, cb) => {
       new AppError(
         "INVALID_FILE_TYPE",
         400,
-        `Invalid file type '${file.mimetype}'. Allowed image formats are JPEG, PNG, and WebP.`
+        `Invalid file type '${file.mimetype}'. Allowed image formats are JPEG, PNG, WebP, and AVIF.`
       ),
       false
     );

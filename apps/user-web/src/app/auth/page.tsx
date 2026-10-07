@@ -48,6 +48,7 @@ export default function AuthPage() {
       }
 
       // Update global state and redirect to home on success
+      useAuthStore.getState().setToken(data.tokens?.accessToken);
       await fetchUser();
       toast.success(isLogin ? 'Logged in successfully!' : 'Account created successfully!');
       router.push('/');

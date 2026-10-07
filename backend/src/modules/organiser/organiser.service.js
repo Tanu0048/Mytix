@@ -60,6 +60,7 @@ export async function createEvent(userId, data) {
       title: data.title,
       slug,
       description: data.description,
+      posterPath: data.posterPath,
       startsAt: new Date(data.startsAt),
       doorsOpenAt: data.doorsOpenAt ? new Date(data.doorsOpenAt) : null,
       status: "PUBLISHED", // Published upon creation for testing Phase 3
@@ -95,6 +96,89 @@ export async function createEvent(userId, data) {
   return event;
 }
 
+export async function updateEvent(userId, eventId, data) {
+  const organiser = await prisma.organiser.findUnique({
+    where: { userId }
+  });
+
+  if (!organiser || organiser.status !== "APPROVED") {
+    throw new AppError("FORBIDDEN", 403, "Approved organiser account is required to update events.");
+  }
+
+  const existingEvent = await prisma.event.findUnique({
+    where: { id: eventId }
+  });
+
+  if (!existingEvent || existingEvent.organiserId !== organiser.id) {
+    throw new AppError("NOT_FOUND", 404, "Event not found or you do not have permission.");
+  }
+
+  const updateData = {};
+  if (data.title !== undefined) {
+    updateData.title = data.title;
+    // Generate new slug if title changes
+    if (data.title !== existingEvent.title) {
+      let slug = generateSlug(data.title);
+      const existingSlug = await prisma.event.findFirst({ where: { slug, id: { not: eventId } } });
+      if (existingSlug) {
+        slug = `${slug}-${Date.now().toString(36)}`;
+      }
+      updateData.slug = slug;
+    }
+  }
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.posterPath !== undefined) updateData.posterPath = data.posterPath;
+  if (data.category !== undefined) updateData.category = data.category;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.startsAt !== undefined) updateData.startsAt = new Date(data.startsAt);
+  if (data.doorsOpenAt !== undefined) updateData.doorsOpenAt = data.doorsOpenAt ? new Date(data.doorsOpenAt) : null;
+  if (data.venueId !== undefined) {
+    const venue = await prisma.venue.findUnique({ where: { id: data.venueId } });
+    if (!venue) throw new AppError("NOT_FOUND", 404, "Venue not found.");
+    updateData.venueId = data.venueId;
+  }
+
+  const updatedEvent = await prisma.event.update({
+    where: { id: eventId },
+    data: updateData,
+    include: {
+      ticketTypes: true,
+      venue: true,
+      artists: { include: { artist: true } }
+    }
+  });
+
+  return updatedEvent;
+}
+
+export async function deleteEvent(userId, eventId) {
+  const organiser = await prisma.organiser.findUnique({
+    where: { userId }
+  });
+
+  if (!organiser || organiser.status !== "APPROVED") {
+    throw new AppError("FORBIDDEN", 403, "Approved organiser account is required to delete events.");
+  }
+
+  const existingEvent = await prisma.event.findUnique({
+    where: { id: eventId }
+  });
+
+  if (!existingEvent || existingEvent.organiserId !== organiser.id) {
+    throw new AppError("NOT_FOUND", 404, "Event not found or you do not have permission.");
+  }
+
+  // First delete dependencies like artists and ticket types to avoid foreign key constraints
+  await prisma.eventArtist.deleteMany({ where: { eventId } });
+  await prisma.ticketType.deleteMany({ where: { eventId } });
+
+  await prisma.event.delete({
+    where: { id: eventId }
+  });
+
+  return true;
+}
+
 export async function listOrganiserEvents(userId, query = {}) {
   const organiser = await prisma.organiser.findUnique({
     where: { userId }
@@ -128,6 +212,31 @@ export async function listOrganiserEvents(userId, query = {}) {
   });
 
   return formatPaginatedResponse(events, limit);
+}
+
+export async function getOrganiserEvent(userId, eventId) {
+  const organiser = await prisma.organiser.findUnique({
+    where: { userId }
+  });
+
+  if (!organiser) {
+    throw new AppError("FORBIDDEN", 403, "Organiser profile not found.");
+  }
+
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: {
+      ticketTypes: true,
+      venue: true,
+      artists: { include: { artist: true } }
+    }
+  });
+
+  if (!event || event.organiserId !== organiser.id) {
+    throw new AppError("NOT_FOUND", 404, "Event not found or unauthorized.");
+  }
+
+  return event;
 }
 
 export async function getEventSalesStats(eventId) {
@@ -334,4 +443,26 @@ export async function issueComplimentaryTickets(userId, eventId, data) {
     ticketTier: tier.name,
     tickets
   };
+}
+
+export async function createVenue(data) {
+  const { name, city, state = "", address = "TBD", timezone = "Australia/Sydney", capacity = 1000 } = data;
+  
+  // Generate a random 4 letter slug suffix
+  const suffix = Math.random().toString(36).substring(2, 6);
+  const slug = `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${city.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${suffix}`;
+
+  const venue = await prisma.venue.create({
+    data: {
+      name,
+      city,
+      state,
+      address,
+      timezone,
+      capacity,
+      slug
+    }
+  });
+
+  return venue;
 }
