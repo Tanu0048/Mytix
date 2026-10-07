@@ -239,7 +239,7 @@ export default function Home() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight">Featured events</h2>
-            <p className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider mt-1">Don't miss these top events</p>
+            <p className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider mt-1">Don&apos;t miss these top events</p>
           </div>
           <Link href="#" className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center group">
             See all <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
@@ -253,7 +253,7 @@ export default function Home() {
             const img = item.posterPath || '/banner/placeholder.avif';
             return (
               <div key={item.id} className="flex flex-col group">
-                <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-[4/5] rounded-xl overflow-hidden mb-3 shadow-md group-hover:shadow-xl transition-all duration-300 block">
+                <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-4/5 rounded-xl overflow-hidden mb-3 shadow-md group-hover:shadow-xl transition-all duration-300 block">
                   <Image src={img} alt={title} fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-md text-blue-700 text-[10px] uppercase font-black px-2 py-1 rounded">
                     Featured
@@ -280,7 +280,7 @@ export default function Home() {
       </div>
 
       {/* Browse by category */}
-      <div className="w-full bg-gradient-to-b from-blue-50/60 to-white py-16 mb-16 border-y border-blue-100/30">
+      <div className="w-full bg-linear-to-b from-blue-50/60 to-white py-16 mb-16 border-y border-blue-100/30">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight mb-2">Browse by category</h2>
           <p className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-8">Find what you love</p>
@@ -329,7 +329,7 @@ export default function Home() {
             const img = item.posterPath || '/banner/placeholder.avif';
             return (
               <div key={`sale-${item.id}`} className="flex flex-col group">
-                <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-[4/5] rounded-xl overflow-hidden mb-3 shadow-md group-hover:shadow-xl transition-all duration-300 block">
+                <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-4/5 rounded-xl overflow-hidden mb-3 shadow-md group-hover:shadow-xl transition-all duration-300 block">
                   <Image src={img} alt={title} fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-2 left-2 bg-green-500 text-white text-[10px] uppercase font-black px-2 py-1 rounded">
                     On Sale
@@ -367,7 +367,7 @@ export default function Home() {
                   <h3 className="font-bold text-gray-900 text-base group-hover:text-blue-600 transition-colors">{city}</h3>
                   <p className="text-xs text-gray-500 font-medium mt-1 group-hover:text-blue-500">Upcoming events <ChevronRight className="inline w-3 h-3" /></p>
                 </div>
-                <MapPin className="absolute right-[-10px] bottom-[-10px] w-24 h-24 text-gray-50/80 group-hover:text-blue-50/80 transition-colors transform -rotate-12" />
+                <MapPin className="absolute -right-2.5 -bottom-2.5 w-24 h-24 text-gray-50/80 group-hover:text-blue-50/80 transition-colors transform -rotate-12" />
              </Link>
           ))}
         </div>
@@ -392,11 +392,11 @@ export default function Home() {
             const day = dateObj.toLocaleDateString('en-US', { day: '2-digit' });
             return (
               <Link key={`coming-${item.id}`} href={`/events/${item.slug}`} className="flex items-center gap-4 py-3 border-b border-gray-50 hover:bg-gray-50/80 transition-colors px-2 rounded-lg group">
-                <div className="flex flex-col items-center justify-center min-w-[60px]">
+                <div className="flex flex-col items-center justify-center min-w-15">
                   <span className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest">{month}</span>
                   <span className="text-2xl font-black text-gray-900">{day}</span>
                 </div>
-                <div className="w-14 h-14 rounded-lg overflow-hidden relative flex-shrink-0">
+                <div className="w-14 h-14 rounded-lg overflow-hidden relative shrink-0">
                   <Image src={item.posterPath || '/banner/placeholder.avif'} alt={item.title} fill className="object-cover" />
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -435,7 +435,7 @@ export default function Home() {
         {/* Let's Talk CTA */}
         <div className="bg-[#2a2422] rounded-3xl p-8 md:p-12 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between">
           <div className="relative z-10 max-w-lg mb-6 md:mb-0">
-             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[#f8f5f2]">Putting on a show? Let's talk.</h2>
+             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[#f8f5f2]">Putting on a show? Let&apos;s talk.</h2>
              <p className="text-[#d8d0ca] text-sm md:text-base font-medium leading-relaxed">Join thousands of creators using our platform to sell tickets, manage events, and grow their audience.</p>
           </div>
           <div className="relative z-10 flex flex-col sm:flex-row gap-4 w-full md:w-auto">
