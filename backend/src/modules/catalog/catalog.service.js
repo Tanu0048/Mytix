@@ -71,7 +71,7 @@ export async function listEvents(filters) {
         }
       },
       ticketTypes: {
-        select: { priceCents: true, available: true }
+        select: { priceCents: true, available: true, quantity: true, sold: true }
       }
     }
   });

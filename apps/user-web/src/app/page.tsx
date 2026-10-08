@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { BannerSkeleton, EventCardSkeleton, EventListRowSkeleton } from '@/components/ui/Skeleton';
 
 const heroSlides = [
   { 
@@ -60,7 +61,7 @@ export default function Home() {
 
   const fetchBanners = async () => {
     try {
-      const bannerRes = await fetch('http://localhost:5000/api/v1/banners');
+      const bannerRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/banners`);
       if (bannerRes.ok) {
         const bannerData = await bannerRes.json();
         setBanners(bannerData.data || []);
@@ -73,7 +74,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchHomeData() {
       try {
-        const res = await fetch('http://localhost:5000/api/v1/home');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/home`);
         if (res.ok) {
           const data = await res.json();
           setHomeData(data);
@@ -112,7 +113,7 @@ export default function Home() {
     }
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/v1/search?q=${encodeURIComponent(searchQuery)}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/search?q=${encodeURIComponent(searchQuery)}`);
         if (res.ok) {
           const data = await res.json();
           setSearchResults(data);
@@ -228,8 +229,8 @@ export default function Home() {
             </div>
           </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 font-medium">
-            Loading banners...
+          <div className="w-full h-full flex items-center justify-center">
+            <BannerSkeleton />
           </div>
         )}
       </div>
@@ -241,22 +242,48 @@ export default function Home() {
             <h2 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight">Featured events</h2>
             <p className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider mt-1">Don&apos;t miss these top events</p>
           </div>
-          <Link href="#" className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center group">
+          <Link href="/events" className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center group">
             See all <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {trending.slice(0, 4).map((item: any, i: number) => {
+          {loading ? (
+            Array(4).fill(0).map((_, i) => <EventCardSkeleton key={i} />)
+          ) : trending.slice(0, 4).map((item: any, i: number) => {
             const title = item.title;
             const sub = `${item.venue?.city || 'Location'} • ${item.venue?.name || 'Venue'}`;
             const img = item.posterPath || '/banner/placeholder.avif';
+            const totalAvailable = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
+            const totalQuantity = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.quantity ?? 0), 0) ?? 0;
+            const minPrice = item.ticketTypes?.length 
+              ? Math.min(...item.ticketTypes.map((t: any) => t.priceCents || 0)) / 100 
+              : 0;
+
             return (
               <div key={item.id} className="flex flex-col group">
                 <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-4/5 rounded-xl overflow-hidden mb-3 shadow-md group-hover:shadow-xl transition-all duration-300 block">
                   <Image src={img} alt={title} fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-md text-blue-700 text-[10px] uppercase font-black px-2 py-1 rounded">
                     Featured
+                  </div>
+                  {/* Seats badge on poster */}
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none gap-1">
+                    {totalAvailable <= 0 ? (
+                      <span className="bg-red-600/90 backdrop-blur-sm text-white text-[11px] font-extrabold uppercase px-2 py-1 rounded shadow">
+                        Sold Out
+                      </span>
+                    ) : (
+                      <span className="bg-black/75 backdrop-blur-sm text-white text-[11px] font-semibold px-2 py-1 rounded shadow flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${totalAvailable <= 10 ? 'bg-orange-400 animate-pulse' : 'bg-emerald-400'}`}></span>
+                        {totalAvailable} / {totalQuantity || 100} Seats
+                      </span>
+                    )}
+                    {minPrice > 0 && (
+                      <span className="bg-white/95 backdrop-blur-sm text-slate-900 text-[11px] font-black px-2 py-1 rounded shadow">
+                        ₹{minPrice}
+                      </span>
+                    )}
                   </div>
                 </Link>
                 <div className="flex flex-col flex-1">
@@ -317,22 +344,48 @@ export default function Home() {
             <h2 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight">On sale now</h2>
             <p className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider mt-1">Tickets are flying fast</p>
           </div>
-          <Link href="#" className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center group">
+          <Link href="/events" className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center group">
             See all <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {trending.slice(0, 4).map((item: any, i: number) => {
+          {loading ? (
+            Array(4).fill(0).map((_, i) => <EventCardSkeleton key={`sale-skeleton-${i}`} />)
+          ) : trending.slice(0, 4).map((item: any, i: number) => {
             const title = item.title;
             const sub = `${item.venue?.city || 'Location'} • ${item.venue?.name || 'Venue'}`;
             const img = item.posterPath || '/banner/placeholder.avif';
+            const totalAvailable = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
+            const totalQuantity = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.quantity ?? 0), 0) ?? 0;
+            const minPrice = item.ticketTypes?.length 
+              ? Math.min(...item.ticketTypes.map((t: any) => t.priceCents || 0)) / 100 
+              : 0;
+
             return (
               <div key={`sale-${item.id}`} className="flex flex-col group">
                 <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-4/5 rounded-xl overflow-hidden mb-3 shadow-md group-hover:shadow-xl transition-all duration-300 block">
                   <Image src={img} alt={title} fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-2 left-2 bg-green-500 text-white text-[10px] uppercase font-black px-2 py-1 rounded">
                     On Sale
+                  </div>
+                  {/* Seats badge on poster */}
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none gap-1">
+                    {totalAvailable <= 0 ? (
+                      <span className="bg-red-600/90 backdrop-blur-sm text-white text-[11px] font-extrabold uppercase px-2 py-1 rounded shadow">
+                        Sold Out
+                      </span>
+                    ) : (
+                      <span className="bg-black/75 backdrop-blur-sm text-white text-[11px] font-semibold px-2 py-1 rounded shadow flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${totalAvailable <= 10 ? 'bg-orange-400 animate-pulse' : 'bg-emerald-400'}`}></span>
+                        {totalAvailable} / {totalQuantity || 100} Seats
+                      </span>
+                    )}
+                    {minPrice > 0 && (
+                      <span className="bg-white/95 backdrop-blur-sm text-slate-900 text-[11px] font-black px-2 py-0.5 rounded shadow">
+                        ₹{minPrice}
+                      </span>
+                    )}
                   </div>
                 </Link>
                 <div className="flex flex-col flex-1">
@@ -380,13 +433,15 @@ export default function Home() {
             <h2 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight">Coming up</h2>
             <p className="text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider mt-1">Plan your next outing</p>
           </div>
-          <Link href="#" className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center group">
+          <Link href="/events" className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center group">
             See all <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 
         <div className="flex flex-col gap-2">
-          {trending.slice(0, 6).map((item: any, i: number) => {
+          {loading ? (
+            Array(6).fill(0).map((_, i) => <EventListRowSkeleton key={`coming-skeleton-${i}`} />)
+          ) : trending.slice(0, 6).map((item: any, i: number) => {
             const dateObj = new Date(item.startsAt);
             const month = dateObj.toLocaleDateString('en-US', { month: 'short' });
             const day = dateObj.toLocaleDateString('en-US', { day: '2-digit' });

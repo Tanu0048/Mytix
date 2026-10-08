@@ -103,19 +103,47 @@ export async function createCheckoutSession(userId, { holdId, attendees }, idemp
   }
 
   // Create or retrieve PaymentIntent from active payment gateway
-  const paymentProvider = getPaymentProvider();
-  const paymentIntent = await paymentProvider.createPaymentIntent({
-    amountCents: order.totalCents,
-    currency: order.currency.toLowerCase(),
-    metadata: {
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      userId,
-      holdId: hold.id,
-      attendees: JSON.stringify(attendees)
-    },
-    idempotencyKey
-  });
+  let paymentIntent;
+  try {
+    const paymentProvider = getPaymentProvider();
+    paymentIntent = await paymentProvider.createPaymentIntent({
+      amountCents: order.totalCents,
+      currency: order.currency.toLowerCase(),
+      metadata: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        userId,
+        holdId: hold.id,
+        attendees: JSON.stringify(attendees)
+      },
+      idempotencyKey
+    });
+  } catch (err) {
+    if (err.code === "PAYMENT_GATEWAY_NOT_CONFIGURED" || err.message.includes("PAYMENT_GATEWAY_NOT_CONFIGURED")) {
+      // Demo Mode: Mock the PaymentIntent and Fulfill immediately
+      const { fulfillOrderAfterPayment } = await import("../payments/fulfillment.service.js");
+      const { generateTicketsForOrder } = await import("../tickets/ticket.service.js");
+      paymentIntent = {
+        id: `pi_demo_${Date.now()}`,
+        clientSecret: `sec_demo_${Date.now()}`,
+        amount: order.totalCents,
+        currency: order.currency.toLowerCase(),
+        status: "succeeded",
+        metadata: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          userId,
+          holdId: hold.id,
+          attendees: JSON.stringify(attendees)
+        }
+      };
+      await fulfillOrderAfterPayment(paymentIntent);
+      // Generate tickets synchronously in demo mode to avoid pgboss queue delays
+      await generateTicketsForOrder(order.id, attendees);
+    } else {
+      throw err;
+    }
+  }
 
   return {
     orderId: order.id,
