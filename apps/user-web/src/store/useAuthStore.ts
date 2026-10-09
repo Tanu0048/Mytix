@@ -37,7 +37,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       headers['Authorization'] = `Bearer ${token}`;
     }
     try {
-      const res = await fetch('http://localhost:5000/api/v1/me', { 
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/me`, { 
         headers,
         credentials: 'include' 
       });
@@ -58,7 +58,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       headers['Authorization'] = `Bearer ${token}`;
     }
     try {
-      await fetch('http://localhost:5000/api/v1/auth/logout', { 
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, { 
         method: 'POST', 
         headers,
         credentials: 'include' 

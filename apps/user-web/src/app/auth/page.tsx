@@ -30,11 +30,11 @@ export default function AuthPage() {
     setError('');
     setLoading(true);
 
-    const endpoint = isLogin ? '/api/v1/auth/login' : '/api/v1/auth/register';
+    const endpoint = isLogin ? '/auth/login' : '/auth/register';
     const payload = isLogin ? { email, password } : { name, email, password };
 
     try {
-      const res = await fetch(`http://localhost:5000${endpoint}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

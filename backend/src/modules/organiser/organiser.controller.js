@@ -55,3 +55,9 @@ export const createVenue = asyncHandler(async (req, res) => {
   const venue = await organiserService.createVenue(req.body);
   res.status(201).json(venue);
 });
+
+export const getOrders = asyncHandler(async (req, res) => {
+  const orders = await organiserService.listOrganiserOrders(req.user.id, req.query);
+  res.status(200).json(orders);
+});
+

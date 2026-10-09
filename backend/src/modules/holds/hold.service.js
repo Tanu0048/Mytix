@@ -5,6 +5,44 @@ import { deleteCached } from "../../lib/cache.js";
 import { AppError } from "../../utils/errors.js";
 import { HOLD_DURATION_MINUTES } from "../../config/constants.js";
 
+export async function getActiveHolds(userId) {
+  const holds = await prisma.inventoryHold.findMany({
+    where: {
+      userId,
+      status: "ACTIVE",
+      expiresAt: { gt: new Date() }
+    },
+    include: {
+      ticketType: {
+        select: {
+          id: true,
+          name: true,
+          priceCents: true,
+          event: {
+            select: {
+              id: true,
+              title: true,
+              slug: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return holds.map(hold => ({
+    holdId: hold.id,
+    eventId: hold.ticketType.event.id,
+    eventSlug: hold.ticketType.event.slug,
+    eventTitle: hold.ticketType.event.title,
+    ticketName: hold.ticketType.name,
+    quantity: hold.quantity,
+    totalCents: hold.quantity * hold.ticketType.priceCents,
+    expiresAt: hold.expiresAt,
+    secondsRemaining: Math.max(0, Math.floor((hold.expiresAt.getTime() - Date.now()) / 1000))
+  }));
+}
+
 export async function createHold(userId, { ticketTypeId, quantity }) {
   const now = new Date();
 
@@ -67,11 +105,13 @@ export async function createHold(userId, { ticketTypeId, quantity }) {
   });
 
   if (existingHold) {
-    throw new AppError(
-      "ACTIVE_HOLD_EXISTS",
-      409,
-      "You already have an active ticket reservation for this event. Please complete checkout or release it first."
-    );
+    return {
+      holdId: existingHold.id,
+      eventId: ticketType.event.id,
+      quantity: existingHold.quantity,
+      expiresAt: existingHold.expiresAt,
+      existing: true
+    };
   }
 
   const expiresAt = new Date(now.getTime() + HOLD_DURATION_MINUTES * 60 * 1000);

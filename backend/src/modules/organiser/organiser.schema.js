@@ -48,7 +48,17 @@ export const updateEventSchema = {
     posterPath: z.string().max(512).optional(),
     status: z.string().optional(),
     startsAt: z.string().datetime().optional(),
-    doorsOpenAt: z.string().datetime().optional()
+    doorsOpenAt: z.string().datetime().optional(),
+    ticketTypes: z.array(z.object({
+      id: z.string().uuid().optional(),
+      name: z.string().min(1).max(128),
+      priceCents: z.number().int().min(0),
+      quantity: z.number().int().min(1),
+      saleStartsAt: z.string().datetime().optional(),
+      saleEndsAt: z.string().datetime().optional(),
+      minPerOrder: z.number().int().min(1).default(1),
+      maxPerOrder: z.number().int().min(1).default(10)
+    })).optional()
   })
 };
 

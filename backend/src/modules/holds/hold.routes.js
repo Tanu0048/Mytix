@@ -5,7 +5,8 @@ import { createHoldSchema, holdIdParamSchema } from "./hold.schema.js";
 import {
   createHoldHandler,
   getHoldHandler,
-  releaseHoldHandler
+  releaseHoldHandler,
+  getActiveHoldsHandler
 } from "./hold.controller.js";
 
 export const holdRouter = Router();
@@ -16,6 +17,12 @@ holdRouter.post(
   authenticate,
   validate({ body: createHoldSchema }),
   createHoldHandler
+);
+
+holdRouter.get(
+  "/",
+  authenticate,
+  getActiveHoldsHandler
 );
 
 holdRouter.get(

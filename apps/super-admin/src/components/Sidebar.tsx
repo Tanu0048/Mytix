@@ -3,14 +3,20 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useSidebarStore } from "@/store/useSidebarStore";
 import {
   LayoutDashboard,
+  CalendarDays,
+  ShoppingBag,
+  BarChart3,
+  Settings,
+  Crown,
+  ArrowRight,
+  LogOut,
   Image as ImageIcon,
   Users,
-  ShoppingBag,
-  LogOut,
-  Settings,
-  Ticket,
+  PanelLeftClose,
+  PanelLeftOpen
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -18,6 +24,7 @@ export default function Sidebar() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const { isCollapsed, toggleSidebar } = useSidebarStore();
 
   const handleLogout = async () => {
     await logout();
@@ -26,77 +33,204 @@ export default function Sidebar() {
 
   const adminNavItems = [
     { name: "Overview", href: "/", icon: LayoutDashboard },
+    { name: "Events", href: "/events", icon: CalendarDays },
     { name: "Banners", href: "/banners", icon: ImageIcon },
     { name: "Organisers", href: "/organisers", icon: Users },
-    { name: "Global Orders", href: "/orders", icon: ShoppingBag },
+    { name: "Orders", href: "/orders", icon: ShoppingBag },
+    { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   const organiserNavItems = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "My Events", href: "/events", icon: Ticket },
+    { name: "Overview", href: "/", icon: LayoutDashboard },
+    { name: "Events", href: "/events", icon: CalendarDays },
     { name: "Orders", href: "/orders", icon: ShoppingBag },
+    { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   const navItems = user?.role === "ADMIN" ? adminNavItems : organiserNavItems;
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 w-64 border-r border-slate-200 bg-white hidden lg:block">
-      <div className="flex h-20 items-center px-8 border-b border-transparent">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-          <Ticket className="h-5 w-5" />
-        </div>
-        <div className="ml-3 flex flex-col">
-          <span className="text-xl font-bold tracking-tight text-slate-900">
-            Mytix
-          </span>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            {user?.role === "ADMIN" ? "Admin Panel" : "Organiser Panel"}
-          </span>
-        </div>
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 border-r border-slate-100 bg-white hidden lg:flex lg:flex-col justify-between transition-all duration-300 ease-in-out ${
+        isCollapsed ? "w-20" : "w-64"
+      }`}
+    >
+      <div>
+        {/* Logo & Header */}
+        {isCollapsed ? (
+          <div className="flex flex-col items-center pt-6 pb-4">
+            <button
+              onClick={toggleSidebar}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-tr from-amber-500 to-amber-300 text-white shadow-md shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              title="Expand menu (Mytix)"
+            >
+              <span className="text-2xl font-black tracking-tighter">M</span>
+            </button>
+            <button
+              onClick={toggleSidebar}
+              className="mt-2.5 p-1.5 rounded-xl hover:bg-slate-50 text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
+              title="Expand sidebar"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between px-6 pt-7 pb-6">
+            <div className="flex items-center">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-tr from-amber-500 to-amber-300 text-white shadow-md shadow-amber-500/20">
+                <span className="text-2xl font-black tracking-tighter">M</span>
+              </div>
+              <div className="ml-3.5 flex flex-col">
+                <span className="text-xl font-extrabold tracking-tight text-slate-900 leading-tight">
+                  Mytix
+                </span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                  Event Organiser Panel
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={toggleSidebar}
+              className="p-2 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-400 hover:text-amber-700 transition-colors cursor-pointer"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Navigation items */}
+        <nav className={isCollapsed ? "px-2 mt-2" : "px-4 mt-3"}>
+          <ul className="space-y-1.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/" && pathname.startsWith(item.href));
+
+              if (isCollapsed) {
+                return (
+                  <li key={item.name} className="relative group flex justify-center">
+                    <Link
+                      href={item.href}
+                      scroll={false}
+                      className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-all duration-200 ease-in-out active:scale-95 ${
+                        isActive
+                          ? "bg-[#FFF9EB] text-amber-600 border-amber-300/80 shadow-2xs font-extrabold"
+                          : "text-slate-400 border-transparent hover:bg-slate-50 hover:text-slate-900"
+                      }`}
+                    >
+                      <Icon
+                        className={`h-5 w-5 transition-transform duration-200 ${
+                          isActive ? "text-amber-500 scale-110" : "group-hover:scale-110 group-hover:text-slate-700"
+                        }`}
+                      />
+                    </Link>
+
+                    {/* Floating Tooltip */}
+                    <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
+                      {item.name}
+                    </div>
+                  </li>
+                );
+              }
+
+              return (
+                <li key={item.name} className="relative">
+                  <Link
+                    href={item.href}
+                    scroll={false}
+                    className={`group relative flex items-center rounded-2xl px-4 py-3 text-sm font-bold border transition-all duration-200 ease-in-out select-none active:scale-[0.98] ${
+                      isActive
+                        ? "bg-[#FFF9EB] text-amber-950 border-amber-300/80 shadow-2xs font-extrabold"
+                        : "text-slate-500 border-transparent hover:bg-slate-50/80 hover:text-slate-900"
+                    }`}
+                  >
+                    {/* Glowing Left Indicator for Active Tab */}
+                    {isActive && (
+                      <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-amber-500 transition-all duration-200" />
+                    )}
+
+                    <Icon
+                      className={`mr-3 h-5 w-5 shrink-0 transition-all duration-200 ${
+                        isActive ? "text-amber-500 scale-105" : "text-slate-400 group-hover:text-slate-700 group-hover:scale-105"
+                      }`}
+                    />
+                    <span className="truncate">{item.name}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
       </div>
 
-      <div className="flex flex-col justify-between h-[calc(100vh-5rem)] p-4">
-        <ul className="space-y-1 mt-4">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href));
+      {/* Bottom Promo Box & Sign Out */}
+      {isCollapsed ? (
+        <div className="p-3 flex flex-col items-center space-y-3 pb-6">
+          {/* Mini Crown Button */}
+          <div className="relative group">
+            <button
+              onClick={() => router.push("/events/create")}
+              className="w-11 h-11 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 flex items-center justify-center text-amber-700 transition-all shadow-2xs hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <Crown className="w-5 h-5" />
+            </button>
+            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
+              Create Event
+            </div>
+          </div>
 
-            return (
-              <li key={item.name}>
-                <Link
-                  href={item.href}
-                  className={`group flex items-center rounded-xl px-4 py-3 text-sm font-semibold transition-all ${
-                    isActive
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                  }`}
-                >
-                  <Icon
-                    className={`mr-3 h-5 w-5 transition-colors ${
-                      isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"
-                    }`}
-                  />
-                  {item.name}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+          {/* Mini Sign Out */}
+          <div className="relative group">
+            <button
+              onClick={handleLogout}
+              className="w-11 h-11 rounded-2xl border border-transparent hover:bg-red-50 text-slate-400 hover:text-red-500 flex items-center justify-center transition-all cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
+              Sign Out
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 space-y-3">
+          {/* Yellow Promo Card */}
+          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-amber-50 via-amber-100/40 to-amber-100/70 p-4 border border-amber-200/60 shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-amber-400/30 flex items-center justify-center mb-2.5">
+              <CalendarDays className="w-4 h-4 text-amber-700" />
+            </div>
+            <h4 className="text-xs font-extrabold text-slate-900 leading-snug">
+              Create amazing events, grow your audience!
+            </h4>
+            <p className="text-[11px] font-medium text-slate-500 mt-1">
+              More events. More people. More success.
+            </p>
+            <div className="mt-3 flex justify-end">
+              <button 
+                onClick={() => router.push("/events/create")}
+                className="w-7 h-7 rounded-full bg-amber-400 hover:bg-amber-500 flex items-center justify-center text-slate-950 transition-all shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
+                title="Create event"
+              >
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
 
-        <div className="mt-auto mb-4">
+          {/* Sign Out Button */}
           <button 
             onClick={handleLogout}
-            className="group flex w-full items-center rounded-xl px-4 py-3 text-sm font-semibold text-red-500 transition-all hover:bg-red-50"
+            className="group flex w-full items-center rounded-xl px-4 py-2.5 text-xs font-bold text-slate-400 transition-all hover:bg-red-50 hover:text-red-500 cursor-pointer"
           >
-            <LogOut className="mr-3 h-5 w-5 text-red-400 transition-colors group-hover:text-red-500" />
+            <LogOut className="mr-2.5 h-4 w-4 text-slate-400 group-hover:text-red-500" />
             Sign Out
           </button>
         </div>
-      </div>
+      )}
     </aside>
   );
 }

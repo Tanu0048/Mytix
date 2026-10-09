@@ -16,10 +16,10 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: "*",
+    origin: true,
+    credentials: true
   })
 );
-
 
 // 2. Stripe Webhook mounted BEFORE express.json() to preserve raw body buffer
 app.use("/api/v1/webhooks", webhookRouter);

@@ -138,6 +138,48 @@ export async function updateEvent(userId, eventId, data) {
     updateData.venueId = data.venueId;
   }
 
+  if (data.ticketTypes && Array.isArray(data.ticketTypes)) {
+    for (const t of data.ticketTypes) {
+      if (t.id) {
+        const existingTier = await prisma.ticketType.findUnique({ where: { id: t.id } });
+        if (existingTier) {
+          const sold = existingTier.sold || 0;
+          const newQty = Math.max(sold, t.quantity);
+          const newAvailable = Math.max(0, newQty - sold);
+
+          await prisma.ticketType.update({
+            where: { id: t.id },
+            data: {
+              name: t.name,
+              priceCents: t.priceCents,
+              quantity: newQty,
+              available: newAvailable,
+              ...(t.saleStartsAt ? { saleStartsAt: new Date(t.saleStartsAt) } : {}),
+              ...(t.saleEndsAt ? { saleEndsAt: new Date(t.saleEndsAt) } : {}),
+              minPerOrder: t.minPerOrder || 1,
+              maxPerOrder: t.maxPerOrder || 10,
+            }
+          });
+        }
+      } else {
+        await prisma.ticketType.create({
+          data: {
+            eventId,
+            name: t.name,
+            priceCents: t.priceCents,
+            quantity: t.quantity,
+            available: t.quantity,
+            sold: 0,
+            saleStartsAt: t.saleStartsAt ? new Date(t.saleStartsAt) : new Date(),
+            saleEndsAt: t.saleEndsAt ? new Date(t.saleEndsAt) : (updateData.startsAt || existingEvent.startsAt),
+            minPerOrder: t.minPerOrder || 1,
+            maxPerOrder: t.maxPerOrder || 10,
+          }
+        });
+      }
+    }
+  }
+
   const updatedEvent = await prisma.event.update({
     where: { id: eventId },
     data: updateData,
@@ -466,3 +508,68 @@ export async function createVenue(data) {
 
   return venue;
 }
+
+export async function listOrganiserOrders(userId, query = {}) {
+  const organiser = await prisma.organiser.findUnique({
+    where: { userId }
+  });
+
+  const { limit, cursor } = parseCursorPagination(query);
+  let where = {};
+
+  if (organiser) {
+    where.event = { organiserId: organiser.id };
+  } else {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user?.role !== "ADMIN") {
+      throw new AppError("NOT_FOUND", 404, "Organiser profile not found.");
+    }
+  }
+
+  if (query.status && query.status !== "ALL") {
+    where.status = query.status;
+  }
+
+  if (query.eventId) {
+    where.eventId = query.eventId;
+  }
+
+  if (query.query) {
+    where.OR = [
+      { orderNumber: { contains: query.query.trim(), mode: "insensitive" } },
+      { user: { name: { contains: query.query.trim(), mode: "insensitive" } } },
+      { user: { email: { contains: query.query.trim(), mode: "insensitive" } } },
+      { event: { title: { contains: query.query.trim(), mode: "insensitive" } } }
+    ];
+  }
+
+  const orders = await prisma.order.findMany({
+    where,
+    take: limit + 1,
+    cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : 0,
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: {
+        select: { id: true, name: true, email: true, phone: true }
+      },
+      event: {
+        select: {
+          id: true,
+          title: true,
+          startsAt: true,
+          venue: { select: { name: true, city: true } }
+        }
+      },
+      payment: {
+        select: { status: true, cardBrand: true, amountCents: true }
+      },
+      _count: {
+        select: { tickets: true }
+      }
+    }
+  });
+
+  return formatPaginatedResponse(orders, limit);
+}
+

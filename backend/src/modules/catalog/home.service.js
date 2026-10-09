@@ -23,7 +23,7 @@ export async function getHomePageData() {
       include: {
         venue: { select: { name: true, city: true, state: true } },
         artists: { include: { artist: { select: { id: true, name: true, slug: true } } } },
-        ticketTypes: { select: { priceCents: true, available: true } }
+        ticketTypes: { select: { priceCents: true, available: true, quantity: true, sold: true } }
       }
     }),
 
@@ -38,7 +38,7 @@ export async function getHomePageData() {
       orderBy: { createdAt: "desc" },
       include: {
         venue: { select: { name: true, city: true } },
-        ticketTypes: { select: { priceCents: true, available: true } }
+        ticketTypes: { select: { priceCents: true, available: true, quantity: true, sold: true } }
       }
     }),
 
