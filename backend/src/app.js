@@ -16,10 +16,10 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(",") : true,
-    credentials: true
+    origin: "*",
   })
 );
+
 
 // 2. Stripe Webhook mounted BEFORE express.json() to preserve raw body buffer
 app.use("/api/v1/webhooks", webhookRouter);
