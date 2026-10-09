@@ -35,10 +35,6 @@ export const register = asyncHandler(async (req, res) => {
       email: result.user.email,
       name: result.user.name,
       role: result.user.role
-    },
-    tokens: {
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken
     }
   });
 });
@@ -53,10 +49,6 @@ export const login = asyncHandler(async (req, res) => {
       email: result.user.email,
       name: result.user.name,
       role: result.user.role
-    },
-    tokens: {
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken
     }
   });
 });
@@ -71,16 +63,12 @@ export const googleAuth = asyncHandler(async (req, res) => {
       email: result.user.email,
       name: result.user.name,
       role: result.user.role
-    },
-    tokens: {
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken
     }
   });
 });
 
 export const refresh = asyncHandler(async (req, res) => {
-  const rawRefreshToken = req.cookies?.refresh_token;
+  const rawRefreshToken = req.cookies?.refresh_token || req.body?.refreshToken;
   const result = await authService.refreshSession(rawRefreshToken);
   attachAuthCookies(res, result.accessToken, result.refreshToken);
 
@@ -95,7 +83,7 @@ export const refresh = asyncHandler(async (req, res) => {
 });
 
 export const logout = asyncHandler(async (req, res) => {
-  const rawRefreshToken = req.cookies?.refresh_token;
+  const rawRefreshToken = req.cookies?.refresh_token || req.body?.refreshToken;
   await authService.logoutSession(rawRefreshToken);
   clearAuthCookies(res);
 
