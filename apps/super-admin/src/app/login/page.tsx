@@ -84,7 +84,7 @@ export default function LoginPage() {
               Events Effortlessly.
             </span>
           </h1>
-          <p className="text-sm sm:text-base font-medium text-slate-400 leading-relaxed max-w-md">
+          <p className="text-base sm:text-base font-medium text-slate-400 leading-relaxed max-w-md">
             The all-in-one platform for organizers and admins.
           </p>
         </div>
@@ -120,7 +120,7 @@ export default function LoginPage() {
           <div className="relative p-7 rounded bg-linear-to-br from-amber-400/50 via-amber-500/30 to-amber-900/20 border-2 border-amber-300/60 backdrop-blur-lg shadow-[0_25px_60px_rgba(245,190,40,0.35)]">
             <div className="flex items-center justify-between pb-4 border-b border-dashed border-amber-200/40">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl bg-amber-300/80 flex items-center justify-center text-slate-950 font-black text-xs">M</div>
+                <div className="w-7 h-7 rounded-xl bg-amber-300/80 flex items-center justify-center text-slate-950 font-black text-sm">M</div>
                 <div className="w-24 h-2 rounded-full bg-amber-100/70" />
               </div>
               <div className="px-2.5 py-1 rounded-full bg-amber-300/30 border border-amber-200/40 text-[10px] font-black text-amber-200 uppercase">VIP ACCESS</div>
@@ -130,7 +130,7 @@ export default function LoginPage() {
                 <p className="text-[10px] font-bold text-amber-200/70 uppercase tracking-widest">LIVE CONCERT</p>
                 <div className="w-28 h-3 rounded-full bg-amber-100/80 mt-1" />
               </div>
-              <div className="font-mono text-sm font-black text-amber-200 tracking-wider">₹5,000</div>
+              <div className="font-mono text-base font-black text-amber-200 tracking-wider">₹5,000</div>
             </div>
           </div>
         </div>
@@ -162,7 +162,7 @@ export default function LoginPage() {
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Welcome Back
             </h2>
-            <p className="text-xs font-semibold text-slate-400 mt-1">
+            <p className="text-sm font-semibold text-slate-400 mt-1">
               Sign in to the Mytix Dashboard
             </p>
           </div>
@@ -172,7 +172,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setLoginType("ADMIN")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-extrabold rounded-xl transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-extrabold rounded-xl transition-all cursor-pointer ${
                 loginType === "ADMIN"
                   ? "bg-white text-amber-950 border border-amber-300/80 shadow-[0_2px_10px_rgba(245,190,40,0.18)]"
                   : "text-slate-500 hover:text-slate-800"
@@ -185,7 +185,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setLoginType("ORGANISER")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-extrabold rounded-xl transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-extrabold rounded-xl transition-all cursor-pointer ${
                 loginType === "ORGANISER"
                   ? "bg-white text-amber-950 border border-amber-300/80 shadow-[0_2px_10px_rgba(245,190,40,0.18)]"
                   : "text-slate-500 hover:text-slate-800"
@@ -198,7 +198,7 @@ export default function LoginPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 rounded-2xl bg-red-50 border border-red-200/80 flex items-center gap-2 text-red-600 text-xs font-bold animate-in fade-in">
+            <div className="mb-4 p-3 rounded-2xl bg-red-50 border border-red-200/80 flex items-center gap-2 text-red-600 text-sm font-bold animate-in fade-in">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -209,7 +209,7 @@ export default function LoginPage() {
             
             {/* Email Field */}
             <div>
-              <label className="block text-xs font-bold text-slate-800 mb-1.5">
+              <label className="block text-sm font-bold text-slate-800 mb-1.5">
                 Email Address
               </label>
               <div className="relative">
@@ -220,7 +220,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={loginType === "ADMIN" ? "admin@mytix.example.com" : "organiser@business.com"}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-2.5 pl-10 pr-10 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-2.5 pl-10 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
                 />
                 {isEmailValid && (
                   <Check className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
@@ -230,7 +230,7 @@ export default function LoginPage() {
 
             {/* Password Field */}
             <div>
-              <label className="block text-xs font-bold text-slate-800 mb-1.5">
+              <label className="block text-sm font-bold text-slate-800 mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -241,7 +241,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-2.5 pl-10 pr-10 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-2.5 pl-10 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
                 />
                 <button
                   type="button"
@@ -268,7 +268,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-linear-to-b from-[#F5BF26] to-[#E6AC10] hover:from-[#E6AC10] hover:to-[#D99D05] py-3 text-xs font-black text-slate-950 transition-all shadow-[0_8px_20px_rgba(245,190,40,0.35)] hover:shadow-[0_10px_24px_rgba(245,190,40,0.45)] hover:scale-[1.01] active:scale-[0.98] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-1"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-linear-to-b from-[#F5BF26] to-[#E6AC10] hover:from-[#E6AC10] hover:to-[#D99D05] py-3 text-sm font-black text-slate-950 transition-all shadow-[0_8px_20px_rgba(245,190,40,0.35)] hover:shadow-[0_10px_24px_rgba(245,190,40,0.45)] hover:scale-[1.01] active:scale-[0.98] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-1"
             >
               <span>{isLoading ? "Signing In..." : `Sign In as ${loginType === "ADMIN" ? "Admin" : "Organiser"}`}</span>
               {!isLoading && <ArrowRight className="w-4 h-4 stroke-[2.5]" />}
@@ -276,19 +276,7 @@ export default function LoginPage() {
 
           </form>
 
-          {/* Bottom Signup Link */}
-          <div className="text-center mt-5 pt-4 border-t border-slate-100">
-            <p className="text-xs font-medium text-slate-500">
-              Don&apos;t have an account?{" "}
-              <button
-                type="button"
-                onClick={() => setLoginType("ORGANISER")}
-                className="font-black text-amber-600 hover:text-amber-700 hover:underline cursor-pointer"
-              >
-                Sign up
-              </button>
-            </p>
-          </div>
+
 
         </div>
 

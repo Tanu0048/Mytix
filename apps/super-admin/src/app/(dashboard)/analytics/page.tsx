@@ -157,7 +157,7 @@ export default function AnalyticsPage() {
           <h1 className="text-3xl font-black tracking-tight text-slate-900">
             Performance & <span className="text-amber-500">Analytics</span>
           </h1>
-          <p className="mt-1 text-xs font-semibold text-slate-400">
+          <p className="mt-1 text-sm font-semibold text-slate-400">
             Deep insights into ticket sales, audience traction, and revenue velocity.
           </p>
         </div>
@@ -170,7 +170,7 @@ export default function AnalyticsPage() {
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-sm font-extrabold transition-all cursor-pointer ${
                   timeRange === range
                     ? "bg-[#FFF9EB] text-amber-950 border border-amber-300/80 shadow-2xs"
                     : "text-slate-500 hover:text-slate-900"
@@ -184,7 +184,7 @@ export default function AnalyticsPage() {
           <button
             onClick={fetchData}
             disabled={isRefreshing}
-            className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white hover:bg-slate-50 px-4 py-3 text-xs font-bold text-slate-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white hover:bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
             title="Refresh analytics data"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-amber-600" : "text-slate-400"}`} />
@@ -291,7 +291,7 @@ export default function AnalyticsPage() {
                 <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
                 <h2 className="text-base font-black text-slate-900">Sales Velocity Trend</h2>
               </div>
-              <p className="text-xs font-semibold text-slate-400 mt-0.5">
+              <p className="text-sm font-semibold text-slate-400 mt-0.5">
                 Daily sales performance over the active tracking window.
               </p>
             </div>
@@ -300,7 +300,7 @@ export default function AnalyticsPage() {
             <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl shrink-0">
               <button
                 onClick={() => setActiveMetricTab("revenue")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-extrabold transition-all cursor-pointer ${
                   activeMetricTab === "revenue"
                     ? "bg-white text-slate-900 shadow-2xs"
                     : "text-slate-500 hover:text-slate-800"
@@ -310,7 +310,7 @@ export default function AnalyticsPage() {
               </button>
               <button
                 onClick={() => setActiveMetricTab("tickets")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-extrabold transition-all cursor-pointer ${
                   activeMetricTab === "tickets"
                     ? "bg-white text-slate-900 shadow-2xs"
                     : "text-slate-500 hover:text-slate-800"
@@ -354,7 +354,7 @@ export default function AnalyticsPage() {
             })}
           </div>
 
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-400 pt-4">
+          <div className="flex items-center justify-between text-sm font-semibold text-slate-400 pt-4">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-amber-400"></span>
               Peak Sales on Friday evening
@@ -372,7 +372,7 @@ export default function AnalyticsPage() {
               <h2 className="text-base font-black text-slate-900">Tier Distribution</h2>
               <Layers className="w-4 h-4 text-slate-400" />
             </div>
-            <p className="text-xs font-semibold text-slate-400 mb-6">
+            <p className="text-sm font-semibold text-slate-400 mb-6">
               Breakdown of ticket categories chosen by attendees.
             </p>
 
@@ -380,7 +380,7 @@ export default function AnalyticsPage() {
             <div className="space-y-4">
               {tierDistribution.map((tier, idx) => (
                 <div key={idx} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-sm">
                     <span className="font-bold text-slate-700">{tier.name}</span>
                     <span className="font-black text-slate-900">{tier.pct}%</span>
                   </div>
@@ -400,7 +400,7 @@ export default function AnalyticsPage() {
             <div className="flex items-start gap-2.5">
               <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-bold text-amber-950">Organizer Tip</p>
+                <p className="text-sm font-bold text-amber-950">Organizer Tip</p>
                 <p className="text-[11px] font-medium text-amber-900/80 mt-0.5 leading-relaxed">
                   VIP passes generate <strong>42% of total event revenue</strong> despite representing only 28% of attendance.
                 </p>
@@ -419,18 +419,18 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-base font-black text-slate-900">Top Performing Events</h2>
-              <p className="text-xs font-semibold text-slate-400 mt-0.5">
+              <p className="text-sm font-semibold text-slate-400 mt-0.5">
                 Ranked by ticket volume and gross sales revenue.
               </p>
             </div>
-            <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
+            <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-sm font-bold">
               {events.length} Events
             </span>
           </div>
 
           <div className="space-y-3.5">
             {events.length === 0 ? (
-              <div className="py-10 text-center text-slate-400 text-xs font-semibold">
+              <div className="py-10 text-center text-slate-400 text-sm font-semibold">
                 No event performance records available yet.
               </div>
             ) : (
@@ -445,11 +445,11 @@ export default function AnalyticsPage() {
                     className="p-4 rounded-2xl border border-slate-100 bg-slate-50/40 hover:bg-[#FFF9EB]/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className="w-8 h-8 rounded-xl bg-amber-100/90 border border-amber-200/80 text-amber-950 font-black text-xs flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-xl bg-amber-100/90 border border-amber-200/80 text-amber-950 font-black text-sm flex items-center justify-center shrink-0">
                         #{idx + 1}
                       </div>
                       <div>
-                        <p className="text-xs font-black text-slate-900 line-clamp-1">{event.title}</p>
+                        <p className="text-sm font-black text-slate-900 line-clamp-1">{event.title}</p>
                         <p className="text-[11px] font-semibold text-slate-400 flex items-center gap-1 mt-0.5">
                           <MapPin className="w-3 h-3 text-slate-400" />
                           {event.venue?.name || "Venue"} ({event.venue?.city || "City"})
@@ -483,7 +483,7 @@ export default function AnalyticsPage() {
         <div className="bg-white rounded-3xl p-7 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between">
           <div>
             <h2 className="text-base font-black text-slate-900 mb-1">Audience Devices</h2>
-            <p className="text-xs font-semibold text-slate-400 mb-6">
+            <p className="text-sm font-semibold text-slate-400 mb-6">
               Platforms used by customers to book tickets.
             </p>
 
@@ -495,11 +495,11 @@ export default function AnalyticsPage() {
                     <Smartphone className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900">Mobile Devices</p>
+                    <p className="text-sm font-bold text-slate-900">Mobile Devices</p>
                     <p className="text-[11px] font-semibold text-slate-400">iOS & Android Web</p>
                   </div>
                 </div>
-                <span className="text-sm font-black text-slate-900">72.4%</span>
+                <span className="text-base font-black text-slate-900">72.4%</span>
               </div>
 
               {/* Desktop */}
@@ -509,16 +509,16 @@ export default function AnalyticsPage() {
                     <Monitor className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900">Desktop Web</p>
+                    <p className="text-sm font-bold text-slate-900">Desktop Web</p>
                     <p className="text-[11px] font-semibold text-slate-400">Chrome, Safari, Edge</p>
                   </div>
                 </div>
-                <span className="text-sm font-black text-slate-900">27.6%</span>
+                <span className="text-base font-black text-slate-900">27.6%</span>
               </div>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-400">
+          <div className="pt-6 border-t border-slate-100 flex items-center justify-between text-sm font-semibold text-slate-400">
             <span>Primary booking window:</span>
             <span className="font-bold text-slate-900">7 PM – 11 PM</span>
           </div>

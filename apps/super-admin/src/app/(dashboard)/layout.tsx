@@ -13,21 +13,18 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const isCollapsed = useSidebarStore((state) => state.isCollapsed);
-  const token = useAuthStore((state) => state.token);
   const setUser = useAuthStore((state) => state.setUser);
 
-  // Sync latest user role & info from backend on mount
+  // Sync latest user role & info from backend on mount using cookies
   useEffect(() => {
-    if (token) {
-      api.get("/me")
-        .then((res) => {
-          if (res.data?.data) {
-            setUser(res.data.data);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [token, setUser]);
+    api.get("/me")
+      .then((res) => {
+        if (res.data?.data) {
+          setUser(res.data.data);
+        }
+      })
+      .catch(() => {});
+  }, [setUser]);
 
   return (
     <div className="min-h-screen bg-[#FBFBFC]">

@@ -19,7 +19,10 @@ import {
   GripVertical,
   ArrowRight,
   X,
-  Loader2
+  Loader2,
+  LayoutGrid,
+  Armchair,
+  Check
 } from "lucide-react";
 import api from "@/lib/api";
 
@@ -33,9 +36,23 @@ export default function CreateEventPage() {
 
   const [venues, setVenues] = useState<any[]>([]);
   const [artists, setArtists] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   
   const [newVenueName, setNewVenueName] = useState("");
   const [newVenueCity, setNewVenueCity] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
+
+  const [seatingType, setSeatingType] = useState<"GENERAL" | "RESERVED">("GENERAL");
+  const [seatingSections, setSeatingSections] = useState([
+    {
+      id: "sec-1",
+      name: "Front Section",
+      tierName: "General Admission",
+      rawRows: "A, B, C",
+      rows: ["A", "B", "C"],
+      seatsPerRow: 10
+    }
+  ]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -51,9 +68,10 @@ export default function CreateEventPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [vRes, aRes] = await Promise.all([
+        const [vRes, aRes, cRes] = await Promise.all([
           fetch("http://localhost:5000/api/v1/venues"),
-          fetch("http://localhost:5000/api/v1/artists")
+          fetch("http://localhost:5000/api/v1/artists"),
+          fetch("http://localhost:5000/api/v1/categories")
         ]);
         
         if (vRes.ok) {
@@ -71,6 +89,14 @@ export default function CreateEventPage() {
             setFormData(prev => ({ ...prev, artistId: aData[0].id }));
           }
         }
+
+        if (cRes.ok) {
+          const cData = await cRes.json();
+          setCategories(cData);
+          if (cData.length > 0) {
+            setFormData(prev => ({ ...prev, category: cData[0] }));
+          }
+        }
       } catch (err) {
         console.error("Failed to load venues/artists", err);
       }
@@ -81,6 +107,7 @@ export default function CreateEventPage() {
   const [ticketTypes, setTicketTypes] = useState([
     {
       name: "General Admission",
+      description: "",
       priceCents: 5000,
       quantity: 100,
       saleStartsAt: "",
@@ -104,6 +131,7 @@ export default function CreateEventPage() {
   const addTicketType = () => {
     setTicketTypes([...ticketTypes, {
       name: "",
+      description: "",
       priceCents: 5000,
       quantity: 100,
       saleStartsAt: formData.startsAt || "",
@@ -118,6 +146,45 @@ export default function CreateEventPage() {
     const updated = [...ticketTypes];
     updated.splice(index, 1);
     setTicketTypes(updated);
+  };
+
+  const addSeatingSection = () => {
+    const nextChar = String.fromCharCode(65 + seatingSections.length * 3);
+    const nextRows = [nextChar, String.fromCharCode(nextChar.charCodeAt(0) + 1), String.fromCharCode(nextChar.charCodeAt(0) + 2)];
+    setSeatingSections([
+      ...seatingSections,
+      {
+        id: `sec-${Date.now()}`,
+        name: `Section ${seatingSections.length + 1}`,
+        tierName: ticketTypes[0]?.name || "General Admission",
+        rawRows: nextRows.join(", "),
+        rows: nextRows,
+        seatsPerRow: 10
+      }
+    ]);
+  };
+
+  const removeSeatingSection = (index: number) => {
+    if (seatingSections.length === 1) return;
+    const updated = [...seatingSections];
+    updated.splice(index, 1);
+    setSeatingSections(updated);
+  };
+
+  const handleSectionChange = (index: number, field: string, val: any) => {
+    const updated = [...seatingSections];
+    updated[index] = { ...updated[index], [field]: val };
+    setSeatingSections(updated);
+  };
+
+  const handleRowsChange = (index: number, rawValue: string) => {
+    const rows = rawValue
+      .split(",")
+      .map(r => r.trim().toUpperCase())
+      .filter(Boolean);
+    const updated = [...seatingSections];
+    updated[index] = { ...updated[index], rawRows: rawValue, rows };
+    setSeatingSections(updated);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -141,17 +208,28 @@ export default function CreateEventPage() {
         finalVenueId = venueRes.data.data.id;
       }
 
+      let finalCategory = formData.category;
+      if (formData.category === "NEW") {
+        if (!newCategoryName) {
+          throw new Error("Please specify the custom category name.");
+        }
+        finalCategory = newCategoryName;
+      }
+
       const payload = {
         title: formData.title,
         description: formData.description,
         venueId: finalVenueId,
-        category: formData.category,
+        category: finalCategory,
         posterPath: formData.posterPath,
+        seatingType,
+        seatingConfig: seatingType === "RESERVED" ? { sections: seatingSections } : null,
         startsAt: new Date(formData.startsAt).toISOString(),
         doorsOpenAt: formData.doorsOpenAt ? new Date(formData.doorsOpenAt).toISOString() : undefined,
         artists: formData.artistId ? [{ artistId: formData.artistId, isHeadline: true }] : [],
         ticketTypes: ticketTypes.map(t => ({
           name: t.name,
+          description: t.description || undefined,
           priceCents: Number(t.priceCents),
           quantity: Number(t.quantity),
           saleStartsAt: t.saleStartsAt ? new Date(t.saleStartsAt).toISOString() : new Date().toISOString(),
@@ -183,24 +261,24 @@ export default function CreateEventPage() {
           <button 
             type="button"
             onClick={() => router.back()}
-            className="flex items-center text-xs font-bold text-slate-400 hover:text-slate-900 transition-colors mb-2.5"
+            className="flex items-center text-sm font-bold text-slate-400 hover:text-slate-900 transition-colors mb-2.5"
           >
             <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back to Events
           </button>
           <h1 className="text-3xl font-black tracking-tight text-slate-900">
             Create New Event
           </h1>
-          <p className="mt-1 text-xs font-semibold text-slate-400">
+          <p className="mt-1 text-sm font-semibold text-slate-400">
             Set up your event details and ticketing tiers.
           </p>
         </div>
 
         {/* Decorative Slogan */}
         <div className="hidden sm:block text-right select-none transform -rotate-2">
-          <span className="text-slate-400/80 font-bold italic text-sm tracking-wide block font-serif">
+          <span className="text-slate-400/80 font-bold italic text-base tracking-wide block font-serif">
             Great Events
           </span>
-          <span className="text-slate-400 font-extrabold italic text-xs tracking-wider block font-serif -mt-0.5">
+          <span className="text-slate-400 font-extrabold italic text-sm tracking-wider block font-serif -mt-0.5">
             Start Here
           </span>
           <div className="w-16 h-1 bg-amber-300/40 rounded-full ml-auto mt-0.5"></div>
@@ -208,7 +286,7 @@ export default function CreateEventPage() {
       </header>
 
       {error && (
-        <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200/80 text-red-600 font-bold text-xs">
+        <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200/80 text-red-600 font-bold text-sm">
           {error}
         </div>
       )}
@@ -225,7 +303,7 @@ export default function CreateEventPage() {
             </div>
             <div>
               <h2 className="text-base font-black text-slate-900 leading-tight">Basic Details</h2>
-              <p className="text-xs font-semibold text-slate-400 mt-0.5">
+              <p className="text-sm font-semibold text-slate-400 mt-0.5">
                 Tell us about your event. This will help attendees discover and know your event better.
               </p>
             </div>
@@ -238,7 +316,7 @@ export default function CreateEventPage() {
               
               {/* Event Title */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Event Title <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -250,14 +328,14 @@ export default function CreateEventPage() {
                     value={formData.title} 
                     onChange={handleChange} 
                     placeholder="e.g. Summer Music Festival" 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
                   />
                 </div>
               </div>
 
               {/* Poster Image Upload Box */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Poster Image <span className="text-slate-400 font-medium">(Required)</span> <span className="text-red-500">*</span>
                 </label>
                 <div className="rounded-2xl border-2 border-dashed border-slate-200/90 bg-slate-50/40 p-3.5 flex flex-col justify-center relative hover:bg-slate-50 transition-colors">
@@ -292,7 +370,7 @@ export default function CreateEventPage() {
                             setIsUploadingImage(false);
                           }
                         }}
-                        className="text-xs text-slate-500 font-medium file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-slate-200/80 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer min-w-0 truncate"
+                        className="text-sm text-slate-500 font-medium file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-slate-200/80 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer min-w-0 truncate"
                       />
                     </div>
 
@@ -349,7 +427,7 @@ export default function CreateEventPage() {
             {/* Description */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-bold text-slate-800">
+                <label className="block text-sm font-bold text-slate-800">
                   Description <span className="text-red-500">*</span>
                 </label>
               </div>
@@ -362,7 +440,7 @@ export default function CreateEventPage() {
                   maxLength={1000}
                   placeholder="Tell your audience about the event..." 
                   rows={4} 
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all resize-none" 
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all resize-none" 
                 />
                 <span className="absolute bottom-3 right-4 text-[10px] font-bold text-slate-400 pointer-events-none">
                   {formData.description.length}/1000
@@ -375,7 +453,7 @@ export default function CreateEventPage() {
               
               {/* Category */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Category <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -384,22 +462,26 @@ export default function CreateEventPage() {
                     name="category" 
                     value={formData.category} 
                     onChange={handleChange} 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-9 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all appearance-none cursor-pointer"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-9 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all appearance-none cursor-pointer"
                   >
-                    <option value="Concert">Concert</option>
-                    <option value="Comedy">Comedy</option>
-                    <option value="Workshop">Workshop</option>
-                    <option value="Festival">Festival</option>
-                    <option value="Theatre">Theatre</option>
-                    <option value="Sports">Sports</option>
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="NEW">+ Create Custom Category</option>
                   </select>
                   <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
+                {formData.category === "NEW" && (
+                  <div className="mt-3.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Custom Category Name</label>
+                    <input type="text" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} placeholder="e.g. Art & Exhibitions" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-400" required />
+                  </div>
+                )}
               </div>
 
               {/* Venue */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Venue <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -408,7 +490,7 @@ export default function CreateEventPage() {
                     name="venueId" 
                     value={formData.venueId} 
                     onChange={handleChange} 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-9 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all appearance-none cursor-pointer"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-9 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all appearance-none cursor-pointer"
                   >
                     {venues.map(v => (
                       <option key={v.id} value={v.id}>{v.name} ({v.city})</option>
@@ -422,11 +504,11 @@ export default function CreateEventPage() {
                   <div className="mt-3.5 grid grid-cols-2 gap-3.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">City</label>
-                      <input type="text" value={newVenueCity} onChange={e => setNewVenueCity(e.target.value)} placeholder="e.g. Mumbai" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-amber-400" required />
+                      <input type="text" value={newVenueCity} onChange={e => setNewVenueCity(e.target.value)} placeholder="e.g. Mumbai" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-400" required />
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">Venue Name</label>
-                      <input type="text" value={newVenueName} onChange={e => setNewVenueName(e.target.value)} placeholder="e.g. Jio World Centre" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-amber-400" required />
+                      <input type="text" value={newVenueName} onChange={e => setNewVenueName(e.target.value)} placeholder="e.g. Jio World Centre" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-400" required />
                     </div>
                   </div>
                 )}
@@ -438,7 +520,7 @@ export default function CreateEventPage() {
               
               {/* Artist */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Artist (Headline) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -447,7 +529,7 @@ export default function CreateEventPage() {
                     name="artistId" 
                     value={formData.artistId} 
                     onChange={handleChange} 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-9 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all appearance-none cursor-pointer"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-9 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all appearance-none cursor-pointer"
                   >
                     {artists.map(a => (
                       <option key={a.id} value={a.id}>{a.name}</option>
@@ -459,7 +541,7 @@ export default function CreateEventPage() {
 
               {/* Starts At */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Starts At <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -469,7 +551,7 @@ export default function CreateEventPage() {
                     name="startsAt" 
                     value={formData.startsAt} 
                     onChange={handleChange} 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-4 pr-10 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
                   />
                   <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
@@ -479,7 +561,7 @@ export default function CreateEventPage() {
             {/* Row 5: Doors Open At */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Doors Open At <span className="text-slate-400 font-medium">(Optional)</span>
                 </label>
                 <div className="relative">
@@ -488,7 +570,7 @@ export default function CreateEventPage() {
                     name="doorsOpenAt" 
                     value={formData.doorsOpenAt} 
                     onChange={handleChange} 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-4 pr-10 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
                   />
                   <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
@@ -498,7 +580,7 @@ export default function CreateEventPage() {
           </div>
         </div>
 
-        {/* ===== CARD 2: TICKETING TIERS ===== */}
+        {/* ===== CARD 2: TICKET CATEGORIES ===== */}
         <div className="rounded-3xl bg-white p-7 sm:p-9 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-100">
           
           {/* Section Header */}
@@ -508,24 +590,24 @@ export default function CreateEventPage() {
                 <Ticket className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <h2 className="text-base font-black text-slate-900 leading-tight">Ticketing Tiers</h2>
-                <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                  Add different ticket tiers for your event. You can create multiple price levels, types, and quantities.
+                <h2 className="text-base font-black text-slate-900 leading-tight">Ticket Categories</h2>
+                <p className="text-sm font-semibold text-slate-400 mt-0.5">
+                  Create categories for your tickets (e.g., VIP, Normal, Student) and set their prices.
                 </p>
               </div>
             </div>
 
-            {/* Add Tier Button */}
+            {/* Add Category Button */}
             <button 
               type="button" 
               onClick={addTicketType} 
-              className="flex items-center gap-1.5 text-xs font-extrabold text-amber-900 bg-[#FFF9EB] hover:bg-amber-100/70 border border-amber-200/80 px-4 py-2.5 rounded-2xl transition-all shadow-2xs cursor-pointer"
+              className="flex items-center gap-1.5 text-sm font-extrabold text-amber-900 bg-[#FFF9EB] hover:bg-amber-100/70 border border-amber-200/80 px-4 py-2.5 rounded-2xl transition-all shadow-2xs cursor-pointer"
             >
-              <Plus className="w-4 h-4 stroke-3" /> Add Tier
+              <Plus className="w-4 h-4 stroke-3" /> Add Category
             </button>
           </div>
 
-          {/* Tiers List */}
+          {/* Categories List */}
           <div className="space-y-5">
             {ticketTypes.map((ticket, index) => (
               <div 
@@ -538,25 +620,25 @@ export default function CreateEventPage() {
                   {/* Grip + Number Badge */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <GripVertical className="w-4 h-4 text-slate-300" />
-                    <span className="w-6 h-6 rounded-full bg-amber-100/90 border border-amber-200/70 text-amber-950 font-black text-xs flex items-center justify-center">
+                    <span className="w-6 h-6 rounded-full bg-amber-100/90 border border-amber-200/70 text-amber-950 font-black text-sm flex items-center justify-center">
                       {index + 1}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
                     
-                    {/* Tier Name */}
+                    {/* Category Name */}
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
-                        Tier Name <span className="text-red-500">*</span>
+                        Category Name (e.g. VIP) <span className="text-red-500">*</span>
                       </label>
                       <input 
                         required 
                         type="text" 
                         value={ticket.name} 
                         onChange={(e) => handleTicketChange(index, "name", e.target.value)} 
-                        placeholder="General Admission" 
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 px-3.5 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
+                        placeholder="e.g. VIP or Normal" 
+                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
                       />
                     </div>
 
@@ -570,21 +652,21 @@ export default function CreateEventPage() {
                         type="number" 
                         value={ticket.priceCents} 
                         onChange={(e) => handleTicketChange(index, "priceCents", e.target.value)} 
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 px-3.5 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
+                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
                       />
                     </div>
 
                     {/* Quantity */}
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
-                        Quantity <span className="text-red-500">*</span>
+                        Total Tickets <span className="text-red-500">*</span>
                       </label>
                       <input 
                         required 
                         type="number" 
                         value={ticket.quantity} 
                         onChange={(e) => handleTicketChange(index, "quantity", e.target.value)} 
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 px-3.5 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
+                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
                       />
                     </div>
 
@@ -596,51 +678,217 @@ export default function CreateEventPage() {
                       type="button" 
                       onClick={() => removeTicketType(index)} 
                       className="w-8 h-8 rounded-xl bg-red-50/80 hover:bg-red-100 text-red-500 flex items-center justify-center transition-colors shrink-0 self-end mb-1 cursor-pointer"
-                      title="Delete tier"
+                      title="Delete category"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
                 </div>
 
-                {/* Bottom Row: Sale Starts & Ends Times */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:pl-11">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
-                      Sale Starts At <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input 
-                        required 
-                        type="datetime-local" 
-                        value={ticket.saleStartsAt} 
-                        onChange={(e) => handleTicketChange(index, "saleStartsAt", e.target.value)} 
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 pl-3.5 pr-10 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
-                      />
-                      <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
-                      Sale Ends At <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input 
-                        required 
-                        type="datetime-local" 
-                        value={ticket.saleEndsAt} 
-                        onChange={(e) => handleTicketChange(index, "saleEndsAt", e.target.value)} 
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 pl-3.5 pr-10 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
-                      />
-                      <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                    </div>
-                  </div>
+                {/* Description Row */}
+                <div className="pl-0 lg:pl-11">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                    Category Perks <span className="text-slate-400 font-medium">(Optional)</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    value={ticket.description} 
+                    onChange={(e) => handleTicketChange(index, "description", e.target.value)} 
+                    placeholder="e.g. Includes front row seating and a free drink" 
+                    className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
+                  />
                 </div>
-
               </div>
             ))}
           </div>
 
+        </div>
+
+        {/* ===== CARD 3: SEATING ARRANGEMENT ===== */}
+        <div className="rounded-3xl bg-white p-7 sm:p-9 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-100">
+          <div className="flex items-start gap-3.5 mb-6">
+            <div className="w-11 h-11 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
+              <Armchair className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-slate-900 leading-tight">Seating & Layout</h2>
+              <p className="text-sm font-semibold text-slate-400 mt-0.5">
+                Assign the categories (like VIP, Normal) to seats or keep it as open admission.
+              </p>
+            </div>
+          </div>
+
+          {/* 2 Choice Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            {/* General Admission */}
+            <div 
+              onClick={() => setSeatingType("GENERAL")}
+              className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
+                seatingType === "GENERAL"
+                  ? "border-amber-400 bg-amber-50/40 shadow-xs ring-2 ring-amber-400/20"
+                  : "border-slate-100 bg-slate-50/40 hover:border-slate-200"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-black text-slate-900">General Admission (Open)</span>
+                {seatingType === "GENERAL" && (
+                  <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[11px] font-black">
+                    ✓
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                Best for Standing or Club events. Buyers pick a category without specific seat numbers.
+              </p>
+            </div>
+
+            {/* Reserved Seating */}
+            <div 
+              onClick={() => setSeatingType("RESERVED")}
+              className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
+                seatingType === "RESERVED"
+                  ? "border-amber-400 bg-amber-50/40 shadow-xs ring-2 ring-amber-400/20"
+                  : "border-slate-100 bg-slate-50/40 hover:border-slate-200"
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-black text-slate-900">Reserved Seating (Numbered)</span>
+                {seatingType === "RESERVED" && (
+                  <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[11px] font-black">
+                    ✓
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                Assign specific rows and seat numbers to the categories you created above.
+              </p>
+            </div>
+          </div>
+
+          {/* Reserved Seating Grid Config */}
+          {seatingType === "RESERVED" && (
+            <div className="mt-6 pt-6 border-t border-slate-100 space-y-5 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">Seat Sections & Rows</h3>
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    Map rows to your ticket categories (e.g. Rows A,B for VIP).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addSeatingSection}
+                  className="flex items-center gap-1.5 text-sm font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 px-3.5 py-1.5 rounded-xl cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Section
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {seatingSections.map((sec, idx) => {
+                  const totalSeats = sec.rows.length * sec.seatsPerRow;
+                  return (
+                     <div key={sec.id} className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/30 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                        {/* Section Name */}
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-700 mb-1">Section Name</label>
+                          <input
+                            type="text"
+                            value={sec.name}
+                            onChange={(e) => handleSectionChange(idx, "name", e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400"
+                            placeholder="e.g. VIP Front"
+                          />
+                        </div>
+
+                        {/* Linked Tier */}
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-700 mb-1">Category</label>
+                          <select
+                            value={sec.tierName}
+                            onChange={(e) => handleSectionChange(idx, "tierName", e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400"
+                          >
+                            {ticketTypes.map((t, tIdx) => (
+                              <option key={tIdx} value={t.name || `Category ${tIdx + 1}`}>
+                                {t.name || `Category ${tIdx + 1}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Rows (comma separated) */}
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-700 mb-1">
+                            Rows <span className="text-slate-400">(e.g. A,B,C)</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={sec.rawRows !== undefined ? sec.rawRows : sec.rows.join(", ")}
+                            onChange={(e) => handleRowsChange(idx, e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400"
+                            placeholder="A, B, C"
+                          />
+                        </div>
+
+                        {/* Seats Per Row & Delete */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-slate-700 mb-1">Seats / Row</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="40"
+                              value={sec.seatsPerRow}
+                              onChange={(e) => handleSectionChange(idx, "seatsPerRow", Number(e.target.value))}
+                              className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400"
+                            />
+                          </div>
+                          {seatingSections.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeSeatingSection(idx)}
+                              className="p-2 text-slate-400 hover:text-red-500 transition-colors mt-4"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Visual Mini Preview */}
+                      <div className="bg-slate-950 p-3 rounded-xl">
+                        <div className="text-[10px] font-bold text-slate-400 mb-2 flex items-center justify-between">
+                          <span>Preview: {sec.name}</span>
+                          <span className="text-amber-400">{totalSeats} seats generated</span>
+                        </div>
+                        <div className="space-y-1.5 overflow-x-auto py-1">
+                          {sec.rows.map((r) => (
+                            <div key={r} className="flex items-center gap-1.5 min-w-fit">
+                              <span className="w-4 text-[9px] font-black text-slate-500">{r}</span>
+                              {Array.from({ length: Math.min(sec.seatsPerRow, 25) }, (_, i) => (
+                                <span
+                                  key={i}
+                                  className="w-4 h-4 rounded-sm bg-slate-800 text-[8px] font-bold text-slate-400 flex items-center justify-center border border-slate-700"
+                                >
+                                  {i + 1}
+                                </span>
+                              ))}
+                              {sec.seatsPerRow > 25 && (
+                                <span className="text-[9px] text-slate-500 ml-1">+{sec.seatsPerRow - 25} more</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ===== BOTTOM ACTION BUTTON ===== */}
@@ -648,7 +896,7 @@ export default function CreateEventPage() {
           <button 
             type="submit" 
             disabled={isLoading}
-            className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-9 py-4 text-xs font-black text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-9 py-4 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {isLoading ? (
               "Publishing Event..."

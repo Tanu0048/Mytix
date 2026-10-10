@@ -6,7 +6,6 @@ import {
   Plus, 
   UserCheck, 
   UserX, 
-  Clock, 
   MoreVertical, 
   KeyRound, 
   CheckCircle, 
@@ -17,14 +16,13 @@ import {
   Eye, 
   EyeOff, 
   ShieldCheck, 
-  Mail, 
-  Phone, 
   Building2, 
   RefreshCw, 
   Loader2, 
   AlertCircle, 
   Sparkles,
-  Users
+  Users,
+  Trash2
 } from "lucide-react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -34,7 +32,7 @@ interface Organiser {
   businessName: string;
   contactEmail: string;
   contactPhone?: string | null;
-  status: "APPROVED" | "PENDING" | "SUSPENDED" | string;
+  status: "APPROVED" | "SUSPENDED" | string;
   createdAt: string;
   user?: {
     id: string;
@@ -48,7 +46,7 @@ export default function OrganisersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "APPROVED" | "PENDING" | "SUSPENDED">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "APPROVED" | "SUSPENDED">("ALL");
 
   // Create Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -62,6 +60,13 @@ export default function OrganisersPage() {
     businessName: "",
     contactPhone: ""
   });
+
+  // Success Credentials Modal State
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    businessName: string;
+    email: string;
+    password: string;
+  } | null>(null);
 
   // Action Dropdown State
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -77,9 +82,13 @@ export default function OrganisersPage() {
   const [resetError, setResetError] = useState("");
   const [isResetSubmitting, setIsResetSubmitting] = useState(false);
 
+  // Delete Organiser Modal State
+  const [deleteModalTarget, setDeleteModalTarget] = useState<Organiser | null>(null);
+  const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false);
+
   const [isForbidden, setIsForbidden] = useState(false);
 
-  // Toast / Feedback State
+  // Toast State
   const [toastMsg, setToastMsg] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -129,15 +138,25 @@ export default function OrganisersPage() {
   // Derived counts
   const totalCount = organisers.length;
   const approvedCount = organisers.filter((o) => o.status === "APPROVED").length;
-  const pendingCount = organisers.filter((o) => o.status === "PENDING").length;
   const suspendedCount = organisers.filter((o) => o.status === "SUSPENDED").length;
+
+  // Generate random strong password
+  const generateRandomPassword = () => {
+    const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let randomPart = "";
+    for (let i = 0; i < 6; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const generated = `Org@${randomPart}9!`;
+    setFormData((prev) => ({ ...prev, password: generated }));
+    setShowCreatePassword(true);
+  };
 
   // Handle Create Submit
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError("");
 
-    // Validate password rules
     const pwd = formData.password;
     if (pwd.length < 8 || !/[A-Z]/.test(pwd) || !/[a-z]/.test(pwd) || !/[0-9]/.test(pwd) || !/[^A-Za-z0-9]/.test(pwd)) {
       setCreateError("Password must be 8+ chars and contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special symbol.");
@@ -147,7 +166,11 @@ export default function OrganisersPage() {
     setIsSubmitting(true);
     try {
       await api.post("/admin/organisers", formData);
-      showToast(`Organiser "${formData.businessName}" created successfully!`);
+      setCreatedCredentials({
+        businessName: formData.businessName,
+        email: formData.email,
+        password: formData.password
+      });
       setIsCreateModalOpen(false);
       setFormData({ name: "", email: "", password: "", businessName: "", contactPhone: "" });
       fetchOrganisers();
@@ -160,14 +183,14 @@ export default function OrganisersPage() {
     }
   };
 
-  // Handle Status Update via Modal
+  // Handle Status Update (Suspend / Activate)
   const handleConfirmStatusChange = async () => {
     if (!statusModalTarget) return;
     const { organiser, newStatus } = statusModalTarget;
     setIsStatusSubmitting(true);
     try {
       await api.patch(`/admin/organisers/${organiser.id}/status`, { status: newStatus });
-      showToast(`Status updated to ${newStatus} for ${organiser.businessName}`);
+      showToast(`Status updated to ${newStatus === "APPROVED" ? "Active" : "Suspended"} for ${organiser.businessName}`);
       setStatusModalTarget(null);
       fetchOrganisers();
       setOpenDropdown(null);
@@ -211,31 +234,38 @@ export default function OrganisersPage() {
     }
   };
 
+  // Handle Delete Organiser
+  const handleConfirmDelete = async () => {
+    if (!deleteModalTarget) return;
+    setIsDeleteSubmitting(true);
+    try {
+      await api.delete(`/admin/organisers/${deleteModalTarget.id}`);
+      showToast(`Organiser account deleted successfully!`);
+      setDeleteModalTarget(null);
+      fetchOrganisers();
+      setOpenDropdown(null);
+    } catch (err: any) {
+      showToast(`Error deleting account: ${err.response?.data?.error?.message || err.message}`);
+    } finally {
+      setIsDeleteSubmitting(false);
+    }
+  };
+
   // Copy helper
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
-    showToast(`Copied "${text}" to clipboard`);
+    showToast(`Copied to clipboard`);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const getInitials = (name: string) => {
-    if (!name) return "OR";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
-  };
-
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 max-w-7xl pb-24">
+    <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 max-w-7xl pb-24 relative">
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-slate-900 text-white px-5 py-3.5 shadow-2xl border border-slate-800 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#F6C636] animate-pulse"></div>
-          <span className="text-xs font-bold tracking-wide">{toastMsg}</span>
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-slate-900 text-white text-sm font-bold shadow-xl border border-slate-800 animate-in fade-in slide-in-from-bottom-2">
+          <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <span>{toastMsg}</span>
         </div>
       )}
 
@@ -244,14 +274,14 @@ export default function OrganisersPage() {
         <div>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/60">
-              <ShieldCheck className="w-3.5 h-3.5" /> Platform Governance
+              <ShieldCheck className="w-3.5 h-3.5" /> Organiser Management
             </span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-slate-900 mt-2">
             Organisers Directory
           </h1>
-          <p className="mt-1 text-xs font-semibold text-slate-400">
-            Review partner credentials, grant event publishing access, and maintain security credentials.
+          <p className="mt-1 text-sm font-semibold text-slate-400">
+            Create organiser accounts, assign login credentials, and manage access.
           </p>
         </div>
 
@@ -259,7 +289,7 @@ export default function OrganisersPage() {
           <button
             onClick={fetchOrganisers}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 text-xs font-bold transition-all shadow-xs"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 text-sm font-bold transition-all shadow-xs cursor-pointer"
             title="Refresh list"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-amber-500" : ""}`} />
@@ -271,10 +301,10 @@ export default function OrganisersPage() {
               setCreateError("");
               setIsCreateModalOpen(true);
             }}
-            className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-2.5 text-xs font-black text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01]"
+            className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-2.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
           >
             <Plus className="h-4 w-4 stroke-3" />
-            <span>Add New Organiser</span>
+            <span>Create New Organiser</span>
           </button>
         </div>
       </header>
@@ -286,8 +316,8 @@ export default function OrganisersPage() {
             <ShieldCheck className="w-8 h-8" />
           </div>
           <h2 className="text-xl font-black text-slate-900">Administrator Clearance Required</h2>
-          <p className="text-xs font-semibold text-slate-500 mt-2 mb-6 leading-relaxed">
-            Managing partner credentials and status is strictly reserved for Super Administrators. If your account role was recently updated, please sync your active session.
+          <p className="text-sm font-semibold text-slate-500 mt-2 mb-6 leading-relaxed">
+            Managing partner credentials is strictly reserved for Super Administrators. Please sync your active session.
           </p>
           <button
             onClick={async () => {
@@ -300,7 +330,7 @@ export default function OrganisersPage() {
               } catch {}
               await fetchOrganisers();
             }}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-xs font-black text-slate-950 transition-all shadow-sm hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-black text-slate-950 transition-all shadow-sm hover:scale-[1.02]"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
             <span>Sync Session & Reload</span>
@@ -308,390 +338,328 @@ export default function OrganisersPage() {
         </div>
       ) : (
         <>
-          {/* ===== Stat Cards ===== */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        {/* Total */}
-        <div className="group rounded-3xl bg-white p-5 border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] hover:shadow-md transition-all">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Partners</p>
-              <p className="text-3xl font-black text-slate-900 mt-1">{totalCount}</p>
+          {/* ===== 3 Stat Cards ===== */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+            {/* Total */}
+            <div className="group rounded-3xl bg-white p-5 border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Organisers</p>
+                  <p className="text-3xl font-black text-slate-900 mt-1">{totalCount}</p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/50 flex items-center justify-center text-amber-600">
+                  <Users className="w-6 h-6" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
+                <span>Registered organiser accounts</span>
+              </div>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/50 flex items-center justify-center text-amber-600">
-              <Users className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
-            <span>Platform-registered organizers</span>
-          </div>
-        </div>
 
-        {/* Approved */}
-        <div className="group rounded-3xl bg-white p-5 border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] hover:shadow-md transition-all">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Active & Approved</p>
-              <p className="text-3xl font-black text-emerald-600 mt-1">{approvedCount}</p>
+            {/* Active */}
+            <div className="group rounded-3xl bg-white p-5 border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Active & Ready</p>
+                  <p className="text-3xl font-black text-emerald-600 mt-1">{approvedCount}</p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/50 flex items-center justify-center text-emerald-600">
+                  <UserCheck className="w-6 h-6" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-emerald-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>Can log in & create events</span>
+              </div>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/50 flex items-center justify-center text-emerald-600">
-              <UserCheck className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-emerald-600">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span>Can publish and host events</span>
-          </div>
-        </div>
 
-        {/* Pending */}
-        <div className="group rounded-3xl bg-white p-5 border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] hover:shadow-md transition-all">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Pending Approval</p>
-              <p className="text-3xl font-black text-amber-600 mt-1">{pendingCount}</p>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/50 flex items-center justify-center text-amber-600">
-              <Clock className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-amber-600">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            <span>Awaiting administrator verification</span>
-          </div>
-        </div>
-
-        {/* Suspended */}
-        <div className="group rounded-3xl bg-white p-5 border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] hover:shadow-md transition-all">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Suspended</p>
-              <p className="text-3xl font-black text-rose-600 mt-1">{suspendedCount}</p>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200/50 flex items-center justify-center text-rose-600">
-              <UserX className="w-6 h-6" />
+            {/* Suspended */}
+            <div className="group rounded-3xl bg-white p-5 border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Suspended</p>
+                  <p className="text-3xl font-black text-rose-600 mt-1">{suspendedCount}</p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200/50 flex items-center justify-center text-rose-600">
+                  <UserX className="w-6 h-6" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-rose-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                <span>Login temporarily blocked</span>
+              </div>
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-rose-600">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-            <span>Access blocked / under review</span>
-          </div>
-        </div>
-      </div>
 
-      {/* ===== Toolbar & Filters ===== */}
-      <div className="rounded-3xl bg-white border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] p-5 mb-6">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-50 border border-slate-200/60 overflow-x-auto">
-            <button
-              onClick={() => setStatusFilter("ALL")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
-                statusFilter === "ALL"
-                  ? "bg-[#F6C636] text-slate-950 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-              }`}
-            >
-              <span>All</span>
-              <span className="px-1.5 py-0.5 rounded-md bg-black/10 text-[10px] font-extrabold">{totalCount}</span>
-            </button>
+          {/* ===== Toolbar & Filters ===== */}
+          <div className="rounded-3xl bg-white border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] p-5 mb-6">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+              {/* Status Tabs */}
+              <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-50 border border-slate-200/60 overflow-x-auto">
+                <button
+                  onClick={() => setStatusFilter("ALL")}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-black transition-all shrink-0 cursor-pointer ${
+                    statusFilter === "ALL"
+                      ? "bg-[#F6C636] text-slate-950 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                  }`}
+                >
+                  <span>All</span>
+                  <span className="px-1.5 py-0.5 rounded-md bg-black/10 text-[10px] font-extrabold">{totalCount}</span>
+                </button>
 
-            <button
-              onClick={() => setStatusFilter("APPROVED")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
-                statusFilter === "APPROVED"
-                  ? "bg-emerald-500 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-              }`}
-            >
-              <span>Approved</span>
-              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${statusFilter === "APPROVED" ? "bg-white/20" : "bg-slate-200 text-slate-700"}`}>
-                {approvedCount}
-              </span>
-            </button>
+                <button
+                  onClick={() => setStatusFilter("APPROVED")}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-black transition-all shrink-0 cursor-pointer ${
+                    statusFilter === "APPROVED"
+                      ? "bg-emerald-500 text-white shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                  }`}
+                >
+                  <span>Active</span>
+                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${statusFilter === "APPROVED" ? "bg-white/20" : "bg-slate-200 text-slate-700"}`}>
+                    {approvedCount}
+                  </span>
+                </button>
 
-            <button
-              onClick={() => setStatusFilter("PENDING")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
-                statusFilter === "PENDING"
-                  ? "bg-amber-400 text-slate-950 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-              }`}
-            >
-              <span>Pending</span>
-              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${statusFilter === "PENDING" ? "bg-black/10" : "bg-slate-200 text-slate-700"}`}>
-                {pendingCount}
-              </span>
-            </button>
+                <button
+                  onClick={() => setStatusFilter("SUSPENDED")}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-black transition-all shrink-0 cursor-pointer ${
+                    statusFilter === "SUSPENDED"
+                      ? "bg-rose-500 text-white shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                  }`}
+                >
+                  <span>Suspended</span>
+                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${statusFilter === "SUSPENDED" ? "bg-white/20" : "bg-slate-200 text-slate-700"}`}>
+                    {suspendedCount}
+                  </span>
+                </button>
+              </div>
 
-            <button
-              onClick={() => setStatusFilter("SUSPENDED")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all shrink-0 ${
-                statusFilter === "SUSPENDED"
-                  ? "bg-rose-500 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-              }`}
-            >
-              <span>Suspended</span>
-              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${statusFilter === "SUSPENDED" ? "bg-white/20" : "bg-slate-200 text-slate-700"}`}>
-                {suspendedCount}
-              </span>
-            </button>
-          </div>
-
-          {/* Search Box */}
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by business, name, email..."
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2 pl-10 pr-4 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ===== Table / List ===== */}
-      <div className="rounded-3xl bg-white border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] overflow-hidden">
-        {isLoading ? (
-          <div className="p-16 text-center flex flex-col items-center justify-center">
-            <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
-            <p className="text-xs font-bold text-slate-500">Loading verified organisers...</p>
-          </div>
-        ) : filteredOrganisers.length === 0 ? (
-          <div className="p-16 text-center flex flex-col items-center justify-center">
-            <div className="w-16 h-16 rounded-3xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 mb-4">
-              <Building2 className="w-8 h-8" />
+              {/* Search Box */}
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by business, name, email..."
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2 pl-10 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
+                />
+              </div>
             </div>
-            <h3 className="text-base font-black text-slate-900">No organisers found</h3>
-            <p className="text-xs font-semibold text-slate-400 max-w-sm mt-1 mb-5">
-              {searchQuery
-                ? `No partner matches "${searchQuery}". Try a different search phrase or clear the filter.`
-                : "No organisers created yet. Click 'Add New Organiser' to onboard your first partner."}
-            </p>
-            {searchQuery ? (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors"
-              >
-                Clear Search
-              </button>
+          </div>
+
+          {/* ===== Organisers Table ===== */}
+          <div className="rounded-3xl bg-white border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] overflow-hidden">
+            {isLoading ? (
+              <div className="p-16 flex flex-col items-center justify-center text-slate-400 gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+                <p className="text-sm font-bold">Loading organisers directory...</p>
+              </div>
+            ) : filteredOrganisers.length === 0 ? (
+              <div className="p-16 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 mx-auto mb-3">
+                  <Users className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-black text-slate-900">No Organisers Found</h3>
+                <p className="text-sm font-semibold text-slate-400 mt-1 max-w-sm mx-auto">
+                  {searchQuery ? "No partners match your search query." : "Click 'Create New Organiser' above to add your first partner account."}
+                </p>
+              </div>
             ) : (
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-xs font-black text-slate-950 transition-all shadow-xs"
-              >
-                <Plus className="w-4 h-4 stroke-3" />
-                <span>Onboard Organiser</span>
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/70 text-[11px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-4">Organiser & Entity</th>
-                  <th className="px-6 py-4">Contact Details</th>
-                  <th className="px-6 py-4">Account Status</th>
-                  <th className="px-6 py-4">Joined On</th>
-                  <th className="px-6 py-4 text-right">Quick Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                {filteredOrganisers.map((org) => {
-                  const isApproved = org.status === "APPROVED";
-                  const isSuspended = org.status === "SUSPENDED";
-                  const isPending = org.status === "PENDING";
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50/60 border-b border-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <tr>
+                      <th className="px-6 py-4">Business / Host</th>
+                      <th className="px-6 py-4">Account User</th>
+                      <th className="px-6 py-4">Contact Phone</th>
+                      <th className="px-6 py-4">Account Status</th>
+                      <th className="px-6 py-4">Joined Date</th>
+                      <th className="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                    {filteredOrganisers.map((org) => {
+                      const isApproved = org.status === "APPROVED";
+                      return (
+                        <tr key={org.id} className="hover:bg-slate-50/40 transition-colors">
+                          {/* Business */}
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200/50 flex items-center justify-center text-amber-700 font-black text-sm shrink-0">
+                                {org.businessName.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="font-extrabold text-slate-900">{org.businessName}</p>
+                                <p className="text-[11px] text-slate-400 font-mono mt-0.5">{org.contactEmail}</p>
+                              </div>
+                            </div>
+                          </td>
 
-                  return (
-                    <tr key={org.id} className="transition-colors hover:bg-amber-50/20 group">
-                      {/* Organiser / Entity */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3.5">
-                          <div className="w-10 h-10 rounded-2xl bg-linear-to-br from-[#FFF9EB] to-amber-100/80 border border-amber-200/70 flex items-center justify-center font-black text-amber-700 text-xs shrink-0 shadow-xs">
-                            {getInitials(org.businessName)}
-                          </div>
-                          <div>
-                            <p className="font-black text-slate-900 text-sm group-hover:text-amber-700 transition-colors">
-                              {org.businessName}
-                            </p>
-                            <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
-                              Owner: {org.user?.name || "N/A"}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
+                          {/* Account User */}
+                          <td className="px-6 py-4">
+                            <p className="font-bold text-slate-800">{org.user?.name || "—"}</p>
+                            <p className="text-[11px] text-slate-400 font-mono">{org.user?.email}</p>
+                          </td>
 
-                      {/* Contact Details */}
-                      <td className="px-6 py-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="text-slate-700 font-bold">{org.contactEmail}</span>
-                            <button
-                              onClick={() => handleCopy(org.contactEmail, org.id + "-email")}
-                              className="text-slate-400 hover:text-amber-600 transition-colors"
-                              title="Copy email"
-                            >
-                              {copiedId === org.id + "-email" ? (
-                                <Check className="w-3 h-3 text-emerald-600" />
-                              ) : (
-                                <Copy className="w-3 h-3" />
-                              )}
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-2 text-slate-400 text-[11px]">
-                            <Phone className="w-3.5 h-3.5 shrink-0" />
-                            <span>{org.contactPhone || "No phone added"}</span>
-                          </div>
-                        </div>
-                      </td>
+                          {/* Contact Phone */}
+                          <td className="px-6 py-4">
+                            <span className="font-semibold text-slate-600">{org.contactPhone || "—"}</span>
+                          </td>
 
-                      {/* Status */}
-                      <td className="px-6 py-4">
-                        {isApproved && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-extrabold text-emerald-700 border border-emerald-200/80">
-                            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Approved</span>
-                          </span>
-                        )}
-                        {isPending && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-extrabold text-amber-700 border border-amber-200/80">
-                            <Clock className="w-3.5 h-3.5 text-amber-600" />
-                            <span>Pending Review</span>
-                          </span>
-                        )}
-                        {isSuspended && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-[11px] font-extrabold text-rose-700 border border-rose-200/80">
-                            <Ban className="w-3.5 h-3.5 text-rose-600" />
-                            <span>Suspended</span>
-                          </span>
-                        )}
-                      </td>
+                          {/* Status */}
+                          <td className="px-6 py-4">
+                            {isApproved ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-rose-50 text-rose-700 border border-rose-200/70">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                Suspended
+                              </span>
+                            )}
+                          </td>
 
-                      {/* Joined Date */}
-                      <td className="px-6 py-4 text-slate-500 font-bold">
-                        {new Date(org.createdAt).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric"
-                        })}
-                      </td>
+                          {/* Joined Date */}
+                          <td className="px-6 py-4 text-slate-500 font-bold">
+                            {new Date(org.createdAt).toLocaleDateString("en-US", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric"
+                            })}
+                          </td>
 
-                      {/* Actions */}
-                      <td className="px-6 py-4 text-right relative">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* Quick Password Reset */}
-                          <button
-                            onClick={() => {
-                              setResetError("");
-                              setNewPassword("");
-                              setResetModalTarget(org);
-                            }}
-                            className="p-2 rounded-xl text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                            title="Reset Organiser Password"
-                          >
-                            <KeyRound className="w-4 h-4" />
-                          </button>
+                          {/* Actions */}
+                          <td className="px-6 py-4 text-right relative">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Quick Password Reset */}
+                              <button
+                                onClick={() => {
+                                  setResetError("");
+                                  setNewPassword("");
+                                  setResetModalTarget(org);
+                                }}
+                                className="p-2 rounded-xl text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                                title="Reset Organiser Password"
+                              >
+                                <KeyRound className="w-4 h-4" />
+                              </button>
 
-                          {/* Quick Status Toggles */}
-                          {!isApproved && (
-                            <button
-                              onClick={() => setStatusModalTarget({ organiser: org, newStatus: "APPROVED" })}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/60 font-bold text-[11px] transition-colors flex items-center gap-1"
-                            >
-                              <CheckCircle className="w-3.5 h-3.5" />
-                              <span>Approve</span>
-                            </button>
-                          )}
-
-                          {isApproved && (
-                            <button
-                              onClick={() => setStatusModalTarget({ organiser: org, newStatus: "SUSPENDED" })}
-                              className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/60 font-bold text-[11px] transition-colors flex items-center gap-1"
-                            >
-                              <Ban className="w-3.5 h-3.5" />
-                              <span>Suspend</span>
-                            </button>
-                          )}
-
-                          {/* More dropdown */}
-                          <div className="relative">
-                            <button
-                              onClick={() => setOpenDropdown(openDropdown === org.id ? null : org.id)}
-                              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-
-                            {openDropdown === org.id && (
-                              <div className="absolute right-0 top-10 w-44 rounded-2xl bg-white shadow-xl border border-slate-100 z-30 p-1.5 animate-in fade-in zoom-in-95 duration-100 text-left">
+                              {/* Quick Status Toggle */}
+                              {isApproved ? (
                                 <button
-                                  onClick={() => {
-                                    setResetError("");
-                                    setNewPassword("");
-                                    setResetModalTarget(org);
-                                    setOpenDropdown(null);
-                                  }}
-                                  className="w-full px-3 py-2 text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-700 rounded-xl flex items-center gap-2 transition-colors"
+                                  onClick={() => setStatusModalTarget({ organiser: org, newStatus: "SUSPENDED" })}
+                                  className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/60 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
                                 >
-                                  <KeyRound className="w-3.5 h-3.5 text-amber-500" />
-                                  <span>Reset Password</span>
+                                  <Ban className="w-3.5 h-3.5" />
+                                  <span>Suspend</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setStatusModalTarget({ organiser: org, newStatus: "APPROVED" })}
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/60 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  <span>Activate</span>
+                                </button>
+                              )}
+
+                              {/* More dropdown */}
+                              <div className="relative">
+                                <button
+                                  onClick={() => setOpenDropdown(openDropdown === org.id ? null : org.id)}
+                                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
                                 </button>
 
-                                {org.status !== "APPROVED" && (
-                                  <button
-                                    onClick={() => {
-                                      setStatusModalTarget({ organiser: org, newStatus: "APPROVED" });
-                                      setOpenDropdown(null);
-                                    }}
-                                    className="w-full px-3 py-2 text-xs font-bold text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-2 transition-colors"
-                                  >
-                                    <CheckCircle className="w-3.5 h-3.5" />
-                                    <span>Approve Partner</span>
-                                  </button>
-                                )}
+                                {openDropdown === org.id && (
+                                  <div className="absolute right-0 top-10 w-44 rounded-2xl bg-white shadow-xl border border-slate-100 z-30 p-1.5 animate-in fade-in zoom-in-95 duration-100 text-left">
+                                    <button
+                                      onClick={() => {
+                                        handleCopy(org.contactEmail, org.id);
+                                        setOpenDropdown(null);
+                                      }}
+                                      className="w-full px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                                    >
+                                      <Copy className="w-3.5 h-3.5 text-slate-400" />
+                                      <span>Copy Email</span>
+                                    </button>
 
-                                {org.status !== "SUSPENDED" && (
-                                  <button
-                                    onClick={() => {
-                                      setStatusModalTarget({ organiser: org, newStatus: "SUSPENDED" });
-                                      setOpenDropdown(null);
-                                    }}
-                                    className="w-full px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 transition-colors"
-                                  >
-                                    <Ban className="w-3.5 h-3.5" />
-                                    <span>Suspend Partner</span>
-                                  </button>
+                                    <button
+                                      onClick={() => {
+                                        setResetError("");
+                                        setNewPassword("");
+                                        setResetModalTarget(org);
+                                        setOpenDropdown(null);
+                                      }}
+                                      className="w-full px-3 py-2 text-sm font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-700 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                                    >
+                                      <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+                                      <span>Reset Password</span>
+                                    </button>
+
+                                    {isApproved ? (
+                                      <button
+                                        onClick={() => {
+                                          setStatusModalTarget({ organiser: org, newStatus: "SUSPENDED" });
+                                          setOpenDropdown(null);
+                                        }}
+                                        className="w-full px-3 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                                      >
+                                        <Ban className="w-3.5 h-3.5" />
+                                        <span>Suspend Account</span>
+                                      </button>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            setStatusModalTarget({ organiser: org, newStatus: "APPROVED" });
+                                            setOpenDropdown(null);
+                                          }}
+                                          className="w-full px-3 py-2 text-sm font-bold text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                                        >
+                                          <CheckCircle className="w-3.5 h-3.5" />
+                                          <span>Activate Account</span>
+                                        </button>
+                                        
+                                        {org.status === "SUSPENDED" && (
+                                          <button
+                                            onClick={() => {
+                                              setDeleteModalTarget(org);
+                                              setOpenDropdown(null);
+                                            }}
+                                            className="w-full mt-1 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <span>Delete Account</span>
+                                          </button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
                                 )}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      </>
+        </>
       )}
 
       {/* ========================================================================= */}
-      {/* ===== MODAL 1: ADD NEW ORGANISER MODAL ===== */}
+      {/* ===== MODAL: CREATE NEW ORGANISER MODAL ===== */}
       {/* ========================================================================= */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
@@ -703,15 +671,15 @@ export default function OrganisersPage() {
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-900">Onboard New Organiser</h2>
-                  <p className="text-xs font-semibold text-slate-400">
-                    Create administrator-verified credentials for an event host.
+                  <h2 className="text-xl font-black text-slate-900">Create Organiser Account</h2>
+                  <p className="text-sm font-semibold text-slate-400">
+                    Create credentials directly. The organiser can log in immediately.
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -719,99 +687,102 @@ export default function OrganisersPage() {
 
             {/* Error Banner */}
             {createError && (
-              <div className="mt-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-xs font-bold text-rose-700">
-                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+              <div className="mt-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-700 text-sm font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{createError}</span>
               </div>
             )}
 
             {/* Form */}
-            <form onSubmit={handleCreateSubmit} className="mt-5 space-y-4">
+            <form onSubmit={handleCreateSubmit} className="mt-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
-                    Owner / Contact Name *
+                  <label className="block text-sm font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                    Contact Person Name *
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
-                    placeholder="e.g. John Doe"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
+                    placeholder="e.g. Rahul Sharma"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
-                    Business / Brand Name *
+                  <label className="block text-sm font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                    Organiser / Brand Name *
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.businessName}
                     onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
-                    placeholder="e.g. Skyline Productions LLC"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
+                    placeholder="e.g. Comedy Central Club"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
-                    Official Email *
+                  <label className="block text-sm font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                    Login Email (User ID) *
                   </label>
                   <input
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
                     placeholder="organizer@domain.com"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-sm font-black text-slate-700 uppercase tracking-wider mb-1.5">
                     Contact Phone Number
                   </label>
                   <input
                     type="text"
                     value={formData.contactPhone}
                     onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
                     placeholder="+91 98765 43210"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
-                  Initial Provisioning Password *
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-black text-slate-700 uppercase tracking-wider">
+                    Password *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={generateRandomPassword}
+                    className="text-[11px] font-bold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-200 transition-colors cursor-pointer"
+                  >
+                    ⚡ Generate Password
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     type={showCreatePassword ? "text" : "password"}
                     required
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 pl-3.5 pr-10 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all font-mono"
-                    placeholder="Min 8 chars with Aa, 123, & #$@"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 pl-3.5 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all font-mono"
+                    placeholder="Min 8 chars with uppercase, number & symbol"
                   />
                   <button
                     type="button"
                     onClick={() => setShowCreatePassword(!showCreatePassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     {showCreatePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
-                </div>
-                <div className="mt-2 p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/50 text-[11px] font-semibold text-slate-600 flex items-start gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                  <span>
-                    Must include: 8+ characters, at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special symbol.
-                  </span>
                 </div>
               </div>
 
@@ -820,14 +791,14 @@ export default function OrganisersPage() {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors"
+                  className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-xs font-black text-slate-950 transition-all shadow-xs disabled:opacity-60 flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-black text-slate-950 transition-all shadow-xs disabled:opacity-60 flex items-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
@@ -837,7 +808,7 @@ export default function OrganisersPage() {
                   ) : (
                     <>
                       <Check className="w-3.5 h-3.5 stroke-3" />
-                      <span>Create & Onboard</span>
+                      <span>Create Organiser</span>
                     </>
                   )}
                 </button>
@@ -848,55 +819,146 @@ export default function OrganisersPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* ===== MODAL 2: RESET PASSWORD MODAL ===== */}
+      {/* ===== SUCCESS MODAL: COPY CREDENTIALS ===== */}
+      {/* ========================================================================= */}
+      {createdCredentials && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-in fade-in zoom-in-95">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-600 mx-auto mb-4">
+              <CheckCircle className="w-7 h-7" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900">Organiser Account Created!</h3>
+            <p className="text-sm text-slate-500 mt-1 mb-5">
+              Account for <strong>{createdCredentials.businessName}</strong> is active. Share these login details with the organiser:
+            </p>
+
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-left space-y-2.5 mb-6 text-sm font-mono">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 block uppercase font-sans">Login Portal</span>
+                <span className="text-slate-800 font-bold select-all">http://localhost:3001/login</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 block uppercase font-sans">Role</span>
+                <span className="text-slate-800 font-bold">Organiser</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 block uppercase font-sans">Login Email (ID)</span>
+                <span className="text-slate-900 font-black select-all">{createdCredentials.email}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 block uppercase font-sans">Password</span>
+                <span className="text-slate-900 font-black select-all">{createdCredentials.password}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  const text = `🎉 Your Mytix Organiser Account is Ready!\n\nPortal: http://localhost:3001/login\nRole: Organiser\nEmail: ${createdCredentials.email}\nPassword: ${createdCredentials.password}\n\nYou can log in and start creating events immediately!`;
+                  navigator.clipboard.writeText(text);
+                  showToast("Login details copied to clipboard!");
+                }}
+                className="flex-1 py-3 px-4 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-black text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
+              >
+                <Copy className="w-4 h-4" />
+                <span>Copy Login Details</span>
+              </button>
+              <button
+                onClick={() => setCreatedCredentials(null)}
+                className="py-3 px-5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* ===== MODAL: STATUS CHANGE CONFIRMATION ===== */}
+      {/* ========================================================================= */}
+      {statusModalTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 border ${
+              statusModalTarget.newStatus === "APPROVED" 
+                ? "bg-emerald-50 border-emerald-200/60 text-emerald-600" 
+                : "bg-rose-50 border-rose-200/60 text-rose-600"
+            }`}>
+              {statusModalTarget.newStatus === "APPROVED" ? <CheckCircle className="w-7 h-7" /> : <Ban className="w-7 h-7" />}
+            </div>
+
+            <h3 className="text-xl font-black text-slate-900">
+              {statusModalTarget.newStatus === "APPROVED" ? "Activate Organiser?" : "Suspend Organiser?"}
+            </h3>
+
+            <p className="text-sm text-slate-500 mt-2 mb-6 leading-relaxed">
+              {statusModalTarget.newStatus === "APPROVED"
+                ? `Activate account for "${statusModalTarget.organiser.businessName}". They will be able to log in and publish events.`
+                : `Suspend account for "${statusModalTarget.organiser.businessName}". Their active login will be paused.`}
+            </p>
+
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setStatusModalTarget(null)}
+                className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isStatusSubmitting}
+                onClick={handleConfirmStatusChange}
+                className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all shadow-xs cursor-pointer ${
+                  statusModalTarget.newStatus === "APPROVED"
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : "bg-rose-600 hover:bg-rose-700 text-white"
+                }`}
+              >
+                {isStatusSubmitting ? "Updating..." : statusModalTarget.newStatus === "APPROVED" ? "Activate" : "Suspend"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* ===== MODAL: RESET PASSWORD ===== */}
       {/* ========================================================================= */}
       {resetModalTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
-            {/* Header */}
             <div className="flex items-start justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
                   <KeyRound className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-900">Reset Password</h2>
-                  <p className="text-xs font-semibold text-slate-400">
-                    Set a new security password for this partner.
+                  <h3 className="text-base font-black text-slate-900">Reset Password</h3>
+                  <p className="text-sm font-semibold text-slate-400 mt-0.5">
+                    {resetModalTarget.businessName}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setResetModalTarget(null)}
-                className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            {/* Organiser Summary Card */}
-            <div className="mt-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-black text-xs text-slate-800">
-                {getInitials(resetModalTarget.businessName)}
-              </div>
-              <div className="overflow-hidden">
-                <p className="text-xs font-black text-slate-900 truncate">{resetModalTarget.businessName}</p>
-                <p className="text-[11px] font-semibold text-slate-500 truncate">{resetModalTarget.contactEmail}</p>
-              </div>
-            </div>
-
-            {/* Error Banner */}
             {resetError && (
-              <div className="mt-3.5 p-3 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-xs font-bold text-rose-700">
-                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+              <div className="mt-4 p-3 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-700 text-sm font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{resetError}</span>
               </div>
             )}
 
-            {/* Form */}
-            <form onSubmit={handleConfirmResetPassword} className="mt-4 space-y-4">
+            <form onSubmit={handleConfirmResetPassword} className="mt-5 space-y-4">
               <div>
-                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-sm font-black text-slate-700 uppercase tracking-wider mb-1.5">
                   New Password *
                 </label>
                 <div className="relative">
@@ -905,80 +967,33 @@ export default function OrganisersPage() {
                     required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 pl-3.5 pr-10 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all font-mono"
-                    placeholder="Enter new strong password"
-                    autoFocus
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 pl-3.5 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all font-mono"
+                    placeholder="Enter new 8+ char password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowResetPassword(!showResetPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              {/* Password Requirements Checklist */}
-              <div className="p-3 rounded-2xl bg-slate-50/70 border border-slate-200/50 space-y-1.5 text-[11px] font-semibold text-slate-600">
-                <p className="font-bold text-slate-700 mb-1">Password Checklist:</p>
-                <div className="flex items-center gap-2">
-                  <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${newPassword.length >= 8 ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}>
-                    ✓
-                  </span>
-                  <span>Minimum 8 characters</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${/[A-Z]/.test(newPassword) ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}>
-                    ✓
-                  </span>
-                  <span>At least 1 uppercase letter (A-Z)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${/[a-z]/.test(newPassword) ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}>
-                    ✓
-                  </span>
-                  <span>At least 1 lowercase letter (a-z)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${/[0-9]/.test(newPassword) ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}>
-                    ✓
-                  </span>
-                  <span>At least 1 number (0-9)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${/[^A-Za-z0-9]/.test(newPassword) ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}>
-                    ✓
-                  </span>
-                  <span>At least 1 special character (!@#$%^&*)</span>
-                </div>
-              </div>
-
-              {/* Actions */}
               <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setResetModalTarget(null)}
-                  className="px-4 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors"
+                  className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isResetSubmitting}
-                  className="px-5 py-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-xs font-black text-slate-950 transition-all shadow-xs disabled:opacity-60 flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-black text-slate-950 transition-all shadow-xs disabled:opacity-60 cursor-pointer"
                 >
-                  {isResetSubmitting ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-3.5 h-3.5 stroke-3" />
-                      <span>Update Password</span>
-                    </>
-                  )}
+                  {isResetSubmitting ? "Resetting..." : "Save New Password"}
                 </button>
               </div>
             </form>
@@ -987,98 +1002,41 @@ export default function OrganisersPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* ===== MODAL 3: STATUS CHANGE CONFIRMATION MODAL ===== */}
+      {/* ===== MODAL: DELETE CONFIRMATION ===== */}
       {/* ========================================================================= */}
-      {statusModalTarget && (
+      {deleteModalTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-start gap-4">
-              <div
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                  statusModalTarget.newStatus === "APPROVED"
-                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                    : "bg-rose-50 text-rose-600 border border-rose-200"
-                }`}
-              >
-                {statusModalTarget.newStatus === "APPROVED" ? (
-                  <CheckCircle className="w-6 h-6" />
-                ) : (
-                  <Ban className="w-6 h-6" />
-                )}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-black text-slate-900">
-                  {statusModalTarget.newStatus === "APPROVED" ? "Approve Organiser?" : "Suspend Organiser?"}
-                </h3>
-                <p className="text-xs font-semibold text-slate-500 mt-1">
-                  You are about to change the status of{" "}
-                  <strong className="text-slate-900">{statusModalTarget.organiser.businessName}</strong> to{" "}
-                  <span
-                    className={`font-black ${
-                      statusModalTarget.newStatus === "APPROVED" ? "text-emerald-600" : "text-rose-600"
-                    }`}
-                  >
-                    {statusModalTarget.newStatus}
-                  </span>
-                  .
-                </p>
-
-                <div className="mt-3 p-3 rounded-2xl bg-slate-50 border border-slate-100 text-[11px] font-semibold text-slate-600 leading-relaxed">
-                  {statusModalTarget.newStatus === "APPROVED" ? (
-                    <span>
-                      ✓ The partner will be able to immediately log into the organizer portal and publish live ticketed events.
-                    </span>
-                  ) : (
-                    <span>
-                      ⚠️ Suspending will prevent the organizer from accessing their dashboard and modifying events until reinstated.
-                    </span>
-                  )}
-                </div>
-              </div>
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 border bg-rose-50 border-rose-200/60 text-rose-600">
+              <Trash2 className="w-6 h-6" />
             </div>
+            
+            <h3 className="text-xl font-black text-slate-900">Delete Organiser</h3>
+            <p className="text-sm font-semibold text-slate-500 mt-2 mb-6 leading-relaxed">
+              Are you absolutely sure you want to permanently delete the account for <strong className="text-slate-800">{deleteModalTarget.businessName}</strong>? This action cannot be undone.
+            </p>
 
-            <div className="mt-6 flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            <div className="flex gap-3">
               <button
-                type="button"
-                onClick={() => setStatusModalTarget(null)}
-                className="px-4 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors"
+                onClick={() => setDeleteModalTarget(null)}
+                disabled={isDeleteSubmitting}
+                className="flex-1 py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
-
               <button
-                type="button"
-                onClick={handleConfirmStatusChange}
-                disabled={isStatusSubmitting}
-                className={`px-5 py-2 rounded-2xl text-xs font-black text-white transition-all shadow-xs disabled:opacity-60 flex items-center gap-1.5 ${
-                  statusModalTarget.newStatus === "APPROVED"
-                    ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-rose-600 hover:bg-rose-700"
-                }`}
+                onClick={handleConfirmDelete}
+                disabled={isDeleteSubmitting}
+                className="flex-1 py-3 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-sm font-black text-white flex items-center justify-center gap-2 transition-all shadow-md shadow-rose-600/20 cursor-pointer disabled:opacity-50"
               >
-                {isStatusSubmitting ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Processing...</span>
-                  </>
-                ) : (
-                  <>
-                    {statusModalTarget.newStatus === "APPROVED" ? (
-                      <CheckCircle className="w-3.5 h-3.5" />
-                    ) : (
-                      <Ban className="w-3.5 h-3.5" />
-                    )}
-                    <span>
-                      Confirm {statusModalTarget.newStatus === "APPROVED" ? "Approval" : "Suspension"}
-                    </span>
-                  </>
-                )}
+                {isDeleteSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Yes, Delete
               </button>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }

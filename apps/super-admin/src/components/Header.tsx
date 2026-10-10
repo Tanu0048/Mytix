@@ -30,7 +30,7 @@ export default function Header() {
           <input 
             type="text" 
             placeholder="Search anything..." 
-            className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200/80 bg-slate-50/60 text-xs font-semibold text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all"
+            className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200/80 bg-slate-50/60 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all"
           />
         </div>
       </div>
@@ -45,11 +45,11 @@ export default function Header() {
 
         {/* User Profile Pill */}
         <div className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer group">
-          <div className="w-9 h-9 rounded-full bg-linear-to-tr from-amber-400 to-amber-200 text-slate-900 font-extrabold text-xs flex items-center justify-center shadow-xs border border-amber-300">
+          <div className="w-9 h-9 rounded-full bg-linear-to-tr from-amber-400 to-amber-200 text-slate-900 font-extrabold text-sm flex items-center justify-center shadow-xs border border-amber-300">
             {initials}
           </div>
           <div className="text-left hidden sm:block">
-            <p className="text-xs font-extrabold text-slate-900 leading-tight group-hover:text-amber-700 transition-colors">
+            <p className="text-sm font-extrabold text-slate-900 leading-tight group-hover:text-amber-700 transition-colors">
               {displayName}
             </p>
             <p className="text-[10px] font-semibold text-slate-400 leading-none mt-0.5 capitalize">
