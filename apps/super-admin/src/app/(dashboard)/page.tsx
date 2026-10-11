@@ -23,6 +23,7 @@ export default function Home() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const [events, setEvents] = useState<any[]>([]);
+  const [adminOrganisers, setAdminOrganisers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -38,6 +39,11 @@ export default function Home() {
     }
     if (user?.role === "ORGANISER" || !user?.role) {
       loadOrganiserStats();
+    } else if (user?.role === "ADMIN") {
+      api.get("/admin/organisers")
+        .then(res => setAdminOrganisers(res.data.data || []))
+        .catch(err => console.error("Failed to load admin organisers", err))
+        .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }
@@ -69,17 +75,17 @@ export default function Home() {
             <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-2">
               <span className="inline-block animate-wave origin-bottom-right">👋</span> Welcome, {firstName}
             </h1>
-            <p className="mt-1 text-xs font-semibold text-slate-400">
+            <p className="mt-1 text-sm font-semibold text-slate-400">
               Here is what&apos;s happening with your events today.
             </p>
           </div>
 
           {/* Decorative Handwritten Slogan */}
           <div className="hidden sm:block text-right select-none transform -rotate-2">
-            <span className="text-slate-400/80 font-bold italic text-sm tracking-wide block font-serif">
+            <span className="text-slate-400/80 font-bold italic text-base tracking-wide block font-serif">
               Better Events
             </span>
-            <span className="text-slate-400 font-extrabold italic text-xs tracking-wider block font-serif -mt-0.5">
+            <span className="text-slate-400 font-extrabold italic text-sm tracking-wider block font-serif -mt-0.5">
               Bigger Moments
             </span>
             <div className="w-16 h-1 bg-amber-300/40 rounded-full ml-auto mt-0.5"></div>
@@ -222,14 +228,14 @@ export default function Home() {
             <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
               No active events
             </h2>
-            <p className="text-xs font-semibold text-slate-400 leading-relaxed max-w-sm mb-7">
+            <p className="text-sm font-semibold text-slate-400 leading-relaxed max-w-sm mb-7">
               You haven&apos;t created any events yet. Get started by creating your first event!
             </p>
 
             {/* Create an Event Button */}
             <button
               onClick={() => router.push("/events/create")}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-7 py-3.5 text-xs font-black text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.02]"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-7 py-3.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.02]"
             >
               <Plus className="w-4 h-4 stroke-3" />
               <span>Create an Event</span>
@@ -256,7 +262,7 @@ export default function Home() {
         <h1 className="text-3xl font-black tracking-tight text-slate-900">
           Platform Overview
         </h1>
-        <p className="mt-1 text-xs font-semibold text-slate-400">
+        <p className="mt-1 text-sm font-semibold text-slate-400">
           Real-time statistics, active organisers, and platform management.
         </p>
       </header>
@@ -284,11 +290,11 @@ export default function Home() {
       {/* Filter Section */}
       <div className="rounded-2xl bg-white p-6 shadow-[0_2px_14px_rgba(0,0,0,0.03)] border border-slate-100 mb-8">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-amber-600 font-bold text-sm">
+          <div className="flex items-center gap-2 text-amber-600 font-bold text-base">
             <Filter className="h-4 w-4" />
             <span>Filter Organisers</span>
           </div>
-          <span className="text-xs font-semibold text-slate-400">Showing 5 of 142 organisers</span>
+          <span className="text-sm font-semibold text-slate-400">Showing 5 of 142 organisers</span>
         </div>
         
         <div className="relative mb-4">
@@ -296,9 +302,74 @@ export default function Home() {
           <input 
             type="text" 
             placeholder="Search by business name, email, or status..." 
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
           />
         </div>
+
+        {/* Organisers Table */}
+        <div className="overflow-x-auto mt-6 border border-slate-100 rounded-2xl">
+          <table className="w-full text-left text-sm text-slate-600">
+            <thead className="bg-slate-50/80 text-xs font-bold uppercase text-slate-400 border-b border-slate-100">
+              <tr>
+                <th className="px-6 py-4">Organiser Name</th>
+                <th className="px-6 py-4">Contact</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {adminOrganisers.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-slate-500 font-medium">
+                    No organisers found.
+                  </td>
+                </tr>
+              ) : (
+                adminOrganisers.slice(0, 10).map((org) => (
+                  <tr key={org.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-slate-900">{org.user?.name || "Unknown"}</div>
+                      <div className="text-xs text-slate-400">Joined {new Date(org.createdAt).toLocaleDateString()}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-700">{org.user?.email || "No email"}</div>
+                      <div className="text-xs text-slate-400">{org.user?.phone || "No phone"}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        org.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700" :
+                        org.status === "SUSPENDED" ? "bg-rose-100 text-rose-700" :
+                        "bg-slate-100 text-slate-700"
+                      }`}>
+                        {org.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => router.push("/organisers")}
+                        className="text-amber-600 hover:text-amber-700 font-bold text-[13px] hover:underline cursor-pointer"
+                      >
+                        Manage &rarr;
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {adminOrganisers.length > 0 && (
+          <div className="mt-4 flex justify-center">
+            <button 
+              onClick={() => router.push("/organisers")}
+              className="text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+            >
+              View all {adminOrganisers.length} organisers
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );

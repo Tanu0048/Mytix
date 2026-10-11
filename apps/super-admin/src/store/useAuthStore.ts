@@ -48,8 +48,9 @@ export const useAuthStore = create<AuthState>()(
           });
           return user.role;
         } catch (err: any) {
+          const errorMsg = err.response?.data?.error?.message || err.response?.data?.message || "Invalid email or password";
           set({ 
-            error: err.response?.data?.message || "Invalid email or password", 
+            error: errorMsg, 
             isLoading: false 
           });
           return false;

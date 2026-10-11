@@ -83,7 +83,8 @@ export default function EventsPage() {
       showToast(`Event "${eventToDelete.title}" deleted successfully`);
     } catch (err: any) {
       console.error("Failed to delete event", err);
-      showToast("Failed to delete event. It may have existing ticket sales.");
+      const msg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || "Failed to delete event";
+      showToast(msg);
     } finally {
       setIsDeleting(false);
     }
@@ -120,13 +121,13 @@ export default function EventsPage() {
           <h1 className="text-3xl font-black tracking-tight text-slate-900">
             My <span className="text-amber-500">Events</span>
           </h1>
-          <p className="mt-1 text-xs font-semibold text-slate-400">
+          <p className="mt-1 text-sm font-semibold text-slate-400">
             Manage your concerts, shows, and ticketing tiers.
           </p>
         </div>
         <button 
           onClick={() => router.push("/events/create")}
-          className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-6 py-3.5 text-xs font-extrabold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01]"
+          className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-6 py-3.5 text-sm font-extrabold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
         >
           <Plus className="h-4 w-4 stroke-3" /> Create New Event
         </button>
@@ -231,14 +232,14 @@ export default function EventsPage() {
         <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-900 leading-tight">Event Management</h2>
-            <p className="text-xs font-semibold text-slate-400 mt-0.5">All your events in one place.</p>
+            <p className="text-sm font-semibold text-slate-400 mt-0.5">All your events in one place.</p>
           </div>
           
           {/* Filter dropdown */}
           <div className="relative">
             <button 
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className="flex items-center gap-2 rounded-xl bg-white border border-slate-200/80 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs"
+              className="flex items-center gap-2 rounded-xl bg-white border border-slate-200/80 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs"
             >
               <Filter className="w-3.5 h-3.5 text-slate-500" /> 
               <span>{statusFilter === "ALL" ? "Filter" : statusFilter}</span>
@@ -251,7 +252,7 @@ export default function EventsPage() {
                   <button
                     key={st}
                     onClick={() => { setStatusFilter(st); setIsFilterOpen(false); }}
-                    className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors ${
+                    className={`w-full text-left px-4 py-2 text-sm font-bold transition-colors ${
                       statusFilter === st ? "bg-amber-50 text-amber-900" : "text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -265,7 +266,7 @@ export default function EventsPage() {
 
         {/* Events Table */}
         <div className="overflow-x-auto min-h-80">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-base">
             <thead className="bg-[#FAFBFD] text-[10px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-100">
               <tr>
                 <th className="px-6 py-4">EVENT DETAILS</th>
@@ -281,7 +282,7 @@ export default function EventsPage() {
                 <tr>
                   <td colSpan={5} className="px-6 py-16 text-center text-slate-400 font-semibold">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400 mb-2"></div>
-                    <p className="text-xs">Loading events...</p>
+                    <p className="text-sm">Loading events...</p>
                   </td>
                 </tr>
               ) : filteredEvents.length === 0 ? (
@@ -289,12 +290,12 @@ export default function EventsPage() {
                   <td colSpan={5} className="px-6 py-16 text-center">
                     <Calendar className="h-10 w-10 text-slate-300 mx-auto mb-3" />
                     <h3 className="text-base font-bold text-slate-800">No events found</h3>
-                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    <p className="text-sm text-slate-400 mt-1 max-w-sm mx-auto">
                       Get started by creating your very first event to sell tickets.
                     </p>
                     <button 
                       onClick={() => router.push("/events/create")}
-                      className="mt-4 rounded-xl bg-[#F6C636] px-5 py-2.5 text-xs font-extrabold text-slate-950 hover:bg-[#E5B523] transition-all shadow-sm"
+                      className="mt-4 rounded-xl bg-[#F6C636] px-5 py-2.5 text-sm font-extrabold text-slate-950 hover:bg-[#E5B523] transition-all shadow-sm cursor-pointer"
                     >
                       + Create Event
                     </button>
@@ -333,7 +334,7 @@ export default function EventsPage() {
                             />
                           </div>
                           <div>
-                            <h3 className="font-extrabold text-sm text-slate-900 leading-snug group-hover:text-amber-700 transition-colors">
+                            <h3 className="font-extrabold text-base text-slate-900 leading-snug group-hover:text-amber-700 transition-colors">
                               {event.title}
                             </h3>
                             <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-400 font-semibold">
@@ -355,7 +356,7 @@ export default function EventsPage() {
                       {/* Column 2: Date & Time */}
                       <td className="px-6 py-4.5">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                          <div className="flex items-center gap-1.5 text-sm font-bold text-slate-800">
                             <Calendar className="w-3.5 h-3.5 text-slate-400" />
                             <span>{dateStr}</span>
                           </div>
@@ -369,7 +370,7 @@ export default function EventsPage() {
                       {/* Column 3: Tickets Sold */}
                       <td className="px-6 py-4.5">
                         <div className="w-48">
-                          <div className="flex items-center justify-between text-xs font-extrabold text-slate-800 mb-1.5">
+                          <div className="flex items-center justify-between text-sm font-extrabold text-slate-800 mb-1.5">
                             <span>{soldTickets} <span className="text-slate-400 font-semibold">/ {totalTickets}</span></span>
                             <span className="text-[11px] font-bold text-slate-400">{soldPercent}%</span>
                           </div>
@@ -397,7 +398,7 @@ export default function EventsPage() {
                       <td className="px-6 py-4.5 text-center relative">
                         <button 
                           onClick={() => setOpenActionId(openActionId === event.id ? null : event.id)}
-                          className="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-colors inline-flex items-center justify-center"
+                          className="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-colors inline-flex items-center justify-center cursor-pointer"
                         >
                           <MoreHorizontal className="w-5 h-5" />
                         </button>
@@ -409,13 +410,13 @@ export default function EventsPage() {
                               href={`http://localhost:3000/events/${event.slug}`} 
                               target="_blank" 
                               rel="noreferrer"
-                              className="w-full px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                              className="w-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                             >
                               <ExternalLink className="w-3.5 h-3.5 text-slate-400" /> View Public Page
                             </a>
                             <button
                               onClick={() => router.push(`/events/${event.id}/edit`)}
-                              className="w-full px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                              className="w-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                             >
                               <Edit2 className="w-3.5 h-3.5 text-slate-400" /> Edit Event
                             </button>
@@ -424,7 +425,7 @@ export default function EventsPage() {
                                 setEventToDelete(event);
                                 setOpenActionId(null);
                               }}
-                              className="w-full px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              className="w-full px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5 text-red-500" /> Delete
                             </button>
@@ -446,7 +447,7 @@ export default function EventsPage() {
       {toastMsg && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-slate-900 text-white px-5 py-3.5 shadow-2xl border border-slate-800 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="w-2.5 h-2.5 rounded-full bg-[#F6C636] animate-pulse"></div>
-          <span className="text-xs font-bold tracking-wide">{toastMsg}</span>
+          <span className="text-sm font-bold tracking-wide">{toastMsg}</span>
         </div>
       )}
 
@@ -461,7 +462,7 @@ export default function EventsPage() {
 
               <div>
                 <h3 className="text-lg font-black text-slate-900">Delete Event?</h3>
-                <p className="text-xs font-semibold text-slate-500 mt-1">
+                <p className="text-sm font-semibold text-slate-500 mt-1">
                   Are you sure you want to delete <strong className="text-slate-900">{eventToDelete.title}</strong>? This action cannot be undone.
                 </p>
 
@@ -475,7 +476,7 @@ export default function EventsPage() {
               <button
                 type="button"
                 onClick={() => setEventToDelete(null)}
-                className="px-4 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors"
+                className="px-4 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition-colors"
               >
                 Cancel
               </button>
@@ -484,7 +485,7 @@ export default function EventsPage() {
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className="px-5 py-2 rounded-2xl bg-rose-600 hover:bg-rose-700 text-xs font-black text-white transition-all shadow-xs disabled:opacity-60 flex items-center gap-1.5"
+                className="px-5 py-2 rounded-2xl bg-rose-600 hover:bg-rose-700 text-sm font-black text-white transition-all shadow-xs disabled:opacity-60 flex items-center gap-1.5"
               >
                 {isDeleting ? (
                   <>

@@ -207,7 +207,7 @@ export default function OrdersPage() {
           <h1 className="text-3xl font-black tracking-tight text-slate-900">
             Orders & <span className="text-amber-500">Sales</span>
           </h1>
-          <p className="mt-1 text-xs font-semibold text-slate-400">
+          <p className="mt-1 text-sm font-semibold text-slate-400">
             Track customer ticket orders, transactions, and payment statuses.
           </p>
         </div>
@@ -216,7 +216,7 @@ export default function OrdersPage() {
           <button
             onClick={fetchOrders}
             disabled={isRefreshing}
-            className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white hover:bg-slate-50 px-4 py-3 text-xs font-bold text-slate-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white hover:bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
             title="Refresh Orders"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-amber-600" : "text-slate-400"}`} />
@@ -226,7 +226,7 @@ export default function OrdersPage() {
           <button
             onClick={handleExportCSV}
             disabled={filteredOrders.length === 0}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-xs font-extrabold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-extrabold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="h-4 w-4 stroke-[2.5]" />
             <span>Export CSV</span>
@@ -328,7 +328,7 @@ export default function OrdersPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by Order ID, customer name, email, or event..."
-            className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-11 pr-4 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+            className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-11 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
           />
           {searchQuery && (
             <button
@@ -346,7 +346,7 @@ export default function OrdersPage() {
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              className={`px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all shrink-0 cursor-pointer ${
                 statusFilter === status
                   ? "bg-[#FFF9EB] text-amber-950 border border-amber-300/80 shadow-2xs font-extrabold"
                   : "text-slate-500 hover:bg-slate-50 border border-transparent"
@@ -375,7 +375,7 @@ export default function OrdersPage() {
                 <th className="py-4 pl-4 pr-6 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100/90 text-xs">
+            <tbody className="divide-y divide-slate-100/90 text-sm">
               {isLoading ? (
                 <tr>
                   <td colSpan={8} className="py-16 text-center">
@@ -383,7 +383,7 @@ export default function OrdersPage() {
                       <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center animate-spin">
                         <RefreshCw className="w-5 h-5 text-amber-600" />
                       </div>
-                      <p className="font-bold text-slate-600 text-xs">Loading orders ledger...</p>
+                      <p className="font-bold text-slate-600 text-sm">Loading orders ledger...</p>
                     </div>
                   </td>
                 </tr>
@@ -395,7 +395,7 @@ export default function OrdersPage() {
                         <ShoppingBag className="w-8 h-8" />
                       </div>
                       <h3 className="text-base font-black text-slate-900 mb-1">No Orders Found</h3>
-                      <p className="text-xs font-semibold text-slate-400 text-center leading-relaxed mb-4">
+                      <p className="text-sm font-semibold text-slate-400 text-center leading-relaxed mb-4">
                         {searchQuery || statusFilter !== "ALL"
                           ? "No orders match your filter criteria. Try clearing search or selecting a different status."
                           : "When customers purchase tickets for your events, order records and payment confirmations will appear here."}
@@ -406,7 +406,7 @@ export default function OrdersPage() {
                             setSearchQuery("");
                             setStatusFilter("ALL");
                           }}
-                          className="px-4 py-2 rounded-xl text-xs font-bold text-amber-900 bg-[#FFF9EB] border border-amber-200 hover:bg-amber-100/70 transition-all cursor-pointer"
+                          className="px-4 py-2 rounded-xl text-sm font-bold text-amber-900 bg-[#FFF9EB] border border-amber-200 hover:bg-amber-100/70 transition-all cursor-pointer"
                         >
                           Clear Filters
                         </button>
@@ -433,7 +433,7 @@ export default function OrdersPage() {
                       {/* Order ID */}
                       <td className="py-4 pl-6 pr-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-slate-900 text-xs tracking-tight">
+                          <span className="font-mono font-bold text-slate-900 text-sm tracking-tight">
                             {order.orderNumber}
                           </span>
                           <button
@@ -526,7 +526,7 @@ export default function OrdersPage() {
 
         {/* Footer info */}
         {filteredOrders.length > 0 && (
-          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-400">
+          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-sm font-semibold text-slate-400">
             <span>Showing {filteredOrders.length} of {orders.length} orders</span>
             <span>Total Value: <strong className="text-slate-800">{formatCurrency(filteredOrders.reduce((s, o) => s + (o.totalCents || 0), 0))}</strong></span>
           </div>
@@ -549,7 +549,7 @@ export default function OrdersPage() {
                     Order Details
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono text-xs font-bold text-slate-500">
+                    <span className="font-mono text-sm font-bold text-slate-500">
                       {selectedOrder.orderNumber}
                     </span>
                     {getStatusBadge(selectedOrder.status)}
@@ -573,16 +573,16 @@ export default function OrdersPage() {
                 <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5" /> Customer Information
                 </p>
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-slate-500">Name</span>
                   <span className="font-bold text-slate-900">{selectedOrder.user?.name || "Guest Attendee"}</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-slate-500">Email</span>
                   <span className="font-bold text-slate-900">{selectedOrder.user?.email || "N/A"}</span>
                 </div>
                 {selectedOrder.user?.phone && (
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-sm">
                     <span className="font-semibold text-slate-500">Phone</span>
                     <span className="font-bold text-slate-900">{selectedOrder.user.phone}</span>
                   </div>
@@ -594,17 +594,17 @@ export default function OrdersPage() {
                 <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" /> Event & Venue
                 </p>
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-slate-500">Event</span>
                   <span className="font-bold text-slate-900">{selectedOrder.event?.title || "Special Event"}</span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-slate-500">Venue</span>
                   <span className="font-bold text-slate-900">
                     {selectedOrder.event?.venue?.name || "Venue"}, {selectedOrder.event?.venue?.city || "City"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-slate-500">Event Date</span>
                   <span className="font-bold text-slate-900">{formatDate(selectedOrder.event?.startsAt)}</span>
                 </div>
@@ -615,27 +615,27 @@ export default function OrdersPage() {
                 <p className="text-[11px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
                   <CreditCard className="w-3.5 h-3.5" /> Payment Summary
                 </p>
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-slate-600">Tickets Quantity</span>
                   <span className="font-bold text-slate-900">
                     {selectedOrder._count?.tickets || selectedOrder.tickets?.length || 1} Tickets
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-sm">
                   <span className="font-semibold text-slate-600">Base Ticket Price</span>
                   <span className="font-bold text-slate-900">
                     {formatCurrency(selectedOrder.ticketTotalCents || selectedOrder.totalCents, selectedOrder.currency)}
                   </span>
                 </div>
                 {selectedOrder.buyerFeeCents > 0 && (
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-sm">
                     <span className="font-semibold text-slate-600">Processing Fee</span>
                     <span className="font-bold text-slate-900">
                       {formatCurrency(selectedOrder.buyerFeeCents, selectedOrder.currency)}
                     </span>
                   </div>
                 )}
-                <div className="pt-2 border-t border-amber-200/80 flex items-center justify-between text-sm">
+                <div className="pt-2 border-t border-amber-200/80 flex items-center justify-between text-base">
                   <span className="font-black text-slate-900">Total Charged</span>
                   <span className="font-black text-amber-950 text-base">
                     {formatCurrency(selectedOrder.totalCents, selectedOrder.currency)}
@@ -649,7 +649,7 @@ export default function OrdersPage() {
             <div className="pt-3 flex justify-end">
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
+                className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-colors cursor-pointer"
               >
                 Close
               </button>

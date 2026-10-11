@@ -246,7 +246,7 @@ export default function BannersPage() {
           <h1 className="text-3xl font-black tracking-tight text-slate-900">
             Banners & <span className="text-amber-500">Promotions</span>
           </h1>
-          <p className="mt-1 text-xs font-semibold text-slate-400">
+          <p className="mt-1 text-sm font-semibold text-slate-400">
             Manage homepage carousel slides, event features, and hero creative banners.
           </p>
         </div>
@@ -254,7 +254,7 @@ export default function BannersPage() {
         <div className="flex items-center gap-3">
           {/* Toast Notification */}
           {toastMsg && (
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-bold shadow-2xs animate-in fade-in">
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-sm font-bold shadow-2xs animate-in fade-in">
               <Check className="w-3.5 h-3.5 text-emerald-600" />
               <span>{toastMsg}</span>
             </div>
@@ -263,7 +263,7 @@ export default function BannersPage() {
           <button
             onClick={fetchBanners}
             disabled={isRefreshing}
-            className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white hover:bg-slate-50 px-4 py-3 text-xs font-bold text-slate-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white hover:bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
             title="Refresh Banners"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-amber-600" : "text-slate-400"}`} />
@@ -278,7 +278,7 @@ export default function BannersPage() {
               setDisplayOrder(banners.length + 1);
               setIsCreateModalOpen(true);
             }}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-xs font-extrabold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-extrabold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
           >
             <Plus className="h-4 w-4 stroke-[2.5]" />
             <span>Add New Banner</span>
@@ -372,7 +372,7 @@ export default function BannersPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search banners by title or campaign name..."
-            className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-11 pr-4 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+            className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-11 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
           />
         </div>
 
@@ -386,7 +386,7 @@ export default function BannersPage() {
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all shrink-0 cursor-pointer ${
                 statusFilter === tab.id
                   ? "bg-[#FFF9EB] text-amber-950 border border-amber-300/80 shadow-2xs font-extrabold"
                   : "text-slate-500 hover:bg-slate-50 border border-transparent"
@@ -403,7 +403,7 @@ export default function BannersPage() {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
           <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
-          <p className="text-xs font-bold text-slate-500">Loading media banners...</p>
+          <p className="text-sm font-bold text-slate-500">Loading media banners...</p>
         </div>
       ) : filteredBanners.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] p-6 text-center">
@@ -411,14 +411,14 @@ export default function BannersPage() {
             <ImageIcon className="w-8 h-8" />
           </div>
           <h3 className="text-base font-black text-slate-900 mb-1">No Banners Found</h3>
-          <p className="text-xs font-semibold text-slate-400 max-w-sm mb-6">
+          <p className="text-sm font-semibold text-slate-400 max-w-sm mb-6">
             {searchQuery || statusFilter !== "ALL"
               ? "No banners match your search filter criteria."
               : "No promotional banners have been created yet. Add your first hero slide!"}
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-6 py-3 text-xs font-black text-slate-950 transition-all shadow-xs cursor-pointer"
+            className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-6 py-3 text-sm font-black text-slate-950 transition-all shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Add New Banner
           </button>
@@ -463,36 +463,12 @@ export default function BannersPage() {
                   )}
                 </div>
 
-                {/* Hover Actions Bar */}
-                <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-xs flex items-center justify-center gap-3">
-                  <button
-                    onClick={() => openEditModal(banner)}
-                    className="w-10 h-10 rounded-2xl bg-white hover:bg-amber-50 text-slate-900 hover:text-amber-800 flex items-center justify-center transition-all shadow-md hover:scale-110 cursor-pointer"
-                    title="Edit Banner"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleToggleStatus(banner)}
-                    className="w-10 h-10 rounded-2xl bg-white hover:bg-slate-100 text-slate-700 flex items-center justify-center transition-all shadow-md hover:scale-110 cursor-pointer"
-                    title={banner.isActive ? "Disable Banner" : "Enable Banner"}
-                  >
-                    {banner.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                  <button
-                    onClick={() => setBannerToDelete(banner)}
-                    className="w-10 h-10 rounded-2xl bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-md hover:scale-110 cursor-pointer"
-                    title="Delete Banner"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
 
               {/* Title & Info Card */}
               <div className="p-5 flex items-center justify-between">
                 <div className="min-w-0 pr-3">
-                  <h3 className="text-sm font-black text-slate-900 truncate" title={banner.title}>
+                  <h3 className="text-base font-black text-slate-900 truncate" title={banner.title}>
                     {banner.title}
                   </h3>
                   <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
@@ -500,12 +476,29 @@ export default function BannersPage() {
                   </p>
                 </div>
 
-                <button
-                  onClick={() => openEditModal(banner)}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-amber-300 hover:bg-[#FFF9EB] text-slate-600 hover:text-amber-950 text-xs font-bold transition-all shrink-0 cursor-pointer"
-                >
-                  Edit
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => handleToggleStatus(banner)}
+                    className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer"
+                    title={banner.isActive ? "Hide Banner" : "Show Banner"}
+                  >
+                    {banner.isActive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={() => openEditModal(banner)}
+                    className="w-8 h-8 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-500 hover:text-amber-600 flex items-center justify-center transition-all cursor-pointer"
+                    title="Edit Banner"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setBannerToDelete(banner)}
+                    className="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-500 hover:text-rose-600 flex items-center justify-center transition-all cursor-pointer"
+                    title="Delete Banner"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -525,7 +518,7 @@ export default function BannersPage() {
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900 leading-tight">Add New Banner</h3>
-                  <p className="text-xs font-semibold text-slate-400 mt-0.5">Upload a 16:9 hero banner image for homepage carousel.</p>
+                  <p className="text-sm font-semibold text-slate-400 mt-0.5">Upload a 16:9 hero banner image for homepage carousel.</p>
                 </div>
               </div>
               <button 
@@ -540,7 +533,7 @@ export default function BannersPage() {
               
               {/* Title */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Banner Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -549,13 +542,13 @@ export default function BannersPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Coldplay Music of the Spheres World Tour"
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20"
                 />
               </div>
 
               {/* Display Order */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Display Order Priority
                 </label>
                 <input
@@ -563,13 +556,13 @@ export default function BannersPage() {
                   min={1}
                   value={displayOrder}
                   onChange={(e) => setDisplayOrder(Number(e.target.value))}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                 />
               </div>
 
               {/* Image Upload Zone */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Banner Image (16:9) <span className="text-red-500">*</span>
                 </label>
 
@@ -605,7 +598,7 @@ export default function BannersPage() {
                         setImageFile(file);
                         setImagePreview(URL.createObjectURL(file));
                       }}
-                      className="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-bold file:bg-[#FFF9EB] file:text-amber-900 cursor-pointer"
+                      className="text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-bold file:bg-[#FFF9EB] file:text-amber-900 cursor-pointer"
                     />
                     <p className="text-[10px] font-semibold text-slate-400 mt-2">
                       Formats: JPG, PNG, WEBP • Max 5MB • 1920×1080 recommended
@@ -619,14 +612,14 @@ export default function BannersPage() {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 py-3.5 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
+                  className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 py-3.5 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !imageFile}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] py-3.5 text-xs font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] py-3.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
@@ -658,7 +651,7 @@ export default function BannersPage() {
                 </div>
                 <div>
                   <h3 className="text-base font-black text-slate-900 leading-tight">Edit Banner</h3>
-                  <p className="text-xs font-semibold text-slate-400 mt-0.5">Update title, image file, or order sequence.</p>
+                  <p className="text-sm font-semibold text-slate-400 mt-0.5">Update title, image file, or order sequence.</p>
                 </div>
               </div>
               <button 
@@ -672,7 +665,7 @@ export default function BannersPage() {
             <form onSubmit={handleUpdate} className="space-y-5">
               
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Banner Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -680,12 +673,12 @@ export default function BannersPage() {
                   required
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Display Order Priority
                 </label>
                 <input
@@ -693,12 +686,12 @@ export default function BannersPage() {
                   min={1}
                   value={editDisplayOrder}
                   onChange={(e) => setEditDisplayOrder(Number(e.target.value))}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Banner Image (16:9)
                 </label>
 
@@ -722,7 +715,7 @@ export default function BannersPage() {
                     setEditImageFile(file);
                     setEditImagePreview(URL.createObjectURL(file));
                   }}
-                  className="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-bold file:bg-[#FFF9EB] file:text-amber-900 cursor-pointer"
+                  className="text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-bold file:bg-[#FFF9EB] file:text-amber-900 cursor-pointer"
                 />
                 <p className="text-[10px] font-semibold text-slate-400 mt-1.5">
                   Leave empty to keep the existing image file.
@@ -733,14 +726,14 @@ export default function BannersPage() {
                 <button
                   type="button"
                   onClick={() => setEditingBanner(null)}
-                  className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 py-3.5 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
+                  className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 py-3.5 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isEditSubmitting}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] py-3.5 text-xs font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] py-3.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
                 >
                   {isEditSubmitting ? (
                     <>
@@ -770,7 +763,7 @@ export default function BannersPage() {
             </div>
 
             <h3 className="text-lg font-black text-slate-900 mb-1">Delete Banner?</h3>
-            <p className="text-xs font-semibold text-slate-500 mb-6 leading-relaxed">
+            <p className="text-sm font-semibold text-slate-500 mb-6 leading-relaxed">
               Are you sure you want to permanently delete &ldquo;<strong className="text-slate-800">{bannerToDelete.title}</strong>&rdquo;? This will immediately remove it from the homepage carousel.
             </p>
 
@@ -778,7 +771,7 @@ export default function BannersPage() {
               <button
                 type="button"
                 onClick={() => setBannerToDelete(null)}
-                className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 py-3 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
+                className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 py-3 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
               >
                 Keep Banner
               </button>
@@ -786,7 +779,7 @@ export default function BannersPage() {
                 type="button"
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="flex-1 rounded-2xl bg-red-600 hover:bg-red-700 py-3 text-xs font-bold text-white transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 rounded-2xl bg-red-600 hover:bg-red-700 py-3 text-sm font-bold text-white transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isDeleting ? "Deleting..." : "Yes, Delete"}
               </button>

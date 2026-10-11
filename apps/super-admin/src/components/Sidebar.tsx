@@ -16,7 +16,8 @@ import {
   Image as ImageIcon,
   Users,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  LayoutGrid
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -36,6 +37,7 @@ export default function Sidebar() {
     { name: "Events", href: "/events", icon: CalendarDays },
     { name: "Banners", href: "/banners", icon: ImageIcon },
     { name: "Organisers", href: "/organisers", icon: Users },
+    { name: "Categories", href: "/categories", icon: LayoutGrid },
     { name: "Orders", href: "/orders", icon: ShoppingBag },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
@@ -57,7 +59,7 @@ export default function Sidebar() {
         isCollapsed ? "w-20" : "w-64"
       }`}
     >
-      <div>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
         {/* Logo & Header */}
         {isCollapsed ? (
           <div className="flex flex-col items-center pt-6 pb-4">
@@ -131,7 +133,7 @@ export default function Sidebar() {
                     </Link>
 
                     {/* Floating Tooltip */}
-                    <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
+                    <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-sm font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
                       {item.name}
                     </div>
                   </li>
@@ -143,7 +145,7 @@ export default function Sidebar() {
                   <Link
                     href={item.href}
                     scroll={false}
-                    className={`group relative flex items-center rounded-2xl px-4 py-3 text-sm font-bold border transition-all duration-200 ease-in-out select-none active:scale-[0.98] ${
+                    className={`group relative flex items-center rounded-2xl px-4 py-3 text-base font-bold border transition-all duration-200 ease-in-out select-none active:scale-[0.98] ${
                       isActive
                         ? "bg-[#FFF9EB] text-amber-950 border-amber-300/80 shadow-2xs font-extrabold"
                         : "text-slate-500 border-transparent hover:bg-slate-50/80 hover:text-slate-900"
@@ -179,7 +181,7 @@ export default function Sidebar() {
             >
               <Crown className="w-5 h-5" />
             </button>
-            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
+            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-sm font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
               Create Event
             </div>
           </div>
@@ -192,39 +194,19 @@ export default function Sidebar() {
             >
               <LogOut className="w-4 h-4" />
             </button>
-            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
+            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-sm font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
               Sign Out
             </div>
           </div>
         </div>
       ) : (
         <div className="p-4 space-y-3">
-          {/* Yellow Promo Card */}
-          <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-amber-50 via-amber-100/40 to-amber-100/70 p-4 border border-amber-200/60 shadow-xs">
-            <div className="w-8 h-8 rounded-xl bg-amber-400/30 flex items-center justify-center mb-2.5">
-              <CalendarDays className="w-4 h-4 text-amber-700" />
-            </div>
-            <h4 className="text-xs font-extrabold text-slate-900 leading-snug">
-              Create amazing events, grow your audience!
-            </h4>
-            <p className="text-[11px] font-medium text-slate-500 mt-1">
-              More events. More people. More success.
-            </p>
-            <div className="mt-3 flex justify-end">
-              <button 
-                onClick={() => router.push("/events/create")}
-                className="w-7 h-7 rounded-full bg-amber-400 hover:bg-amber-500 flex items-center justify-center text-slate-950 transition-all shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
-                title="Create event"
-              >
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+
 
           {/* Sign Out Button */}
           <button 
             onClick={handleLogout}
-            className="group flex w-full items-center rounded-xl px-4 py-2.5 text-xs font-bold text-slate-400 transition-all hover:bg-red-50 hover:text-red-500 cursor-pointer"
+            className="group flex w-full items-center rounded-xl px-4 py-2.5 text-sm font-bold text-slate-400 transition-all hover:bg-red-50 hover:text-red-500 cursor-pointer"
           >
             <LogOut className="mr-2.5 h-4 w-4 text-slate-400 group-hover:text-red-500" />
             Sign Out

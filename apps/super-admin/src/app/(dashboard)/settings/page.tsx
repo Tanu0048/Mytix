@@ -85,7 +85,7 @@ export default function SettingsPage() {
     setErrorMsg("");
 
     try {
-      const res = await api.patch("/users", {
+      const res = await api.patch("/me", {
         name: formData.name,
         phone: formData.phone
       });
@@ -137,20 +137,20 @@ export default function SettingsPage() {
           <h1 className="text-3xl font-black tracking-tight text-slate-900">
             Account & <span className="text-amber-500">Settings</span>
           </h1>
-          <p className="mt-1 text-xs font-semibold text-slate-400">
+          <p className="mt-1 text-sm font-semibold text-slate-400">
             Manage your personal profile, payout accounts, security, and alerts.
           </p>
         </div>
 
         {/* Global Save Feedback */}
         {successMsg && (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-bold shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-sm font-bold shadow-2xs animate-in fade-in">
             <Check className="w-4 h-4 text-emerald-600" />
             <span>{successMsg}</span>
           </div>
         )}
         {errorMsg && (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-50 border border-red-200/80 text-red-700 text-xs font-bold shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-50 border border-red-200/80 text-red-700 text-sm font-bold shadow-2xs animate-in fade-in">
             <AlertCircle className="w-4 h-4 text-red-600" />
             <span>{errorMsg}</span>
           </div>
@@ -171,7 +171,7 @@ export default function SettingsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold transition-all cursor-pointer shrink-0 ${
                 isActive
                   ? "bg-[#FFF9EB] text-amber-950 border border-amber-300/80 shadow-2xs font-extrabold"
                   : "bg-white text-slate-500 hover:text-slate-900 border border-slate-100 hover:bg-slate-50"
@@ -213,7 +213,7 @@ export default function SettingsPage() {
                       {user?.role || "ORGANISER"}
                     </span>
                   </div>
-                  <p className="text-xs font-semibold text-slate-400 mt-0.5">{formData.email}</p>
+                  <p className="text-sm font-semibold text-slate-400 mt-0.5">{formData.email}</p>
                   <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Verified Account
                   </p>
@@ -222,7 +222,7 @@ export default function SettingsPage() {
 
               <div className="text-left sm:text-right">
                 <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Account ID</span>
-                <span className="font-mono text-xs font-bold text-slate-700 block mt-0.5">
+                <span className="font-mono text-sm font-bold text-slate-700 block mt-0.5">
                   {user?.id?.substring(0, 14) || "ORG-892410"}...
                 </span>
               </div>
@@ -237,7 +237,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h3 className="text-base font-black text-slate-900">Personal Information</h3>
-                <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                <p className="text-sm font-semibold text-slate-400 mt-0.5">
                   Update your contact info and public organiser display name.
                 </p>
               </div>
@@ -247,7 +247,7 @@ export default function SettingsPage() {
               
               {/* Name */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Full Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -257,14 +257,14 @@ export default function SettingsPage() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
                   />
                 </div>
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Email Address <span className="text-slate-400 font-normal">(Read Only)</span>
                 </label>
                 <div className="relative">
@@ -273,14 +273,14 @@ export default function SettingsPage() {
                     type="email"
                     disabled
                     value={formData.email}
-                    className="w-full rounded-2xl border border-slate-200/60 bg-slate-100/70 py-3 pl-10 pr-4 text-xs font-semibold text-slate-500 cursor-not-allowed outline-none"
+                    className="w-full rounded-2xl border border-slate-200/60 bg-slate-100/70 py-3 pl-10 pr-4 text-sm font-semibold text-slate-500 cursor-not-allowed outline-none"
                   />
                 </div>
               </div>
 
               {/* Phone */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Contact Phone <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -291,14 +291,14 @@ export default function SettingsPage() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+91 98765 43210"
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
                   />
                 </div>
               </div>
 
               {/* Location */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
                   Operating City
                 </label>
                 <div className="relative">
@@ -306,7 +306,7 @@ export default function SettingsPage() {
                   <input
                     type="text"
                     defaultValue="Melbourne / Mumbai"
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
                   />
                 </div>
               </div>
@@ -315,14 +315,14 @@ export default function SettingsPage() {
 
             {/* Bio */}
             <div>
-              <label className="block text-xs font-bold text-slate-800 mb-2">
+              <label className="block text-sm font-bold text-slate-800 mb-2">
                 Organizer Bio
               </label>
               <textarea
                 rows={3}
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all resize-none"
+                className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all resize-none"
               />
             </div>
 
@@ -331,7 +331,7 @@ export default function SettingsPage() {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-xs font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
               >
                 <Save className="w-4 h-4 stroke-[2.5]" />
                 <span>{isSaving ? "Saving..." : "Save Profile"}</span>
@@ -351,7 +351,7 @@ export default function SettingsPage() {
           <div className="p-5 rounded-3xl bg-[#FFF9EB] border border-amber-200/80 flex items-start gap-3.5">
             <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-xs font-black text-amber-950">Automated Direct Payouts Active</h4>
+              <h4 className="text-sm font-black text-amber-950">Automated Direct Payouts Active</h4>
               <p className="text-[11px] font-semibold text-amber-900/80 mt-0.5 leading-relaxed">
                 Net event ticket revenue is automatically transferred to your verified bank account every Wednesday, minus standard payment gateway fees.
               </p>
@@ -366,7 +366,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h3 className="text-base font-black text-slate-900">Banking & Settlement Credentials</h3>
-                <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                <p className="text-sm font-semibold text-slate-400 mt-0.5">
                   Verified bank account where ticket sales revenue will be deposited.
                 </p>
               </div>
@@ -375,62 +375,62 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">Business / Brand Entity</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Business / Brand Entity</label>
                 <input
                   type="text"
                   value={businessData.businessName}
                   onChange={(e) => setBusinessData({ ...businessData, businessName: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">Tax ID / GST Number</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Tax ID / GST Number</label>
                 <input
                   type="text"
                   value={businessData.taxId}
                   onChange={(e) => setBusinessData({ ...businessData, taxId: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">Account Beneficiary Name</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Account Beneficiary Name</label>
                 <input
                   type="text"
                   value={businessData.accountHolder}
                   onChange={(e) => setBusinessData({ ...businessData, accountHolder: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">Bank Name</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Bank Name</label>
                 <input
                   type="text"
                   value={businessData.bankName}
                   onChange={(e) => setBusinessData({ ...businessData, bankName: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">Account Number / IBAN</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Account Number / IBAN</label>
                 <input
                   type="text"
                   value={businessData.accountNumber}
                   onChange={(e) => setBusinessData({ ...businessData, accountNumber: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white font-mono"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">IFSC / Routing Code</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">IFSC / Routing Code</label>
                 <input
                   type="text"
                   value={businessData.ifscCode}
                   onChange={(e) => setBusinessData({ ...businessData, ifscCode: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white font-mono uppercase"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white font-mono uppercase"
                 />
               </div>
 
@@ -441,7 +441,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => handleGenericSave("Payout Banking")}
                 disabled={isSaving}
-                className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-xs font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
               >
                 <Save className="w-4 h-4 stroke-[2.5]" />
                 <span>Save Banking Details</span>
@@ -465,7 +465,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h3 className="text-base font-black text-slate-900">Password & Authentication</h3>
-                <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                <p className="text-sm font-semibold text-slate-400 mt-0.5">
                   Ensure your portal account is guarded with a strong credentials.
                 </p>
               </div>
@@ -474,14 +474,14 @@ export default function SettingsPage() {
             <div className="max-w-md space-y-4">
               
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">Current Password</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Current Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     value={passwords.currentPassword}
                     onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
                     placeholder="••••••••••••"
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                   />
                   <button
                     type="button"
@@ -494,24 +494,24 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">New Password</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">New Password</label>
                 <input
                   type={showPassword ? "text" : "password"}
                   value={passwords.newPassword}
                   onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
                   placeholder="Min 8 characters"
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">Confirm New Password</label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Confirm New Password</label>
                 <input
                   type={showPassword ? "text" : "password"}
                   value={passwords.confirmPassword}
                   onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
                   placeholder="Re-enter password"
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                 />
               </div>
 
@@ -520,7 +520,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => handleGenericSave("Password")}
                   disabled={isSaving}
-                  className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-7 py-3 text-xs font-black text-slate-950 transition-all shadow-sm cursor-pointer"
+                  className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-7 py-3 text-sm font-black text-slate-950 transition-all shadow-sm cursor-pointer"
                 >
                   <Save className="w-4 h-4 stroke-[2.5]" />
                   <span>Update Password</span>
@@ -534,7 +534,7 @@ export default function SettingsPage() {
               <div className="flex items-start gap-3">
                 <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-xs font-black text-slate-900">Two-Factor Authentication (2FA)</h4>
+                  <h4 className="text-sm font-black text-slate-900">Two-Factor Authentication (2FA)</h4>
                   <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
                     Secure organizer login with verification code confirmation.
                   </p>
@@ -573,7 +573,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h3 className="text-base font-black text-slate-900">Notification Alerts & Channels</h3>
-                <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                <p className="text-sm font-semibold text-slate-400 mt-0.5">
                   Choose how and when Mytix sends updates to your phone and inbox.
                 </p>
               </div>
@@ -607,7 +607,7 @@ export default function SettingsPage() {
                 return (
                   <div key={item.key} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-slate-100">
                     <div>
-                      <p className="text-xs font-bold text-slate-900">{item.title}</p>
+                      <p className="text-sm font-bold text-slate-900">{item.title}</p>
                       <p className="text-[11px] font-semibold text-slate-400 mt-0.5">{item.desc}</p>
                     </div>
 
@@ -635,7 +635,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => handleGenericSave("Notification preferences")}
                 disabled={isSaving}
-                className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-xs font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
               >
                 <Save className="w-4 h-4 stroke-[2.5]" />
                 <span>Save Notification Settings</span>
