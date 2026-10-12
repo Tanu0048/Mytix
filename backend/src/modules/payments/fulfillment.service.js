@@ -201,3 +201,135 @@ export async function handleFailedPayment(paymentIntent) {
 
   logger.info("Handled payment failure for order", { orderId });
 }
+
+export async function handleExternalRefund(charge) {
+  const paymentIntentId = charge.payment_intent;
+  if (!paymentIntentId) {
+    logger.warn("Charge object missing payment_intent in charge.refunded event", { chargeId: charge.id });
+    return;
+  }
+
+  const payment = await prisma.payment.findUnique({
+    where: { stripePaymentIntentId: paymentIntentId },
+    include: {
+      order: {
+        include: {
+          event: {
+            select: {
+              id: true,
+              organiserId: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!payment || !payment.order) {
+    logger.warn("Payment or order not found for refunded charge", { paymentIntentId });
+    return;
+  }
+
+  const order = payment.order;
+  const stripeRefund = charge.refunds?.data?.[0];
+  const refundAmountCents = stripeRefund?.amount || charge.amount_refunded || order.ticketTotalCents;
+  const stripeRefundId = stripeRefund?.id || `re_${Date.now()}`;
+
+  // If order and payment are already REFUNDED (e.g. from in-app admin cancellation), skip redundant operations
+  if (order.status === "REFUNDED" && payment.status === "REFUNDED") {
+    logger.info("Order and payment already marked REFUNDED, skipping duplicate handling", { orderId: order.id });
+    return;
+  }
+
+  const updates = [
+    prisma.order.update({
+      where: { id: order.id },
+      data: { status: "REFUNDED" }
+    }),
+    prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: "REFUNDED" }
+    }),
+    prisma.ticket.updateMany({
+      where: { orderId: order.id },
+      data: { status: "CANCELLED" }
+    }),
+    prisma.refund.upsert({
+      where: { orderId: order.id },
+      create: {
+        orderId: order.id,
+        paymentId: payment.id,
+        stripeRefundId,
+        amountCents: refundAmountCents,
+        status: "SUCCEEDED",
+        reason: stripeRefund?.reason || "Refunded via Stripe dashboard"
+      },
+      update: {
+        stripeRefundId,
+        amountCents: refundAmountCents,
+        status: "SUCCEEDED",
+        reason: stripeRefund?.reason || "Refunded via Stripe dashboard"
+      }
+    })
+  ];
+
+  if (order.status !== "REFUNDED") {
+    updates.push(
+      prisma.ledgerEntry.create({
+        data: {
+          organiserId: order.event.organiserId,
+          eventId: order.eventId,
+          orderId: order.id,
+          type: "REFUND",
+          amountCents: -order.ticketTotalCents,
+          description: `Stripe external refund for order ${order.orderNumber}`
+        }
+      })
+    );
+  }
+
+  await prisma.$transaction(updates);
+
+  logger.info("Successfully processed external charge.refunded event", {
+    orderId: order.id,
+    paymentIntentId,
+    amountCents: refundAmountCents
+  });
+}
+
+export async function handleDisputeCreated(dispute) {
+  const paymentIntentId = dispute.payment_intent;
+  let payment = null;
+
+  if (paymentIntentId) {
+    payment = await prisma.payment.findUnique({
+      where: { stripePaymentIntentId: paymentIntentId },
+      include: { order: true }
+    });
+  }
+
+  if (!payment) {
+    logger.warn("Payment not found for charge dispute", { disputeId: dispute.id, paymentIntentId });
+    return;
+  }
+
+  const order = payment.order;
+
+  await prisma.$transaction([
+    prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: "DISPUTED" }
+    }),
+    prisma.ticket.updateMany({
+      where: { orderId: order.id },
+      data: { status: "CANCELLED" }
+    })
+  ]);
+
+  logger.warn("Recorded dispute for payment and revoked attendee tickets", {
+    orderId: order.id,
+    paymentIntentId,
+    disputeId: dispute.id
+  });
+}
+

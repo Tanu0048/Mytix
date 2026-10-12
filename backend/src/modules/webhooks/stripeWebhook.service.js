@@ -1,6 +1,11 @@
 import { prisma } from "../../lib/prisma.js";
 import { getPaymentProvider } from "../../providers/payment/index.js";
-import { fulfillOrderAfterPayment, handleFailedPayment } from "../payments/fulfillment.service.js";
+import {
+  fulfillOrderAfterPayment,
+  handleFailedPayment,
+  handleExternalRefund,
+  handleDisputeCreated
+} from "../payments/fulfillment.service.js";
 import { logger } from "../../lib/logger.js";
 import { AppError } from "../../utils/errors.js";
 import { env } from "../../config/env.js";
@@ -62,9 +67,18 @@ export async function processStripeWebhook(rawBody, signature) {
       await handleFailedPayment(event.data.object);
       break;
 
+    case "charge.refunded":
+      await handleExternalRefund(event.data.object);
+      break;
+
+    case "charge.dispute.created":
+      await handleDisputeCreated(event.data.object);
+      break;
+
     default:
       logger.info("Unhandled Stripe webhook event type ignored", { type: event.type });
   }
+
 
   return { received: true };
 }

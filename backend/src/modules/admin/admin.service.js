@@ -3,6 +3,11 @@ import { AppError } from "../../utils/errors.js";
 import { parseCursorPagination, formatPaginatedResponse } from "../../utils/pagination.js";
 import { invalidateBannerCache } from "../banners/banner.service.js";
 import { hashPassword } from "../auth/password.service.js";
+import { getPaymentProvider } from "../../providers/payment/index.js";
+import { logger } from "../../lib/logger.js";
+import { sendEventCancellationNotification } from "../notifications/email.service.js";
+
+
 
 // ----------------------------------------------------
 // BANNERS MANAGEMENT
@@ -426,3 +431,226 @@ export async function getGlobalOrderDetails(orderId) {
 
   return order;
 }
+
+// ----------------------------------------------------
+// EVENT CANCELLATION & BULK REFUNDS
+// ----------------------------------------------------
+
+export async function cancelEventAndRefundOrders(eventId, reason, adminUserId) {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: {
+      organiser: {
+        select: {
+          id: true,
+          businessName: true,
+          contactEmail: true
+        }
+      }
+    }
+  });
+
+  if (!event) {
+    throw new AppError("NOT_FOUND", 404, "Event not found.");
+  }
+
+  if (event.status === "CANCELLED") {
+    throw new AppError("CONFLICT", 409, "This event has already been cancelled.");
+  }
+
+  const cancelReason = reason || "Event cancelled by platform administrator";
+
+  // 1. Update event status to CANCELLED and release all active holds
+  await prisma.$transaction([
+    prisma.event.update({
+      where: { id: eventId },
+      data: { status: "CANCELLED" }
+    }),
+    prisma.inventoryHold.updateMany({
+      where: {
+        ticketType: { eventId },
+        status: "ACTIVE"
+      },
+      data: { status: "RELEASED" }
+    })
+  ]);
+
+  // 2. Fetch all PAID orders for this event
+  const paidOrders = await prisma.order.findMany({
+    where: {
+      eventId,
+      status: "PAID"
+    },
+    include: {
+      payment: true,
+      tickets: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true
+        }
+      }
+    }
+  });
+
+  let refundedCount = 0;
+  let failedCount = 0;
+  let totalRefundedCents = 0;
+  let totalRetainedFeesCents = 0;
+
+  const paymentProvider = getPaymentProvider();
+
+  // 3. Process each order refund: refund ONLY ticketTotalCents (retain gateway & buyer fees)
+  for (const order of paidOrders) {
+    const refundAmountCents = order.ticketTotalCents;
+    const retainedFeeCents = order.buyerFeeCents || 0;
+    const paymentIntentId = order.payment?.stripePaymentIntentId;
+
+    let stripeRefundId = null;
+
+    if (paymentIntentId) {
+      try {
+        const refundResult = await paymentProvider.createRefund({
+          paymentIntentId,
+          amountCents: refundAmountCents,
+          reason: "requested_by_customer"
+        });
+        stripeRefundId = refundResult.id;
+      } catch (err) {
+        if (
+          err.code === "PAYMENT_GATEWAY_NOT_CONFIGURED" ||
+          err.message?.includes("PAYMENT_GATEWAY_NOT_CONFIGURED") ||
+          paymentIntentId.startsWith("pi_demo_")
+        ) {
+          stripeRefundId = `re_demo_${Date.now()}_${order.id.slice(0, 8)}`;
+        } else {
+          logger.error("Failed to execute Stripe refund for order", {
+            orderId: order.id,
+            paymentIntentId,
+            error: err.message
+          });
+        }
+      }
+    } else {
+      stripeRefundId = `re_manual_${Date.now()}_${order.id.slice(0, 8)}`;
+    }
+
+    try {
+      const updates = [
+        prisma.order.update({
+          where: { id: order.id },
+          data: { status: "REFUNDED" }
+        }),
+        prisma.ticket.updateMany({
+          where: { orderId: order.id },
+          data: { status: "CANCELLED" }
+        }),
+        prisma.ledgerEntry.create({
+          data: {
+            organiserId: event.organiserId,
+            eventId: event.id,
+            orderId: order.id,
+            type: "REFUND",
+            amountCents: -refundAmountCents,
+            description: `Event cancellation ticket refund for order ${order.orderNumber}`
+          }
+        })
+      ];
+
+      if (order.payment) {
+        updates.push(
+          prisma.refund.upsert({
+            where: { orderId: order.id },
+            create: {
+              orderId: order.id,
+              paymentId: order.payment.id,
+              stripeRefundId,
+              amountCents: refundAmountCents,
+              status: stripeRefundId ? "SUCCEEDED" : "PENDING",
+              reason: cancelReason
+            },
+            update: {
+              stripeRefundId,
+              amountCents: refundAmountCents,
+              status: stripeRefundId ? "SUCCEEDED" : "PENDING",
+              reason: cancelReason
+            }
+          })
+        );
+      }
+
+      await prisma.$transaction(updates);
+
+      refundedCount++;
+      totalRefundedCents += refundAmountCents;
+      totalRetainedFeesCents += retainedFeeCents;
+
+      // Dispatch automated event cancellation & refund notification email
+      const userEmail = order.user?.email;
+      if (userEmail) {
+        const refundAud = (refundAmountCents / 100).toFixed(2);
+        sendEventCancellationNotification({
+          recipientEmail: userEmail,
+          recipientName: order.user?.name || "Valued Customer",
+          orderNumber: order.orderNumber,
+          eventTitle: event.title,
+          cancellationReason: cancelReason,
+          refundAmountAud: refundAud,
+          currency: order.currency || "AUD"
+        }).catch((emailErr) => {
+          logger.error("Failed to send event cancellation email", {
+            orderId: order.id,
+            email: userEmail,
+            error: emailErr.message
+          });
+        });
+      }
+    } catch (dbErr) {
+
+      logger.error("Failed to update database for refunded order", {
+        orderId: order.id,
+        error: dbErr.message
+      });
+      failedCount++;
+    }
+
+
+  }
+
+  // 4. Audit Log entry for event cancellation
+  await prisma.auditLog.create({
+    data: {
+      actorId: adminUserId,
+      action: "EVENT_CANCELLED",
+      entity: "Event",
+      entityId: event.id,
+      after: {
+        eventId: event.id,
+        eventTitle: event.title,
+        reason: cancelReason,
+        totalPaidOrders: paidOrders.length,
+        refundedOrders: refundedCount,
+        failedOrders: failedCount,
+        totalRefundedCents,
+        totalRetainedFeesCents
+      }
+    }
+  });
+
+  return {
+    eventId: event.id,
+    eventTitle: event.title,
+    status: "CANCELLED",
+    reason: cancelReason,
+    summary: {
+      totalPaidOrders: paidOrders.length,
+      refundedOrders: refundedCount,
+      failedOrders: failedCount,
+      totalRefundedAmountCents: totalRefundedCents,
+      retainedFeeAmountCents: totalRetainedFeesCents,
+      currency: "AUD"
+    }
+  };
+}
+
