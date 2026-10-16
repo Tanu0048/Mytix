@@ -110,7 +110,7 @@ export default function Home() {
               <div>
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Sales</p>
                 <p className="text-3xl font-black text-slate-900 mt-1">
-                  ₹{totalSales.toLocaleString("en-IN")}
+                  ${totalSales.toLocaleString("en-AU")}
                 </p>
                 <p className="text-[11px] font-bold text-emerald-600 mt-1.5 flex items-center gap-1">
                   <span>↑ 0%</span> <span className="text-slate-400 font-medium">vs last 30 days</span>
@@ -251,7 +251,7 @@ export default function Home() {
 
   // ===== ADMIN DASHBOARD =====
   const stats = [
-    { name: "Total Revenue", value: "₹1,24,563", icon: Activity, color: "text-amber-600", bg: "bg-amber-50" },
+    { name: "Total Revenue", value: "$1,24,563", icon: Activity, color: "text-amber-600", bg: "bg-amber-50" },
     { name: "Tickets Sold", value: "8,432", icon: ShoppingBag, color: "text-blue-600", bg: "bg-blue-50" },
     { name: "Active Organisers", value: "142", icon: Users, color: "text-emerald-600", bg: "bg-emerald-50" },
   ];

@@ -138,7 +138,7 @@ export default function AnalyticsPage() {
   }, [events]);
 
   const formatCurrency = (val: number) => {
-    return `₹${val.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `$${val.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   return (
@@ -306,7 +306,7 @@ export default function AnalyticsPage() {
                     : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                Revenue (₹)
+                Revenue ($)
               </button>
               <button
                 onClick={() => setActiveMetricTab("tickets")}
@@ -324,7 +324,7 @@ export default function AnalyticsPage() {
           {/* Bar Chart Visual */}
           <div className="h-64 flex items-end justify-between gap-3 pt-6 pb-2 px-2 border-b border-slate-100">
             {chartDays.map((item, index) => {
-              const displayVal = activeMetricTab === "revenue" ? `₹${item.revenue}` : `${item.tickets} Tix`;
+              const displayVal = activeMetricTab === "revenue" ? `$${item.revenue}` : `${item.tickets} Tix`;
               return (
                 <div key={index} className="flex-1 flex flex-col items-center h-full justify-end group relative">
                   
@@ -360,7 +360,7 @@ export default function AnalyticsPage() {
               Peak Sales on Friday evening
             </span>
             <span className="font-bold text-slate-800">
-              Avg. ₹4,630 / Day
+              Avg. $4,630 / Day
             </span>
           </div>
         </div>

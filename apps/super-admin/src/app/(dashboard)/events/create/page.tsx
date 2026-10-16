@@ -134,8 +134,8 @@ export default function CreateEventPage() {
       description: "",
       priceCents: 5000,
       quantity: 100,
-      saleStartsAt: formData.startsAt || "",
-      saleEndsAt: formData.startsAt || "",
+      saleStartsAt: "",
+      saleEndsAt: "",
       minPerOrder: 1,
       maxPerOrder: 10
     }]);
@@ -232,10 +232,10 @@ export default function CreateEventPage() {
           description: t.description || undefined,
           priceCents: Number(t.priceCents),
           quantity: Number(t.quantity),
-          saleStartsAt: t.saleStartsAt ? new Date(t.saleStartsAt).toISOString() : new Date().toISOString(),
-          saleEndsAt: t.saleEndsAt ? new Date(t.saleEndsAt).toISOString() : new Date(formData.startsAt).toISOString(),
-          minPerOrder: Number(t.minPerOrder),
-          maxPerOrder: Number(t.maxPerOrder)
+          saleStartsAt: t.saleStartsAt && new Date(t.saleStartsAt) < new Date(formData.startsAt) ? new Date(t.saleStartsAt).toISOString() : new Date().toISOString(),
+          saleEndsAt: t.saleEndsAt && new Date(t.saleEndsAt) > new Date() ? new Date(t.saleEndsAt).toISOString() : new Date(formData.startsAt).toISOString(),
+          minPerOrder: Number(t.minPerOrder || 1),
+          maxPerOrder: Number(t.maxPerOrder || 10)
         }))
       };
 

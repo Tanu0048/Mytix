@@ -130,7 +130,7 @@ export default function LoginPage() {
                 <p className="text-[10px] font-bold text-amber-200/70 uppercase tracking-widest">LIVE CONCERT</p>
                 <div className="w-28 h-3 rounded-full bg-amber-100/80 mt-1" />
               </div>
-              <div className="font-mono text-base font-black text-amber-200 tracking-wider">₹5,000</div>
+              <div className="font-mono text-base font-black text-amber-200 tracking-wider">$5,000</div>
             </div>
           </div>
         </div>

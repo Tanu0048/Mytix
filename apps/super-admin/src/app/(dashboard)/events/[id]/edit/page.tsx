@@ -87,8 +87,8 @@ function EditEventForm() {
         quantity: 100,
         sold: 0,
         available: 100,
-        saleStartsAt: formData.startsAt || "",
-        saleEndsAt: formData.startsAt || "",
+        saleStartsAt: "",
+        saleEndsAt: "",
         minPerOrder: 1,
         maxPerOrder: 10
       }
@@ -116,21 +116,24 @@ function EditEventForm() {
     setError("");
 
     try {
+      const eventStartsIso = formData.startsAt ? new Date(formData.startsAt).toISOString() : undefined;
       const payload: any = {
         title: formData.title,
         description: formData.description,
         category: formData.category,
         status: formData.status,
         ...(formData.posterPath && { posterPath: formData.posterPath }),
-        ...(formData.startsAt && { startsAt: new Date(formData.startsAt).toISOString() }),
+        ...(eventStartsIso && { startsAt: eventStartsIso }),
         ...(formData.doorsOpenAt && { doorsOpenAt: new Date(formData.doorsOpenAt).toISOString() }),
         ticketTypes: ticketTypes.map((t) => ({
           ...(t.id ? { id: t.id } : {}),
           name: t.name,
           priceCents: Number(t.priceCents),
           quantity: Number(t.quantity),
-          ...(t.saleStartsAt ? { saleStartsAt: new Date(t.saleStartsAt).toISOString() } : {}),
-          ...(t.saleEndsAt ? { saleEndsAt: new Date(t.saleEndsAt).toISOString() } : {}),
+          saleStartsAt: t.saleStartsAt && eventStartsIso && new Date(t.saleStartsAt) < new Date(eventStartsIso) 
+            ? new Date(t.saleStartsAt).toISOString() 
+            : new Date().toISOString(),
+          saleEndsAt: eventStartsIso || (t.saleEndsAt ? new Date(t.saleEndsAt).toISOString() : undefined),
           minPerOrder: Number(t.minPerOrder || 1),
           maxPerOrder: Number(t.maxPerOrder || 10)
         }))
@@ -318,7 +321,7 @@ function EditEventForm() {
                       onChange={(e) => handleTicketChange(index, "priceCents", e.target.value)} 
                       className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400" 
                     />
-                    <span className="text-[10px] text-slate-400 mt-1 block">₹{(ticket.priceCents / 100).toFixed(2)}</span>
+                    <span className="text-[10px] text-slate-400 mt-1 block">${(ticket.priceCents / 100).toFixed(2)}</span>
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">Total Quantity</label>
@@ -333,27 +336,6 @@ function EditEventForm() {
                     {ticket.sold > 0 && (
                       <span className="text-[10px] text-slate-400 mt-1 block">Min {ticket.sold} (already sold)</span>
                     )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Sale Starts At</label>
-                    <input 
-                      type="datetime-local" 
-                      value={ticket.saleStartsAt} 
-                      onChange={(e) => handleTicketChange(index, "saleStartsAt", e.target.value)} 
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400" 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Sale Ends At</label>
-                    <input 
-                      type="datetime-local" 
-                      value={ticket.saleEndsAt} 
-                      onChange={(e) => handleTicketChange(index, "saleEndsAt", e.target.value)} 
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400" 
-                    />
                   </div>
                 </div>
               </div>

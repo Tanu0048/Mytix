@@ -174,7 +174,7 @@ export default function EventsPage() {
           <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tickets Sold</p>
             <p className="text-2xl font-black text-slate-900 mt-0.5">
-              {displaySold.toLocaleString("en-IN")}
+              {displaySold.toLocaleString("en-AU")}
             </p>
             <p className="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1">
               <span>↑ 12%</span> <span className="text-slate-400 font-medium">vs last 30 days</span>
@@ -186,7 +186,7 @@ export default function EventsPage() {
         <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center font-black text-amber-600 text-lg">
-              ₹
+              $
             </div>
             {/* Sparkline curve */}
             <svg className="w-16 h-8 text-amber-400 stroke-current fill-none stroke-[2.5]" viewBox="0 0 64 32">
@@ -196,7 +196,7 @@ export default function EventsPage() {
           <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Revenue</p>
             <p className="text-2xl font-black text-slate-900 mt-0.5">
-              ₹{displayRevenue.toLocaleString("en-IN")}
+              ${displayRevenue.toLocaleString("en-AU")}
             </p>
             <p className="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1">
               <span>↑ 18%</span> <span className="text-slate-400 font-medium">vs last 30 days</span>

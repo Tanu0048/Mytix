@@ -472,7 +472,7 @@ export default function BannersPage() {
                     {banner.title}
                   </h3>
                   <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
-                    Added {new Date(banner.createdAt || Date.now()).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                    Added {new Date(banner.createdAt || Date.now()).toLocaleDateString("en-AU", { month: "short", day: "numeric", year: "numeric" })}
                   </p>
                 </div>
 

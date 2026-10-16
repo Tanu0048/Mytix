@@ -112,15 +112,15 @@ export default function OrdersPage() {
 
   // Format Currency
   const formatCurrency = (cents: number, currency: string = "INR") => {
-    const symbol = currency === "INR" ? "₹" : "$";
-    return `${symbol}${(cents / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const symbol = currency === "INR" ? "$" : "$";
+    return `${symbol}${(cents / 100).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   // Format Date
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
     const d = new Date(dateStr);
-    return d.toLocaleDateString("en-IN", {
+    return d.toLocaleDateString("en-AU", {
       day: "numeric",
       month: "short",
       year: "numeric",

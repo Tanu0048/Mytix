@@ -17,7 +17,8 @@ import {
   Users,
   PanelLeftClose,
   PanelLeftOpen,
-  LayoutGrid
+  LayoutGrid,
+  MapPin
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -35,6 +36,7 @@ export default function Sidebar() {
   const adminNavItems = [
     { name: "Overview", href: "/", icon: LayoutDashboard },
     { name: "Events", href: "/events", icon: CalendarDays },
+    { name: "Venues & Cities", href: "/venues", icon: MapPin },
     { name: "Banners", href: "/banners", icon: ImageIcon },
     { name: "Organisers", href: "/organisers", icon: Users },
     { name: "Categories", href: "/categories", icon: LayoutGrid },
@@ -46,6 +48,7 @@ export default function Sidebar() {
   const organiserNavItems = [
     { name: "Overview", href: "/", icon: LayoutDashboard },
     { name: "Events", href: "/events", icon: CalendarDays },
+    { name: "Venues & Cities", href: "/venues", icon: MapPin },
     { name: "Orders", href: "/orders", icon: ShoppingBag },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
