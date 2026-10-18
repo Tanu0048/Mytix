@@ -12,12 +12,33 @@ import {
   ActivityIndicator,
   Platform,
   Modal,
+  Linking,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
 import { API_BASE } from '../../constants/api';
+import { fetchWithAuth, logoutUser } from '../../services/auth';
+
+const PROFILE_FAQS = [
+  {
+    q: 'How do I receive and access my tickets?',
+    a: "All tickets on Mytix are 100% digital. Once booked, your verified QR entry pass is instantly generated under the 'My Tickets' tab.",
+  },
+  {
+    q: 'How does entry verification work at the gate?',
+    a: "Simply show the QR code on your phone in the 'My Tickets' tab to the turnstile gate scanners for instant, fraud-proof admission.",
+  },
+  {
+    q: 'Can I transfer or cancel my tickets?',
+    a: 'Yes! Depending on the organizer refund policy, you can request a cancellation or transfer up to 24 hours before the event starts.',
+  },
+  {
+    q: 'What payment methods are supported?',
+    a: 'We support major Credit/Debit cards (Visa, Mastercard, Amex), Apple Pay, and Google Pay with bank-grade encryption.',
+  },
+];
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -28,6 +49,7 @@ export default function ProfileScreen() {
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -58,16 +80,14 @@ export default function ProfileScreen() {
   );
 
   const handleSaveChanges = async () => {
-    if (!token) return;
     setSaving(true);
     setSaveSuccess(false);
 
     try {
-      const res = await fetch(`${API_BASE}/me`, {
+      const res = await fetchWithAuth(`${API_BASE}/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: name.trim(),
@@ -101,7 +121,7 @@ export default function ProfileScreen() {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
-          await AsyncStorage.multiRemove(['user', 'token', 'refreshToken']);
+          await logoutUser();
           setUser(null);
           setToken(null);
         },
@@ -110,18 +130,14 @@ export default function ProfileScreen() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!token) return;
     setDeleting(true);
     try {
-      const res = await fetch(`${API_BASE}/me`, {
+      const res = await fetchWithAuth(`${API_BASE}/me`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       if (res.ok) {
-        await AsyncStorage.multiRemove(['user', 'token', 'refreshToken']);
+        await logoutUser();
         setUser(null);
         setToken(null);
         setIsDeleteModalOpen(false);
@@ -285,7 +301,67 @@ export default function ProfileScreen() {
               <Ionicons name="chevron-forward" size={20} color="#D97706" />
             </TouchableOpacity>
 
-            {/* Section 3: Account & Security */}
+            {/* Section 3: Help Center & FAQs */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={[styles.cardIconBox, { backgroundColor: '#FEF3C7' }]}>
+                  <Ionicons name="help-circle" size={18} color="#D97706" />
+                </View>
+                <View>
+                  <Text style={styles.cardTitle}>Help Center & FAQs</Text>
+                  <Text style={styles.cardSubtitle}>Australian ticketing assistance & FAQs</Text>
+                </View>
+              </View>
+
+              {/* Australian Concierge Call Banner */}
+              <TouchableOpacity
+                style={styles.helpCallBanner}
+                activeOpacity={0.8}
+                onPress={() =>
+                  Linking.openURL('tel:0455600003').catch(() => {
+                    Alert.alert('Australian Support', 'Call us at 0455 600 003 for direct concierge assistance.');
+                  })
+                }
+              >
+                <View style={styles.helpCallIconBox}>
+                  <Ionicons name="headset" size={20} color="#D97706" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.helpCallTitle}>Australian Phone Support</Text>
+                  <Text style={styles.helpCallSubtitle}>Call 0455 600 003 • 7 Days a Week</Text>
+                </View>
+                <View style={styles.callNowBadge}>
+                  <Text style={styles.callNowBadgeText}>Call Now</Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* FAQs Accordion */}
+              <View style={styles.faqList}>
+                {PROFILE_FAQS.map((faq, index) => {
+                  const isExpanded = expandedFaq === index;
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.faqItem}
+                      onPress={() => setExpandedFaq(isExpanded ? null : index)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.faqQuestionRow}>
+                        <Text style={styles.faqQuestionText}>{faq.q}</Text>
+                        <Ionicons
+                          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                          size={16}
+                          color="#D97706"
+                        />
+                      </View>
+                      {isExpanded && <Text style={styles.faqAnswerText}>{faq.a}</Text>}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Section 4: Account & Security */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
                 <View style={[styles.cardIconBox, { backgroundColor: '#FEE2E2' }]}>
@@ -359,6 +435,64 @@ export default function ProfileScreen() {
             >
               <Text style={styles.guestBrowseText}>Explore Live Events</Text>
             </TouchableOpacity>
+
+            {/* Help Center & FAQs for Guests */}
+            <View style={[styles.card, { marginTop: 20, width: '100%' }]}>
+              <View style={styles.cardHeader}>
+                <View style={[styles.cardIconBox, { backgroundColor: '#FEF3C7' }]}>
+                  <Ionicons name="help-circle" size={18} color="#D97706" />
+                </View>
+                <View>
+                  <Text style={styles.cardTitle}>Help Center & FAQs</Text>
+                  <Text style={styles.cardSubtitle}>Australian ticketing assistance & FAQs</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={styles.helpCallBanner}
+                activeOpacity={0.8}
+                onPress={() =>
+                  Linking.openURL('tel:0455600003').catch(() => {
+                    Alert.alert('Australian Support', 'Call us at 0455 600 003 for direct concierge assistance.');
+                  })
+                }
+              >
+                <View style={styles.helpCallIconBox}>
+                  <Ionicons name="headset" size={20} color="#D97706" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.helpCallTitle}>Australian Phone Support</Text>
+                  <Text style={styles.helpCallSubtitle}>Call 0455 600 003 • 7 Days a Week</Text>
+                </View>
+                <View style={styles.callNowBadge}>
+                  <Text style={styles.callNowBadgeText}>Call Now</Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.faqList}>
+                {PROFILE_FAQS.map((faq, index) => {
+                  const isExpanded = expandedFaq === index;
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.faqItem}
+                      onPress={() => setExpandedFaq(isExpanded ? null : index)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.faqQuestionRow}>
+                        <Text style={styles.faqQuestionText}>{faq.q}</Text>
+                        <Ionicons
+                          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                          size={16}
+                          color="#D97706"
+                        />
+                      </View>
+                      {isExpanded && <Text style={styles.faqAnswerText}>{faq.a}</Text>}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -742,6 +876,78 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#0F172A',
+  },
+  helpCallBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    gap: 12,
+    marginBottom: 14,
+  },
+  helpCallIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  helpCallTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#92400E',
+  },
+  helpCallSubtitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#B45309',
+    marginTop: 1,
+  },
+  callNowBadge: {
+    backgroundColor: '#D97706',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  callNowBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  faqList: {
+    gap: 8,
+  },
+  faqItem: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  faqQuestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  faqQuestionText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+    flex: 1,
+  },
+  faqAnswerText: {
+    fontSize: 12,
+    color: '#64748B',
+    lineHeight: 18,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
   },
   modalOverlay: {
     flex: 1,

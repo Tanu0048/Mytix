@@ -14,14 +14,18 @@ export const registerSchema = {
     email: z.string().email("A valid email address is required."),
     name: z.string().min(2, "Name must be at least 2 characters long.").max(100),
     password: strongPasswordSchema,
-    phone: z.string().optional()
+    phone: z.string().optional(),
+    clientPlatform: z.string().optional(),
+    isMobile: z.boolean().optional()
   })
 };
 
 export const loginSchema = {
   body: z.object({
     email: z.string().email("A valid email address is required."),
-    password: z.string().min(1, "Password is required.")
+    password: z.string().min(1, "Password is required."),
+    clientPlatform: z.string().optional(),
+    isMobile: z.boolean().optional()
   })
 };
 

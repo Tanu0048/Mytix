@@ -27,12 +27,19 @@ export const useAuthStore = create<AuthState>((set) => ({
   setToken: (token) => set({ token }),
   fetchUser: async () => {
     try {
+      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers: Record<string, string> = {};
+      if (storedToken) {
+        headers['Authorization'] = `Bearer ${storedToken}`;
+      }
+
       const res = await fetch(`${API_BASE}/me`, { 
-        credentials: 'include' 
+        credentials: 'include',
+        headers
       });
       if (res.ok) {
         const data = await res.json();
-        set({ user: data.data || data, loading: false });
+        set({ user: data.data || data, token: storedToken, loading: false });
       } else {
         set({ user: null, loading: false });
       }

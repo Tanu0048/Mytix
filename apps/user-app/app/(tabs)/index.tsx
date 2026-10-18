@@ -18,6 +18,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LocationStore } from '../../services/locationStore';
 import Skeleton from '../../components/Skeleton';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const MYTIX_LOGO = require('../../assets/images/Minimalist_Mytix_Yellow_X_Logo-removebg-preview.png');
 
@@ -26,58 +27,6 @@ const BANNER_CARD_WIDTH = width - 32;
 const BANNER_CARD_HEIGHT = Math.round(BANNER_CARD_WIDTH * (9 / 16));
 
 import { API_BASE, BACKEND_HOST } from '../../constants/api';
-
-function getCategoryMeta(catName: string) {
-  const normalized = (catName || '').toLowerCase().trim();
-  switch (normalized) {
-    case 'concert':
-    case 'music':
-      return { icon: 'musical-notes', bg: '#FEF3C7', iconColor: '#D97706' };
-    case 'comedy':
-      return { icon: 'happy', bg: '#FEE2E2', iconColor: '#DC2626' };
-    case 'sports':
-    case 'sport':
-      return { icon: 'trophy', bg: '#E0E7FF', iconColor: '#4F46E5' };
-    case 'theatre':
-    case 'theater':
-    case 'drama':
-      return { icon: 'film', bg: '#F3E8FF', iconColor: '#9333EA' };
-    case 'festival':
-      return { icon: 'sparkles', bg: '#ECFDF5', iconColor: '#059669' };
-    case 'workshop':
-    case 'education':
-      return { icon: 'color-palette', bg: '#FFEDD5', iconColor: '#EA580C' };
-    case 'nightlife':
-    case 'party':
-    case 'club':
-      return { icon: 'beer', bg: '#EDE9FE', iconColor: '#7C3AED' };
-    case 'food':
-    case 'dining':
-      return { icon: 'restaurant', bg: '#FEF08A', iconColor: '#CA8A04' };
-    default:
-      return { icon: 'grid', bg: '#F1F5F9', iconColor: '#0F172A' };
-  }
-}
-
-const FAQS = [
-  {
-    q: 'How do I receive and access my tickets?',
-    a: "All tickets on Mytix are 100% digital. Once booked, your verified QR entry pass is instantly generated under the 'My Tickets' tab.",
-  },
-  {
-    q: 'How does entry verification work at the gate?',
-    a: "Simply show the QR code on your phone in the 'My Tickets' tab to the turnstile gate scanners for instant, fraud-proof admission.",
-  },
-  {
-    q: 'Can I transfer or cancel my tickets?',
-    a: 'Yes! Depending on the organizer refund policy, you can request a cancellation or transfer up to 24 hours before the event starts.',
-  },
-  {
-    q: 'What payment methods are supported?',
-    a: 'We support major Credit/Debit cards (Visa, Mastercard, Amex), Apple Pay, and Google Pay with bank-grade encryption.',
-  },
-];
-
 const AUSTRALIAN_CITIES = [
   'All of Australia',
   'Sydney',
@@ -111,7 +60,6 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const bannerScrollRef = useRef<ScrollView>(null);
 
@@ -383,31 +331,33 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Categories Section (Dynamic from Admin Panel) */}
+        {/* Categories Section (Sleek Text-Only Pills) */}
         {categories.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionHeading}>Browse by Category</Text>
+            <View style={styles.sectionHeaderRow}>
+              <View>
+                <Text style={styles.sectionHeading}>Browse by Category</Text>
+                <Text style={styles.sectionSubheading}>Explore events tailored to your vibe</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/movies')}>
+                <Text style={styles.seeAllText}>View All</Text>
+              </TouchableOpacity>
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoriesScroll}
             >
-              {categories.map((catName) => {
-                const meta = getCategoryMeta(catName);
-                return (
-                  <TouchableOpacity
-                    key={catName}
-                    style={styles.categoryItem}
-                    onPress={() => handleCategoryPress(catName)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.categoryIconCircle, { backgroundColor: meta.bg }]}>
-                      <Ionicons name={meta.icon as any} size={22} color={meta.iconColor} />
-                    </View>
-                    <Text style={styles.categoryTitle}>{catName}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+              {categories.map((catName) => (
+                <TouchableOpacity
+                  key={catName}
+                  style={styles.categoryPillCard}
+                  onPress={() => handleCategoryPress(catName)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.categoryPillTitle}>{catName}</Text>
+                </TouchableOpacity>
+              ))}
             </ScrollView>
           </View>
         )}
@@ -597,34 +547,54 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* FAQs Accordion (White Theme) */}
-        <View style={styles.faqSection}>
-          <Text style={styles.sectionHeading}>Frequently Asked Questions</Text>
-          <Text style={styles.sectionSubheading}>Everything you need to know about Mytix</Text>
+        {/* Australian Verified Ticketing Guarantee Sleek Banner */}
+        <View style={styles.guaranteeSection}>
+          <LinearGradient
+            colors={['#0F172A', '#1E293B']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.guaranteeCard}
+          >
+            {/* Header with shield badge */}
+            <View style={styles.guaranteeHeader}>
+              <View style={styles.guaranteeIconCircle}>
+                <Ionicons name="shield-checkmark" size={22} color="#F59E0B" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.guaranteeTagBadge}>
+                  <Text style={styles.guaranteeTagText}>100% BUYER PROTECTION</Text>
+                </View>
+                <Text style={styles.guaranteeHeading}>Australian Verified Guarantee</Text>
+              </View>
+            </View>
 
-          <View style={styles.faqList}>
-            {FAQS.map((faq, index) => {
-              const isExpanded = expandedFaq === index;
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.faqItem}
-                  onPress={() => setExpandedFaq(isExpanded ? null : index)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.faqQuestionRow}>
-                    <Text style={styles.faqQuestionText}>{faq.q}</Text>
-                    <Ionicons
-                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                      size={18}
-                      color="#D97706"
-                    />
-                  </View>
-                  {isExpanded && <Text style={styles.faqAnswerText}>{faq.a}</Text>}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+            <Text style={styles.guaranteeDescription}>
+              Official partner tickets • Direct promoter verification • Bank-grade encrypted checkout • Guaranteed gate admission across Australia.
+            </Text>
+
+            {/* 3 Sleek Micro Pills */}
+            <View style={styles.guaranteePillsRow}>
+              <View style={styles.guaranteePill}>
+                <Ionicons name="checkmark-circle" size={13} color="#10B981" />
+                <Text style={styles.guaranteePillText}>Genuine QR Passes</Text>
+              </View>
+              <View style={styles.guaranteePill}>
+                <Ionicons name="lock-closed" size={12} color="#F59E0B" />
+                <Text style={styles.guaranteePillText}>Stripe Secured</Text>
+              </View>
+              <View style={styles.guaranteePill}>
+                <Ionicons name="headset" size={13} color="#38BDF8" />
+                <Text style={styles.guaranteePillText}>Aussie Support</Text>
+              </View>
+            </View>
+
+            {/* Subtle Brand Watermark Bottom */}
+            <View style={styles.guaranteeFooter}>
+              <Text style={styles.guaranteeFooterBrand}>MYTIX AUSTRALIA</Text>
+              <Text style={styles.guaranteeFooterDot}>•</Text>
+              <Text style={styles.guaranteeFooterText}>Premier Live Entertainment</Text>
+            </View>
+          </LinearGradient>
         </View>
       </ScrollView>
       )}
@@ -826,31 +796,28 @@ const styles = StyleSheet.create({
   },
   categoriesScroll: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    gap: 14,
+    paddingTop: 8,
+    paddingBottom: 4,
+    gap: 10,
   },
-  categoryItem: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  categoryIconCircle: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
+  categoryPillCard: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
     elevation: 2,
   },
-  categoryTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
+  categoryPillTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: 0.2,
   },
   horizontalEventsScroll: {
     paddingHorizontal: 16,
@@ -1074,46 +1041,108 @@ const styles = StyleSheet.create({
     color: '#D97706',
     marginTop: 4,
   },
-  faqSection: {
+  guaranteeSection: {
     marginHorizontal: 16,
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: 14,
+    marginBottom: 28,
   },
-  faqList: {
-    marginTop: 12,
-    gap: 8,
-  },
-  faqItem: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
+  guaranteeCard: {
+    borderRadius: 20,
+    padding: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#334155',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  faqQuestionRow: {
+  guaranteeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
+    gap: 12,
+    marginBottom: 10,
   },
-  faqQuestionText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
-    flex: 1,
+  guaranteeIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  faqAnswerText: {
+  guaranteeTagBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginBottom: 3,
+  },
+  guaranteeTagText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#F59E0B',
+    letterSpacing: 0.6,
+  },
+  guaranteeHeading: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#F8FAFC',
+  },
+  guaranteeDescription: {
     fontSize: 12,
-    color: '#475569',
+    color: '#94A3B8',
     lineHeight: 18,
-    marginTop: 10,
-    paddingTop: 10,
+    marginBottom: 14,
+  },
+  guaranteePillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  guaranteePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  guaranteePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#E2E8F0',
+  },
+  guaranteeFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  guaranteeFooterBrand: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#F59E0B',
+    letterSpacing: 1.2,
+  },
+  guaranteeFooterDot: {
+    fontSize: 10,
+    color: '#64748B',
+  },
+  guaranteeFooterText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
   },
   modalOverlay: {
     flex: 1,

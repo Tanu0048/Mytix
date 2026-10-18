@@ -5,12 +5,16 @@ import { AppError } from "../../utils/errors.js";
 import { signAccessToken } from "../../utils/jwt.js";
 import { env } from "../../config/env.js";
 
-export function generateAccessToken(user) {
-  return signAccessToken({
-    sub: user.id,
-    email: user.email,
-    role: user.role
-  });
+export function generateAccessToken(user, options = {}) {
+  const expiresIn = options.expiresIn || (options.isMobile ? "30d" : env.JWT_ACCESS_EXPIRATION);
+  return signAccessToken(
+    {
+      sub: user.id,
+      email: user.email,
+      role: user.role
+    },
+    { expiresIn }
+  );
 }
 
 export async function createRefreshToken(userId, existingFamilyId = null) {
@@ -32,7 +36,7 @@ export async function createRefreshToken(userId, existingFamilyId = null) {
   return { rawToken, familyId };
 }
 
-export async function rotateRefreshToken(rawToken) {
+export async function rotateRefreshToken(rawToken, isMobile = false) {
   if (!rawToken) {
     throw new AppError("LOGIN_REQUIRED", 401, "Refresh token is missing.");
   }
@@ -67,7 +71,7 @@ export async function rotateRefreshToken(rawToken) {
   });
 
   const { rawToken: newRefreshToken } = await createRefreshToken(storedToken.userId, storedToken.familyId);
-  const newAccessToken = generateAccessToken(storedToken.user);
+  const newAccessToken = generateAccessToken(storedToken.user, { isMobile });
 
   return {
     accessToken: newAccessToken,

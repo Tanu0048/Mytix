@@ -50,7 +50,8 @@ function isMobileClient(req) {
 }
 
 export const register = asyncHandler(async (req, res) => {
-  const result = await authService.registerUser(req.body);
+  const isMobile = isMobileClient(req);
+  const result = await authService.registerUser({ ...req.body, isMobile });
   attachAuthCookies(res, result.accessToken, result.refreshToken);
 
   const responseData = {
@@ -71,7 +72,8 @@ export const register = asyncHandler(async (req, res) => {
 });
 
 export const login = asyncHandler(async (req, res) => {
-  const result = await authService.loginUser(req.body);
+  const isMobile = isMobileClient(req);
+  const result = await authService.loginUser({ ...req.body, isMobile });
   attachAuthCookies(res, result.accessToken, result.refreshToken);
 
   const responseData = {
@@ -92,7 +94,8 @@ export const login = asyncHandler(async (req, res) => {
 });
 
 export const googleAuth = asyncHandler(async (req, res) => {
-  const result = await authService.loginWithGoogle(req.body);
+  const isMobile = isMobileClient(req);
+  const result = await authService.loginWithGoogle({ ...req.body, isMobile });
   attachAuthCookies(res, result.accessToken, result.refreshToken);
 
   const responseData = {
@@ -101,22 +104,21 @@ export const googleAuth = asyncHandler(async (req, res) => {
       email: result.user.email,
       name: result.user.name,
       role: result.user.role
-    }
-  };
-
-  if (isMobileClient(req)) {
-    responseData.tokens = {
+    },
+    tokens: {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken
-    };
-  }
+    },
+    token: result.accessToken
+  };
 
   res.status(200).json(responseData);
 });
 
 export const refresh = asyncHandler(async (req, res) => {
+  const isMobile = isMobileClient(req) || !!req.body?.refreshToken;
   const rawRefreshToken = req.cookies?.refresh_token || req.body?.refreshToken;
-  const result = await authService.refreshSession(rawRefreshToken);
+  const result = await authService.refreshSession(rawRefreshToken, isMobile);
   attachAuthCookies(res, result.accessToken, result.refreshToken);
 
   const responseData = {
@@ -125,15 +127,13 @@ export const refresh = asyncHandler(async (req, res) => {
       email: result.user.email,
       name: result.user.name,
       role: result.user.role
-    }
-  };
-
-  if (isMobileClient(req) || req.body?.refreshToken) {
-    responseData.tokens = {
+    },
+    tokens: {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken
-    };
-  }
+    },
+    token: result.accessToken
+  };
 
   res.status(200).json(responseData);
 });

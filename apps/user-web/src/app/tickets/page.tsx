@@ -27,8 +27,15 @@ export default function MyTicketsPage() {
 
   const fetchTickets = async () => {
     try {
+      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers: Record<string, string> = {};
+      if (storedToken) {
+        headers['Authorization'] = `Bearer ${storedToken}`;
+      }
+
       const res = await fetch(`${API_BASE}/me/tickets`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers
       });
 
       if (res.ok) {

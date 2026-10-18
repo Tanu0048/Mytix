@@ -48,6 +48,12 @@ export default function AuthPage() {
         throw new Error(data.error?.message || data.message || 'Authentication failed');
       }
 
+      if (data.tokens?.accessToken) {
+        localStorage.setItem('token', data.tokens.accessToken);
+      } else if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+
       // Session cookies are automatically stored by browser. Fetch authenticated user profile:
       await fetchUser();
       toast.success(isLogin ? 'Logged in successfully!' : 'Account created successfully!');

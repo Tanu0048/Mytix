@@ -6,7 +6,7 @@ import { authenticateWithGoogle } from "./googleAuth.service.js";
 import { AppError } from "../../utils/errors.js";
 import { PASSWORD_RESET_EXPIRATION_MINUTES } from "../../config/constants.js";
 
-export async function registerUser({ email, name, password, phone }) {
+export async function registerUser({ email, name, password, phone, isMobile = false }) {
   const existingUser = await prisma.user.findUnique({
     where: { email }
   });
@@ -27,7 +27,7 @@ export async function registerUser({ email, name, password, phone }) {
     }
   });
 
-  const accessToken = generateAccessToken(user);
+  const accessToken = generateAccessToken(user, { isMobile });
   const { rawToken: refreshToken } = await createRefreshToken(user.id);
 
   // Enqueue welcome email job
@@ -40,7 +40,7 @@ export async function registerUser({ email, name, password, phone }) {
   return { user, accessToken, refreshToken };
 }
 
-export async function loginUser({ email, password }) {
+export async function loginUser({ email, password, isMobile = false }) {
   const normalizedEmail = email ? email.toLowerCase().trim() : "";
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
@@ -60,16 +60,16 @@ export async function loginUser({ email, password }) {
     throw new AppError("ACCOUNT_SUSPENDED", 403, "Your organiser account is currently suspended. Please contact platform administration.");
   }
 
-  const accessToken = generateAccessToken(user);
+  const accessToken = generateAccessToken(user, { isMobile });
   const { rawToken: refreshToken } = await createRefreshToken(user.id);
 
   return { user, accessToken, refreshToken };
 }
 
-export async function loginWithGoogle({ idToken }) {
+export async function loginWithGoogle({ idToken, isMobile = false }) {
   const { user, isNewUser } = await authenticateWithGoogle(idToken);
 
-  const accessToken = generateAccessToken(user);
+  const accessToken = generateAccessToken(user, { isMobile });
   const { rawToken: refreshToken } = await createRefreshToken(user.id);
 
   if (isNewUser) {
@@ -83,8 +83,8 @@ export async function loginWithGoogle({ idToken }) {
   return { user, accessToken, refreshToken };
 }
 
-export async function refreshSession(rawRefreshToken) {
-  return rotateRefreshToken(rawRefreshToken);
+export async function refreshSession(rawRefreshToken, isMobile = false) {
+  return rotateRefreshToken(rawRefreshToken, isMobile);
 }
 
 export async function logoutSession(rawRefreshToken) {

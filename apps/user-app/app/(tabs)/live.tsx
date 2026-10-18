@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
 import { API_BASE } from '../../constants/api';
+import { fetchWithAuth } from '../../services/auth';
 
 export default function MyTicketsScreen() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function MyTicketsScreen() {
       const storedUser = await AsyncStorage.getItem('user');
       const storedToken = await AsyncStorage.getItem('token');
 
-      if (!storedUser || !storedToken) {
+      if (!storedUser) {
         setUser(null);
         setToken(null);
         setTickets([]);
@@ -40,22 +41,121 @@ export default function MyTicketsScreen() {
         return;
       }
 
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
       setToken(storedToken);
 
-      // Fetch tickets
-      const res = await fetch(`${API_BASE}/me/tickets`, {
-        headers: {
-          Authorization: `Bearer ${storedToken}`,
-        },
-      });
+      let fetchedTickets: any[] = [];
+      const ticketMap = new Map<string, any>();
 
-      if (res.ok) {
-        const data = await res.json();
-        setTickets(data.data || data.tickets || []);
-      } else {
-        setTickets([]);
+      // 1. Try backend API with auto-refreshing auth token
+      try {
+        const res = await fetchWithAuth(`${API_BASE}/me/tickets`);
+        if (res.ok) {
+          const data = await res.json();
+          const list = data.data || data.tickets || [];
+          if (Array.isArray(list)) {
+            list.forEach((t: any) => {
+              if (t && t.id) ticketMap.set(String(t.id), t);
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Backend tickets fetch failed, falling back to Supabase:', e);
       }
+
+      // 2. Direct Supabase REST fallback if backend returned 0 tickets or no token
+      if (ticketMap.size === 0) {
+        try {
+          const SUPABASE_URL = 'https://kfcocpzuzxpinqgnzhsq.supabase.co';
+          const ANON_KEY =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmY29jcHp1enhwaW5xZ256aHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODk2NjgsImV4cCI6MjEwNjc2NTY2OH0.tDVNBk_Pi88UHQoWFQZMgjADTZf6PhGYFWAuynzJfMk';
+
+          let resolvedUserId = parsedUser?.id;
+          const userEmail = (parsedUser?.email || '').toLowerCase().trim();
+
+          // Resolve userId from email if missing in stored user object
+          if (!resolvedUserId && userEmail) {
+            try {
+              const uRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/users?select=id&email=eq.${encodeURIComponent(userEmail)}`,
+                {
+                  headers: {
+                    apikey: ANON_KEY,
+                    Authorization: `Bearer ${ANON_KEY}`,
+                  },
+                }
+              );
+              if (uRes.ok) {
+                const uData = await uRes.json();
+                if (Array.isArray(uData) && uData.length > 0 && uData[0].id) {
+                  resolvedUserId = uData[0].id;
+                  parsedUser.id = resolvedUserId;
+                  await AsyncStorage.setItem('user', JSON.stringify(parsedUser));
+                  setUser(parsedUser);
+                }
+              }
+            } catch (err) {
+              console.warn('Supabase user resolution failed:', err);
+            }
+          }
+
+          // A) Fetch tickets by orders.user_id
+          if (resolvedUserId) {
+            try {
+              const sbRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/tickets?select=*,orders!inner(id,user_id,events(id,title,starts_at,venues(name,city)))&orders.user_id=eq.${resolvedUserId}&order=created_at.desc`,
+                {
+                  headers: {
+                    apikey: ANON_KEY,
+                    Authorization: `Bearer ${ANON_KEY}`,
+                  },
+                }
+              );
+              if (sbRes.ok) {
+                const sbData = await sbRes.json();
+                if (Array.isArray(sbData)) {
+                  sbData.forEach((t: any) => {
+                    if (t && t.id) ticketMap.set(String(t.id), t);
+                  });
+                }
+              }
+            } catch (err) {
+              console.warn('Supabase query by user_id failed:', err);
+            }
+          }
+
+          // B) Fetch tickets by attendee_email (e.g. if tickets assigned or purchased under this email)
+          if (userEmail) {
+            try {
+              const attRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/tickets?select=*,orders(id,user_id,events(id,title,starts_at,venues(name,city)))&attendee_email=eq.${encodeURIComponent(userEmail)}&order=created_at.desc`,
+                {
+                  headers: {
+                    apikey: ANON_KEY,
+                    Authorization: `Bearer ${ANON_KEY}`,
+                  },
+                }
+              );
+              if (attRes.ok) {
+                const attData = await attRes.json();
+                if (Array.isArray(attData)) {
+                  attData.forEach((t: any) => {
+                    if (t && t.id) ticketMap.set(String(t.id), t);
+                  });
+                }
+              }
+            } catch (err) {
+              console.warn('Supabase query by attendee_email failed:', err);
+            }
+          }
+        } catch (e) {
+          console.warn('Supabase direct tickets query failed:', e);
+        }
+      }
+
+      fetchedTickets = Array.from(ticketMap.values());
+      setTickets(fetchedTickets);
     } catch (err) {
       console.error('Failed to fetch tickets:', err);
       setTickets([]);
@@ -78,9 +178,11 @@ export default function MyTicketsScreen() {
   };
 
   const renderTicketCard = ({ item }: { item: any }) => {
-    const event = item.order?.event || item.event || {};
-    const venue = event.venue || {};
-    const eventDate = event.startsAt ? new Date(event.startsAt) : null;
+    const orderObj = item.order || item.orders || {};
+    const event = orderObj.event || orderObj.events || item.event || {};
+    const venue = event.venue || event.venues || {};
+    const rawDate = event.startsAt || event.starts_at;
+    const eventDate = rawDate ? new Date(rawDate) : null;
     const formattedDate = eventDate
       ? eventDate.toLocaleDateString('en-AU', {
           weekday: 'short',
@@ -97,20 +199,34 @@ export default function MyTicketsScreen() {
         })
       : 'TBA';
 
-    const qrData = item.qrTokenHash || item.id || 'MYTIX-PASS';
+    const qrData = item.qrTokenHash || item.qr_token_hash || item.id || 'MYTIX-PASS';
     const qrUri = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=4&data=${encodeURIComponent(
       qrData
     )}`;
 
     const shortId = (item.id || 'PASS').slice(0, 8).toUpperCase();
 
+    const rawRow = item.seatRow || item.seat_row;
+    const rawNum = item.seatNumber || item.seat_number;
+    const cleanRow = rawRow ? (rawRow.includes(':') ? rawRow.split(':')[1] : rawRow) : null;
+    const seatLabel = cleanRow && rawNum ? `${cleanRow}${rawNum}` : null;
+
     return (
       <View style={styles.ticketCard}>
         {/* Top Section */}
         <View style={styles.ticketTop}>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusBadgeText}>{item.status || 'CONFIRMED'}</Text>
+          <View style={styles.statusBadgeRow}>
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusBadgeText}>{item.status || 'CONFIRMED'}</Text>
+            </View>
+            {seatLabel ? (
+              <View style={styles.seatBadge}>
+                <Ionicons name="tablet-landscape-outline" size={11} color="#92400E" />
+                <Text style={styles.seatBadgeText}>SEAT {seatLabel}</Text>
+              </View>
+            ) : null}
           </View>
+
           <Text style={styles.ticketEventTitle} numberOfLines={2}>
             {event.title || 'Event Pass'}
           </Text>
@@ -142,7 +258,9 @@ export default function MyTicketsScreen() {
               <Ionicons name="person" size={14} color="#D97706" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.metaPrimary}>{item.attendeeName || user?.name || 'Attendee'}</Text>
+              <Text style={styles.metaPrimary}>
+                {item.attendeeName || item.attendee_name || user?.name || 'Attendee'}
+              </Text>
               <Text style={styles.ticketIdText}>Pass ID: {shortId}</Text>
             </View>
           </View>
@@ -214,17 +332,26 @@ export default function MyTicketsScreen() {
           <View style={styles.emptyIconCircle}>
             <Ionicons name="ticket-outline" size={44} color="#D97706" />
           </View>
-          <Text style={styles.emptyTitle}>No tickets yet</Text>
+          <Text style={styles.emptyTitle}>No tickets found</Text>
           <Text style={styles.emptySubtitle}>
-            Looks like you haven't booked any events yet. Explore what's happening and grab your tickets!
+            Signed in as {user.email || 'User'}. No tickets booked on this account yet.
           </Text>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => router.push('/(tabs)/movies')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.actionButtonText}>Explore Events</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.push('/(tabs)/movies')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.actionButtonText}>Explore Events</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#F1F5F9' }]}
+              onPress={onRefresh}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.actionButtonText, { color: '#0F172A' }]}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         /* Tickets List */
@@ -306,6 +433,12 @@ const styles = StyleSheet.create({
   ticketTop: {
     padding: 20,
   },
+  statusBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
   statusBadge: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -314,13 +447,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 20,
-    marginBottom: 12,
   },
   statusBadgeText: {
     fontSize: 10,
     fontWeight: '900',
     color: '#059669',
     letterSpacing: 0.8,
+  },
+  seatBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  seatBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#B45309',
+    letterSpacing: 0.5,
   },
   ticketEventTitle: {
     fontSize: 20,

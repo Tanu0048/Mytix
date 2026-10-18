@@ -61,14 +61,15 @@ export default function AuthScreen() {
 
     const endpoint = isLogin ? '/auth/login' : '/auth/register';
     const payload = isLogin
-      ? { email: email.trim().toLowerCase(), password }
-      : { name: name.trim(), email: email.trim().toLowerCase(), password };
+      ? { email: email.trim().toLowerCase(), password, isMobile: true, clientPlatform: 'mobile' }
+      : { name: name.trim(), email: email.trim().toLowerCase(), password, isMobile: true, clientPlatform: 'mobile' };
 
     try {
       const res = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-client-platform': 'mobile',
         },
         body: JSON.stringify(payload),
       });
@@ -80,10 +81,14 @@ export default function AuthScreen() {
       }
 
       const token = data.tokens?.accessToken || data.token || '';
+      const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
       const user = data.user || null;
 
       if (token) {
         await AsyncStorage.setItem('token', token);
+      }
+      if (refreshToken) {
+        await AsyncStorage.setItem('refreshToken', refreshToken);
       }
       if (user) {
         await AsyncStorage.setItem('user', JSON.stringify(user));
