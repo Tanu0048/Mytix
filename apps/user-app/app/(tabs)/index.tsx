@@ -13,6 +13,8 @@ import {
   Modal,
   RefreshControl,
   StatusBar,
+  Animated,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,6 +52,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
+  const citySlideAnim = useRef(new Animated.Value(400)).current;
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
 
   const bannerScrollRef = useRef<ScrollView>(null);
@@ -175,10 +178,32 @@ export default function HomeScreen() {
     loadData();
   };
 
+  const openCityModal = () => {
+    citySlideAnim.setValue(400);
+    setCityModalVisible(true);
+    Animated.spring(citySlideAnim, {
+      toValue: 0,
+      damping: 28,
+      mass: 0.8,
+      stiffness: 260,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeCityModal = () => {
+    Animated.timing(citySlideAnim, {
+      toValue: 400,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setCityModalVisible(false);
+    });
+  };
+
   const handleCitySelect = (city: string) => {
     LocationStore.setCity(city);
     setSelectedCity(city);
-    setCityModalVisible(false);
+    closeCityModal();
   };
 
   const handleSearchSubmit = () => {
@@ -240,7 +265,7 @@ export default function HomeScreen() {
         {/* Location Selector (White & Yellow) */}
         <TouchableOpacity
           style={styles.locationSelector}
-          onPress={() => setCityModalVisible(true)}
+          onPress={openCityModal}
           activeOpacity={0.8}
         >
           <Ionicons name="location-sharp" size={14} color="#D97706" />
@@ -813,22 +838,42 @@ export default function HomeScreen() {
       </ScrollView>
       )}
 
-      {/* Australian City Selection Modal (White Theme) */}
+      {/* Australian City Selection Modal (Clean Bottom Sheet) */}
       <Modal
         visible={cityModalVisible}
         transparent
-        animationType="slide"
-        onRequestClose={() => setCityModalVisible(false)}
+        animationType="fade"
+        onRequestClose={closeCityModal}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          {/* Backdrop click to dismiss */}
+          <TouchableWithoutFeedback onPress={closeCityModal}>
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                transform: [{ translateY: citySlideAnim }],
+              },
+            ]}
+          >
+            {/* Native style drag handle */}
+            <View style={styles.sheetHandleContainer}>
+              <View style={styles.sheetHandle} />
+            </View>
+
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalTitle}>Select Your City</Text>
                 <Text style={styles.modalSubtitle}>Filter events and shows near you</Text>
               </View>
-              <TouchableOpacity onPress={() => setCityModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#0F172A" />
+              <TouchableOpacity
+                onPress={closeCityModal}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close-circle" size={26} color="#94A3B8" />
               </TouchableOpacity>
             </View>
 
@@ -859,7 +904,7 @@ export default function HomeScreen() {
                 );
               })}
             </ScrollView>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -1363,11 +1408,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'flex-end',
   },
+  sheetHandleContainer: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    marginBottom: 8,
+  },
+  sheetHandle: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CBD5E1',
+  },
   modalContent: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
     maxHeight: '75%',
     borderTopWidth: 1,
     borderColor: '#F1F5F9',
