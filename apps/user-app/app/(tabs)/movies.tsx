@@ -568,6 +568,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   columnWrapper: {
+    flexDirection: 'row',
     gap: 12,
     marginBottom: 12,
     justifyContent: 'flex-start',
