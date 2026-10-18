@@ -326,13 +326,49 @@ export default function ExploreEventsScreen() {
 
       {/* Event Grid / List */}
       {loading ? (
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
-          {[1, 2, 3].map((i) => (
-            <View key={i} style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#F1F5F9' }}>
-              <Skeleton width="100%" height={170} borderRadius={12} style={{ marginBottom: 12 }} />
-              <Skeleton width="80%" height={18} borderRadius={4} style={{ marginBottom: 8 }} />
-              <Skeleton width="50%" height={14} borderRadius={4} style={{ marginBottom: 6 }} />
-              <Skeleton width="35%" height={14} borderRadius={4} />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+        >
+          {[0, 1, 2].map((rowIndex) => (
+            <View key={rowIndex} style={styles.columnWrapper}>
+              {[0, 1].map((colIndex) => (
+                <View key={colIndex} style={styles.card}>
+                  <View style={styles.posterContainer}>
+                    <Skeleton width="100%" height="100%" borderRadius={0} />
+                    {/* Category pill placeholder */}
+                    <View style={{ position: 'absolute', top: 8, left: 8 }}>
+                      <Skeleton width={62} height={18} borderRadius={6} />
+                    </View>
+                    {/* Bottom badges placeholder */}
+                    <View
+                      style={{
+                        position: 'absolute',
+                        bottom: 8,
+                        left: 8,
+                        right: 8,
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Skeleton width={58} height={18} borderRadius={6} />
+                      <Skeleton width={32} height={18} borderRadius={6} />
+                    </View>
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Skeleton width="88%" height={15} borderRadius={4} style={{ marginBottom: 7 }} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                      <Skeleton width={13} height={13} borderRadius={6} />
+                      <Skeleton width="72%" height={11} borderRadius={4} />
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 }}>
+                      <Skeleton width={13} height={13} borderRadius={6} />
+                      <Skeleton width="52%" height={11} borderRadius={4} />
+                    </View>
+                  </View>
+                </View>
+              ))}
             </View>
           ))}
         </ScrollView>
