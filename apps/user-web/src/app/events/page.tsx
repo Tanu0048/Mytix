@@ -17,17 +17,6 @@ function getFullImageUrl(path: string | undefined): string {
   return `${BACKEND_HOST}${path}`;
 }
 
-const AUSTRALIAN_STATES = [
-  { id: 'NSW', name: 'New South Wales' },
-  { id: 'VIC', name: 'Victoria' },
-  { id: 'QLD', name: 'Queensland' },
-  { id: 'WA', name: 'Western Australia' },
-  { id: 'SA', name: 'South Australia' },
-  { id: 'TAS', name: 'Tasmania' },
-  { id: 'ACT', name: 'Australian Capital Territory' },
-  { id: 'NT', name: 'Northern Territory' },
-];
-
 function EventsExploreContent() {
   const router = useRouter();
   const searchParams = useSearchParams();

@@ -27,17 +27,6 @@ const BANNER_CARD_WIDTH = width - 32;
 const BANNER_CARD_HEIGHT = Math.round(BANNER_CARD_WIDTH * (9 / 16));
 
 import { API_BASE, BACKEND_HOST } from '../../constants/api';
-const AUSTRALIAN_CITIES = [
-  'All of Australia',
-  'Sydney',
-  'Melbourne',
-  'Brisbane',
-  'Perth',
-  'Adelaide',
-  'Gold Coast',
-  'Canberra',
-  'Hobart',
-];
 
 function getFullImageUrl(path: string | undefined): string {
   if (!path) return 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80';
@@ -53,7 +42,7 @@ export default function HomeScreen() {
   const [featuredEvents, setFeaturedEvents] = useState<any[]>([]);
   const [trendingEvents, setTrendingEvents] = useState<any[]>([]);
   const [selectedCity, setSelectedCity] = useState<string>(LocationStore.getCity());
-  const [availableCities, setAvailableCities] = useState<string[]>(AUSTRALIAN_CITIES);
+  const [availableCities, setAvailableCities] = useState<string[]>(['All Cities']);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -96,13 +85,26 @@ export default function HomeScreen() {
         const hData = await homeRes.json();
         setFeaturedEvents(hData.featuredEvents || []);
         setTrendingEvents(hData.trendingEvents || []);
-        if (hData.cities && Array.isArray(hData.cities) && hData.cities.length > 0) {
-          const merged = Array.from(new Set(['All of Australia', ...hData.cities]));
-          setAvailableCities(merged);
+
+        // Dynamically extract cities configured by admin across venues & events
+        const dynamicCities = [
+          ...(hData.cities || []),
+          ...(hData.featuredEvents || []).map((e: any) => e.venue?.city),
+          ...(hData.trendingEvents || []).map((e: any) => e.venue?.city),
+        ]
+          .map((c: string) => c?.trim())
+          .filter(Boolean);
+
+        const uniqueCities = Array.from(new Set(dynamicCities)).sort();
+        if (uniqueCities.length > 0) {
+          setAvailableCities(['All Cities', ...uniqueCities]);
+        } else {
+          setAvailableCities(['All Cities']);
         }
       } else {
         setFeaturedEvents([]);
         setTrendingEvents([]);
+        setAvailableCities(['All Cities']);
       }
     } catch (err) {
       console.error('Error loading home data:', err);
@@ -139,9 +141,8 @@ export default function HomeScreen() {
   };
 
   const handleCitySelect = (city: string) => {
-    const val = city === 'All of Australia' ? 'All Cities' : city;
-    LocationStore.setCity(val);
-    setSelectedCity(val);
+    LocationStore.setCity(city);
+    setSelectedCity(city);
     setCityModalVisible(false);
   };
 
@@ -618,9 +619,9 @@ export default function HomeScreen() {
             <ScrollView style={styles.cityList} showsVerticalScrollIndicator={false}>
               {availableCities.map((city) => {
                 const isSelected =
-                  (city === 'All of Australia' &&
-                    (selectedCity === 'All Cities' || selectedCity === 'All of Australia')) ||
-                  selectedCity === city;
+                  (city === 'All Cities' &&
+                    (!selectedCity || selectedCity === 'All Cities' || selectedCity === 'All of Australia')) ||
+                  selectedCity?.toLowerCase() === city.toLowerCase();
                 return (
                   <TouchableOpacity
                     key={city}

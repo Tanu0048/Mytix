@@ -27,23 +27,12 @@ function getFullImageUrl(path: string | undefined): string {
   return `${BACKEND_HOST}${path}`;
 }
 
-const AUSTRALIAN_STATES = [
-  { id: '', name: 'All States' },
-  { id: 'NSW', name: 'NSW' },
-  { id: 'VIC', name: 'VIC' },
-  { id: 'QLD', name: 'QLD' },
-  { id: 'WA', name: 'WA' },
-  { id: 'SA', name: 'SA' },
-  { id: 'TAS', name: 'TAS' },
-  { id: 'ACT', name: 'ACT' },
-  { id: 'NT', name: 'NT' },
-];
-
 export default function ExploreEventsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ q?: string; category?: string }>();
 
   const [categories, setCategories] = useState<string[]>(['All']);
+  const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState(params.q || '');
   const [selectedCategory, setSelectedCategory] = useState(params.category || 'All');
   const [selectedState, setSelectedState] = useState('');
@@ -87,6 +76,13 @@ export default function ExploreEventsScreen() {
           eventsArray = Array.isArray(data) ? data : (data.events || data.data || []);
         }
       }
+
+      // Extract unique states configured by admin across venues
+      const rawStates = eventsArray
+        .map((e: any) => e.venue?.state?.trim().toUpperCase())
+        .filter(Boolean);
+      const uniqueStates = Array.from(new Set(rawStates)).sort() as string[];
+      setAvailableStates(uniqueStates);
 
       // Filter by city
       if (selectedCity && selectedCity !== 'All Cities' && selectedCity !== 'All of Australia') {
@@ -301,27 +297,37 @@ export default function ExploreEventsScreen() {
           })}
         </ScrollView>
 
-        {/* Australian States Pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.filterScroll, { paddingTop: 6, paddingBottom: 10 }]}
-        >
-          {AUSTRALIAN_STATES.map(st => {
-            const isSelected = selectedState === st.id;
-            return (
-              <TouchableOpacity
-                key={st.name}
-                style={[styles.stateChip, isSelected && styles.stateChipActive]}
-                onPress={() => setSelectedState(st.id)}
-              >
-                <Text style={[styles.stateChipText, isSelected && styles.stateChipTextActive]}>
-                  {st.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        {/* Dynamic States Pills (only shown if admin's events/venues have states) */}
+        {availableStates.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[styles.filterScroll, { paddingTop: 6, paddingBottom: 10 }]}
+          >
+            <TouchableOpacity
+              style={[styles.stateChip, selectedState === '' && styles.stateChipActive]}
+              onPress={() => setSelectedState('')}
+            >
+              <Text style={[styles.stateChipText, selectedState === '' && styles.stateChipTextActive]}>
+                All States
+              </Text>
+            </TouchableOpacity>
+            {availableStates.map(st => {
+              const isSelected = selectedState === st;
+              return (
+                <TouchableOpacity
+                  key={st}
+                  style={[styles.stateChip, isSelected && styles.stateChipActive]}
+                  onPress={() => setSelectedState(st)}
+                >
+                  <Text style={[styles.stateChipText, isSelected && styles.stateChipTextActive]}>
+                    {st}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
       </View>
 
       {/* Event Grid / List */}

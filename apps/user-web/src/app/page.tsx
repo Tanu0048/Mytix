@@ -955,24 +955,13 @@ export default function Home() {
       </div>
 
       {/* Browse by city */}
-      <div className="max-w-7xl mx-auto px-4 mb-16">
-        <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Browse by city</h2>
-        <p className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-8">Click a city to explore local concerts & festivals</p>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {(() => {
-            const defaults = ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Gold Coast', 'Canberra', 'Hobart'];
-            const all = [...availableCities, ...defaults];
-            const seen = new Set<string>();
-            const displayCities = all.filter((c) => {
-              const lower = c?.trim().toLowerCase();
-              if (!lower || seen.has(lower)) return false;
-              seen.add(lower);
-              return true;
-            });
-
-            return displayCities.map((city, i) => {
-              const isLive = availableCities.some(ac => ac.toLowerCase() === city.toLowerCase());
+      {availableCities.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 mb-16">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Browse by city</h2>
+          <p className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-8">Click a city to explore local concerts & festivals</p>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {availableCities.map((city, i) => {
               const isSelected = selectedCity.toLowerCase() === city.toLowerCase();
 
               return (
@@ -992,21 +981,19 @@ export default function Home() {
                   <div className="relative z-10">
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-slate-900 text-base">{city}</h3>
-                      {isLive && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Active live events"></span>
-                      )}
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Active live events"></span>
                     </div>
                     <p className="text-xs text-slate-500 font-medium mt-1">
-                      {isLive ? 'Live events now' : 'Browse events'} <ChevronRight className="inline w-3 h-3" />
+                      Live events now <ChevronRight className="inline w-3 h-3" />
                     </p>
                   </div>
                   <MapPin className="absolute -right-2.5 -bottom-2.5 w-24 h-24 text-slate-900/5 transform -rotate-12 pointer-events-none" />
                 </button>
               );
-            });
-          })()}
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Coming up list - High-End Luxury Live Tour Dates */}
       <div className="max-w-7xl mx-auto px-4 mb-20">
