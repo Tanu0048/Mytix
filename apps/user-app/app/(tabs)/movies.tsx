@@ -13,6 +13,7 @@ import {
   ScrollView,
   RefreshControl,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,9 @@ import { LocationStore } from '../../services/locationStore';
 import Skeleton from '../../components/Skeleton';
 
 import { API_BASE, BACKEND_HOST } from '../../constants/api';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const GRID_CARD_WIDTH = (SCREEN_WIDTH - 36) / 2;
 
 function getFullImageUrl(path: string | undefined): string {
   if (!path) return 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&q=80';
@@ -150,6 +154,7 @@ export default function ExploreEventsScreen() {
   };
 
   const renderEventCard = ({ item }: { item: any }) => {
+    const hasAvailabilityInfo = item.ticketTypes?.some((t: any) => typeof t.available === 'number');
     const totalAvailable = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
     const totalCapacity = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.quantity ?? 0), 0) || 100;
     const minPrice = item.ticketTypes?.length
@@ -159,7 +164,7 @@ export default function ExploreEventsScreen() {
     const startsAt = (item.startsAt || item.startDate) ? new Date(item.startsAt || item.startDate) : null;
     const now = new Date();
     const isBookingClosed = startsAt ? now >= new Date(startsAt.getTime() - 60 * 60 * 1000) : false;
-    const isSoldOut = totalAvailable <= 0;
+    const isSoldOut = hasAvailabilityInfo ? totalAvailable <= 0 : false;
 
     const formattedDate = startsAt
       ? startsAt.toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -194,12 +199,17 @@ export default function ExploreEventsScreen() {
               <View style={[styles.badgePill, { backgroundColor: 'rgba(220, 38, 38, 0.92)' }]}>
                 <Text style={styles.badgePillText}>SOLD OUT</Text>
               </View>
-            ) : (
+            ) : hasAvailabilityInfo ? (
               <View style={[styles.badgePill, { backgroundColor: 'rgba(15, 23, 42, 0.85)' }]}>
                 <View style={[styles.statusDot, { backgroundColor: totalAvailable <= 10 ? '#FB923C' : '#10B981' }]} />
                 <Text style={styles.badgePillText}>
                   {totalAvailable}/{totalCapacity}
                 </Text>
+              </View>
+            ) : (
+              <View style={[styles.badgePill, { backgroundColor: 'rgba(15, 23, 42, 0.85)' }]}>
+                <View style={[styles.statusDot, { backgroundColor: '#10B981' }]} />
+                <Text style={styles.badgePillText}>AVAILABLE</Text>
               </View>
             )}
 
@@ -560,9 +570,11 @@ const styles = StyleSheet.create({
   columnWrapper: {
     gap: 12,
     marginBottom: 12,
+    justifyContent: 'flex-start',
   },
   card: {
-    flex: 1,
+    width: GRID_CARD_WIDTH,
+    maxWidth: GRID_CARD_WIDTH,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     overflow: 'hidden',

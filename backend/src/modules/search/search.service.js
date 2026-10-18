@@ -55,8 +55,8 @@ export async function searchAll(rawQuery) {
       },
       take: 10,
       include: {
-        venue: { select: { name: true, city: true } },
-        ticketTypes: { select: { priceCents: true } }
+        venue: { select: { name: true, city: true, state: true } },
+        ticketTypes: { select: { priceCents: true, available: true, quantity: true, sold: true } }
       }
     }),
 
