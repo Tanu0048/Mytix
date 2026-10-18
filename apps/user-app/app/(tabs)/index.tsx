@@ -567,7 +567,7 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.verticalList}>
-              {displayTrending.map((event) => {
+              {displayTrending.slice(0, 6).map((event) => {
                 const minPrice = event.ticketTypes?.length
                   ? Math.min(...event.ticketTypes.map((t: any) => t.priceCents || 0)) / 100
                   : 0;
@@ -603,6 +603,21 @@ export default function HomeScreen() {
                 );
               })}
             </View>
+
+            {displayTrending.length > 6 && (
+              <View style={{ paddingHorizontal: 16 }}>
+                <TouchableOpacity
+                  style={styles.viewMoreEventsBtn}
+                  onPress={() => router.push('/(tabs)/movies')}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.viewMoreEventsBtnText}>
+                    View all {displayTrending.length} trending shows
+                  </Text>
+                  <Ionicons name="arrow-forward" size={15} color="#0F172A" />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
 
@@ -673,7 +688,7 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.discoveryGrid}>
-              {filterByCity(allEvents).map((event: any) => {
+              {filterByCity(allEvents).slice(0, 6).map((event: any) => {
                 const minPrice = event.ticketTypes?.length
                   ? Math.min(...event.ticketTypes.map((t: any) => t.priceCents || 0)) / 100
                   : 0;
@@ -728,6 +743,21 @@ export default function HomeScreen() {
                 );
               })}
             </View>
+
+            {filterByCity(allEvents).length > 6 && (
+              <View style={{ paddingHorizontal: 16 }}>
+                <TouchableOpacity
+                  style={styles.viewMoreEventsBtn}
+                  onPress={() => router.push('/(tabs)/movies')}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.viewMoreEventsBtnText}>
+                    View all {filterByCity(allEvents).length} upcoming events
+                  </Text>
+                  <Ionicons name="arrow-forward" size={15} color="#0F172A" />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
 
@@ -1536,5 +1566,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
     color: '#B45309',
+  },
+  viewMoreEventsBtn: {
+    marginTop: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  viewMoreEventsBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
   },
 });
