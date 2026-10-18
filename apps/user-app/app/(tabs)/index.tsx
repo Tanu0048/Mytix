@@ -237,12 +237,19 @@ export default function HomeScreen() {
     );
   };
 
+  const isSpecificCitySelected =
+    Boolean(selectedCity && selectedCity !== 'All Cities' && selectedCity !== 'All of Australia');
   const filteredFeatured = filterByCity(featuredEvents);
   const filteredTrending = filterByCity(trendingEvents);
+  const filteredUpcomingEvents = filterByCity(allEvents);
+  const hasEventsInCity =
+    filteredFeatured.length > 0 || filteredTrending.length > 0 || filteredUpcomingEvents.length > 0;
+  const showCityEmptyState = isSpecificCitySelected && !hasEventsInCity;
+
   const displayTrending =
     filteredTrending.length > 0
       ? filteredTrending
-      : filterByCity(allEvents.length > 0 ? allEvents : featuredEvents);
+      : (hasEventsInCity ? filteredUpcomingEvents : trendingEvents);
   const filteredVenues =
     !selectedCity || selectedCity === 'All Cities' || selectedCity === 'All of Australia'
       ? venues
@@ -443,36 +450,63 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Featured Events Horizontal Carousel */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <View>
-              <Text style={styles.sectionHeading}>Featured Events</Text>
-              <Text style={styles.sectionSubheading}>
-                {selectedCity && selectedCity !== 'All Cities' && selectedCity !== 'All of Australia'
-                  ? `Popular shows in ${selectedCity}`
-                  : 'Handpicked highlights across Australia'}
-              </Text>
+        {/* If user selected a city with 0 events, show a clean Australian Empty State Card with 1-tap reset */}
+        {showCityEmptyState && (
+          <View style={styles.cityEmptyContainer}>
+            <View style={styles.cityEmptyIconBox}>
+              <Ionicons name="location-outline" size={28} color="#D97706" />
             </View>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/movies')}>
-              <Text style={styles.seeAllText}>See All</Text>
+            <Text style={styles.cityEmptyTitle}>No Live Shows in {selectedCity} Yet</Text>
+            <Text style={styles.cityEmptySubtitle}>
+              We don't have any concerts or events scheduled in {selectedCity} right now. Explore top shows across Australia or switch to another city.
+            </Text>
+            <TouchableOpacity
+              style={styles.cityEmptyResetBtn}
+              onPress={() => handleCitySelect('All Cities')}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="globe-outline" size={16} color="#0F172A" />
+              <Text style={styles.cityEmptyResetBtnText}>Explore All Australian Events</Text>
             </TouchableOpacity>
           </View>
+        )}
 
-          {filteredFeatured.length === 0 ? (
-            <View style={styles.emptyInlineCard}>
-              <Ionicons name="sparkles-outline" size={24} color="#94A3B8" />
-              <Text style={styles.emptyInlineText}>
-                No featured events in this city right now.
-              </Text>
+        {/* Featured Events Horizontal Carousel */}
+        {(filteredFeatured.length > 0 || showCityEmptyState) && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <View>
+                <Text style={styles.sectionHeading}>
+                  {showCityEmptyState
+                    ? 'Popular Across Australia'
+                    : isSpecificCitySelected
+                    ? `Featured in ${selectedCity}`
+                    : 'Featured Events'}
+                </Text>
+                <Text style={styles.sectionSubheading}>
+                  {showCityEmptyState
+                    ? 'Top verified live shows you can attend across Australian capitals'
+                    : isSpecificCitySelected
+                    ? `Popular verified shows in ${selectedCity}`
+                    : 'Handpicked highlights across Australia'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/movies')}>
+                <Text style={styles.seeAllText}>See All</Text>
+              </TouchableOpacity>
             </View>
-          ) : (
+
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalEventsScroll}
             >
-              {filteredFeatured.map((event) => {
+              {(filteredFeatured.length > 0
+                ? filteredFeatured
+                : featuredEvents.length > 0
+                ? featuredEvents
+                : allEvents
+              ).map((event) => {
                 const totalAvail =
                   event.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
                 const minPrice = event.ticketTypes?.length
@@ -532,8 +566,8 @@ export default function HomeScreen() {
                 );
               })}
             </ScrollView>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* Why Choose Mytix Trust Banner (Warm Light Yellow & White) */}
         <View style={styles.trustBanner}>
@@ -700,11 +734,13 @@ export default function HomeScreen() {
         )}
 
         {/* All Live Shows Discovery Grid */}
-        {allEvents.length > 0 && (
+        {filteredUpcomingEvents.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <View>
-                <Text style={styles.sectionHeading}>Upcoming Live Shows</Text>
+                <Text style={styles.sectionHeading}>
+                  {isSpecificCitySelected ? `Live Shows in ${selectedCity}` : 'Upcoming Live Shows'}
+                </Text>
                 <Text style={styles.sectionSubheading}>Instant booking with verified digital passes</Text>
               </View>
               <TouchableOpacity onPress={() => router.push('/(tabs)/movies')}>
@@ -713,7 +749,7 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.discoveryGrid}>
-              {filterByCity(allEvents).slice(0, 6).map((event: any) => {
+              {filteredUpcomingEvents.slice(0, 6).map((event: any) => {
                 const minPrice = event.ticketTypes?.length
                   ? Math.min(...event.ticketTypes.map((t: any) => t.priceCents || 0)) / 100
                   : 0;
@@ -769,7 +805,7 @@ export default function HomeScreen() {
               })}
             </View>
 
-            {filterByCity(allEvents).length > 6 && (
+            {filteredUpcomingEvents.length > 6 && (
               <View style={{ paddingHorizontal: 16 }}>
                 <TouchableOpacity
                   style={styles.viewMoreEventsBtn}
@@ -777,7 +813,7 @@ export default function HomeScreen() {
                   activeOpacity={0.85}
                 >
                   <Text style={styles.viewMoreEventsBtnText}>
-                    View all {filterByCity(allEvents).length} upcoming events
+                    View all {filteredUpcomingEvents.length} upcoming events
                   </Text>
                   <Ionicons name="arrow-forward" size={15} color="#0F172A" />
                 </TouchableOpacity>
@@ -1196,6 +1232,67 @@ const styles = StyleSheet.create({
   emptyInlineText: {
     fontSize: 12,
     color: '#64748B',
+  },
+  cityEmptyContainer: {
+    marginHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 20,
+    backgroundColor: '#FFFBEB',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+    shadowColor: '#D97706',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cityEmptyIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  cityEmptyTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#92400E',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  cityEmptySubtitle: {
+    fontSize: 12,
+    color: '#78350F',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 14,
+    paddingHorizontal: 8,
+  },
+  cityEmptyResetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F6C636',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cityEmptyResetBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
   },
   trustBanner: {
     marginHorizontal: 16,
