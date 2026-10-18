@@ -11,13 +11,14 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
 import { API_BASE } from '../../constants/api';
-import { fetchWithAuth, logoutUser } from '../../services/auth';
+import { fetchWithAuth, logoutUser, fetchFreshUserProfile } from '../../services/auth';
 
 const PROFILE_FAQS = [
   {
@@ -46,30 +47,46 @@ export default function ProfileScreen() {
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      const loadProfile = async () => {
+  const loadProfile = async (isManualRefresh = false) => {
+    if (isManualRefresh) setRefreshing(true);
+    try {
+      const storedUser = await AsyncStorage.getItem('user');
+      const storedToken = await AsyncStorage.getItem('token');
+      if (storedUser && storedToken) {
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        setToken(storedToken);
+        setName(parsed.name || '');
+
+        // Fetch latest profile from backend server so edits made on website sync immediately
         try {
-          const storedUser = await AsyncStorage.getItem('user');
-          const storedToken = await AsyncStorage.getItem('token');
-          if (storedUser && storedToken) {
-            const parsed = JSON.parse(storedUser);
-            setUser(parsed);
-            setToken(storedToken);
-            setName(parsed.name || '');
-          } else {
-            setUser(null);
-            setToken(null);
+          const freshUser = await fetchFreshUserProfile();
+          if (freshUser) {
+            setUser(freshUser);
+            setName(freshUser.name || '');
           }
         } catch {
-          setUser(null);
-          setToken(null);
+          // Fallback to cached user on network error
         }
-      };
-      loadProfile();
+      } else {
+        setUser(null);
+        setToken(null);
+      }
+    } catch {
+      setUser(null);
+      setToken(null);
+    } finally {
+      if (isManualRefresh) setRefreshing(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile(false);
     }, [])
   );
 
@@ -90,9 +107,11 @@ export default function ProfileScreen() {
 
       if (res.ok) {
         const data = await res.json();
-        const updatedUser = data.user || { ...user, name: name.trim() };
-        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
-        setUser(updatedUser);
+        const updatedUser = data.user || data.data || data || { ...user, name: name.trim() };
+        const mergedUser = { ...user, ...updatedUser, name: name.trim() };
+        await AsyncStorage.setItem('user', JSON.stringify(mergedUser));
+        setUser(mergedUser);
+        setName(mergedUser.name || '');
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
         Alert.alert('Success', 'Profile updated successfully!');
@@ -183,6 +202,16 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          user ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadProfile(true)}
+              tintColor="#D97706"
+              colors={['#D97706']}
+            />
+          ) : undefined
+        }
       >
         {user ? (
           /* ================= LOGGED IN VIEW ================= */

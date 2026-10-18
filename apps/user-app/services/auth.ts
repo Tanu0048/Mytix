@@ -158,3 +158,28 @@ export async function logoutUser(): Promise<void> {
     await AsyncStorage.multiRemove(['user', 'token', 'refreshToken']);
   }
 }
+
+/**
+ * Fetches the latest user profile from GET /me, updates AsyncStorage('user'),
+ * and returns the latest merged user profile.
+ */
+export async function fetchFreshUserProfile(): Promise<any | null> {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/me`);
+    if (res.ok) {
+      const data = await res.json();
+      const freshUser = data.data || data.user || data;
+      if (freshUser && (freshUser.id || freshUser.email)) {
+        const storedUser = await AsyncStorage.getItem('user');
+        const existing = storedUser ? JSON.parse(storedUser) : {};
+        const mergedUser = { ...existing, ...freshUser };
+        await AsyncStorage.setItem('user', JSON.stringify(mergedUser));
+        return mergedUser;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.warn('Silent user profile sync failed:', err);
+    return null;
+  }
+}

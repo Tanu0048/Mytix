@@ -17,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
 import { API_BASE } from '../../constants/api';
-import { fetchWithAuth } from '../../services/auth';
+import { fetchWithAuth, fetchFreshUserProfile } from '../../services/auth';
 
 export default function MyTicketsScreen() {
   const router = useRouter();
@@ -44,6 +44,11 @@ export default function MyTicketsScreen() {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
       setToken(storedToken);
+
+      // Silently sync fresh user profile in background so edits reflect across tabs
+      fetchFreshUserProfile().then((fresh) => {
+        if (fresh) setUser(fresh);
+      }).catch(() => {});
 
       let fetchedTickets: any[] = [];
       const ticketMap = new Map<string, any>();

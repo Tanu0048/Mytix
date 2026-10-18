@@ -50,9 +50,17 @@ export default function ProfilePage() {
 
     try {
       setSaving(true);
+      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (storedToken) {
+        headers['Authorization'] = `Bearer ${storedToken}`;
+      }
+
       const res = await fetch(`${API_BASE}/me`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify({ 
           name: trimmedName,
@@ -61,7 +69,7 @@ export default function ProfilePage() {
 
       if (res.ok) {
         const updated = await res.json();
-        setUser(updated);
+        setUser(updated.data || updated.user || updated);
         toast.success('Profile updated successfully!');
       } else {
         const err = await res.json().catch(() => ({}));
@@ -83,8 +91,15 @@ export default function ProfilePage() {
   const handleDeleteAccount = async () => {
     try {
       setDeleting(true);
+      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const headers: Record<string, string> = {};
+      if (storedToken) {
+        headers['Authorization'] = `Bearer ${storedToken}`;
+      }
+
       const res = await fetch(`${API_BASE}/me`, {
         method: 'DELETE',
+        headers,
         credentials: 'include',
       });
 
