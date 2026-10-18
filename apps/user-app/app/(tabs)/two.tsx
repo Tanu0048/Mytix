@@ -11,7 +11,6 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
-  Modal,
   Linking,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -50,8 +49,6 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useFocusEffect(
@@ -129,6 +126,21 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Delete your account?',
+      'Are you sure? All personal details and tickets will be permanently removed. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Delete',
+          style: 'destructive',
+          onPress: handleDeleteAccount,
+        },
+      ]
+    );
+  };
+
   const handleDeleteAccount = async () => {
     setDeleting(true);
     try {
@@ -140,7 +152,6 @@ export default function ProfileScreen() {
         await logoutUser();
         setUser(null);
         setToken(null);
-        setIsDeleteModalOpen(false);
         Alert.alert('Account Deleted', 'Your account and personal data have been removed.');
       } else {
         Alert.alert('Error', 'Failed to delete account. Please try again.');
@@ -401,7 +412,7 @@ export default function ProfileScreen() {
                 </View>
                 <TouchableOpacity
                   style={styles.deleteBtn}
-                  onPress={() => setIsDeleteModalOpen(true)}
+                  onPress={confirmDeleteAccount}
                   activeOpacity={0.8}
                 >
                   <Ionicons name="trash-outline" size={16} color="#DC2626" />
@@ -496,47 +507,6 @@ export default function ProfileScreen() {
           </View>
         )}
       </ScrollView>
-
-      {/* Delete Account Confirmation Modal */}
-      <Modal
-        visible={isDeleteModalOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsDeleteModalOpen(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalIconBox}>
-              <Ionicons name="warning-outline" size={32} color="#DC2626" />
-            </View>
-            <Text style={styles.modalTitle}>Delete your account?</Text>
-            <Text style={styles.modalMessage}>
-              Are you sure? All personal details and tickets will be permanently removed. This action
-              cannot be undone.
-            </Text>
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setIsDeleteModalOpen(false)}
-                disabled={deleting}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalConfirmBtn}
-                onPress={handleDeleteAccount}
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.modalConfirmText}>Yes, Delete</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }

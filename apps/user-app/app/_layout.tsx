@@ -7,6 +7,7 @@ import { View, Image, Animated, StyleSheet, StatusBar } from 'react-native';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { CustomAlertModal } from '@/components/CustomAlert';
 
 const SPLASH_IMAGE = require('../assets/images/splash-screen.png');
 
@@ -82,6 +83,7 @@ export default function RootLayout() {
   return (
     <View style={styles.rootContainer}>
       <RootLayoutNav />
+      <CustomAlertModal />
 
       {isSplashVisible && (
         <Animated.View
