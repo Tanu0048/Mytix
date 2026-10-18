@@ -41,6 +41,24 @@ export default function ExploreEventsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Sync category param from navigation
+  useEffect(() => {
+    if (params.category) {
+      const cat = Array.isArray(params.category) ? params.category[0] : params.category;
+      if (cat) {
+        setSelectedCategory(cat);
+      }
+    }
+  }, [params.category]);
+
+  // Sync search param from navigation
+  useEffect(() => {
+    if (params.q !== undefined) {
+      const q = Array.isArray(params.q) ? params.q[0] : params.q;
+      setSearchQuery(q);
+    }
+  }, [params.q]);
+
   useEffect(() => {
     LocationStore.init().then(city => setSelectedCity(city));
     const unsubscribe = LocationStore.subscribe(city => {
@@ -99,9 +117,9 @@ export default function ExploreEventsScreen() {
       }
 
       // Filter by category
-      if (selectedCategory && selectedCategory !== 'All') {
+      if (selectedCategory && selectedCategory.trim().toLowerCase() !== 'all') {
         eventsArray = eventsArray.filter((e: any) =>
-          e.category?.toLowerCase() === selectedCategory.toLowerCase()
+          e.category?.trim().toLowerCase() === selectedCategory.trim().toLowerCase()
         );
       }
 
@@ -282,7 +300,7 @@ export default function ExploreEventsScreen() {
           contentContainerStyle={styles.filterScroll}
         >
           {categories.map(cat => {
-            const isSelected = selectedCategory === cat;
+            const isSelected = selectedCategory?.trim().toLowerCase() === cat.trim().toLowerCase();
             return (
               <TouchableOpacity
                 key={cat}
