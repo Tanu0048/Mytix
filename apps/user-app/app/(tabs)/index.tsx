@@ -212,14 +212,11 @@ export default function HomeScreen() {
             <Skeleton width="100%" height={BANNER_CARD_HEIGHT} borderRadius={18} />
           </View>
           {/* Categories chips skeleton */}
-          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <View key={i} style={{ alignItems: 'center', width: 64 }}>
-                <Skeleton width={54} height={54} borderRadius={27} style={{ marginBottom: 6 }} />
-                <Skeleton width={44} height={10} borderRadius={4} />
-              </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, marginBottom: 24 }}>
+            {[90, 110, 95, 120, 85].map((w, idx) => (
+              <Skeleton key={idx} width={w} height={38} borderRadius={22} />
             ))}
-          </View>
+          </ScrollView>
           {/* Section 1 header skeleton */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
             <Skeleton width={160} height={20} borderRadius={6} />

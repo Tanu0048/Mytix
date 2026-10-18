@@ -41,16 +41,16 @@ export default function RootLayout() {
       // Hide native splash immediately so our custom splash takes over seamlessly
       SplashScreen.hideAsync().catch(() => {});
 
-      // Keep splash image visible for 3 seconds, then smoothly fade out
+      // Keep splash image visible briefly for a smooth transition, then smoothly fade out
       const timer = setTimeout(() => {
         Animated.timing(splashFadeAnim, {
           toValue: 0,
-          duration: 500,
+          duration: 400,
           useNativeDriver: true,
         }).start(() => {
           setIsSplashVisible(false);
         });
-      }, 3000);
+      }, 500);
 
       return () => clearTimeout(timer);
     }

@@ -495,23 +495,23 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   categoryChipActive: {
-    backgroundColor: '#F6C636',
-    borderColor: '#F6C636',
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
   },
   categoryChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: '#64748B',
   },
   categoryChipTextActive: {
-    color: '#0F172A',
+    color: '#F6C636',
     fontWeight: '800',
   },
   stateChip: {
     paddingHorizontal: 11,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -525,7 +525,8 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   stateChipTextActive: {
-    color: '#FFFFFF',
+    color: '#F6C636',
+    fontWeight: '800',
   },
   listContent: {
     padding: 12,

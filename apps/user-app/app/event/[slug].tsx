@@ -12,6 +12,7 @@ import {
   Platform,
   StatusBar,
   Alert,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,6 +42,10 @@ export default function EventDetailScreen() {
   const [bookedSeats, setBookedSeats] = useState<string[]>([]);
   const [heldSeats, setHeldSeats] = useState<string[]>([]);
   const [holding, setHolding] = useState(false);
+
+  // General Admission States
+  const [selectedTierId, setSelectedTierId] = useState<string>('');
+  const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
 
   useEffect(() => {
     let seatInterval: any = null;
@@ -79,6 +84,12 @@ export default function EventDetailScreen() {
         }
 
         setEvent(data);
+        if (data?.ticketTypes?.length) {
+          const firstAvailable = data.ticketTypes.find((t: any) => (t.available ?? 0) > 0) || data.ticketTypes[0];
+          if (firstAvailable?.id) {
+            setSelectedTierId(firstAvailable.id);
+          }
+        }
 
         // If reserved seating, fetch booked & held seats
         if (data && data.seatingType === 'RESERVED') {
@@ -270,6 +281,13 @@ export default function EventDetailScreen() {
     return sum + (tier ? (tier.priceCents || 0) / 100 : 0);
   }, 0);
 
+  const activeTier =
+    event?.ticketTypes?.find((t: any) => t.id === selectedTierId) ||
+    event?.ticketTypes?.find((t: any) => (t.available ?? 0) > 0) ||
+    event?.ticketTypes?.[0];
+  const gaUnitPrice = activeTier ? (activeTier.priceCents || 0) / 100 : 0;
+  const gaTotalPrice = gaUnitPrice * selectedQuantity;
+
   const handleBookTickets = async () => {
     if (isBookingClosed) {
       Alert.alert('Booking Closed', 'Ticket sales have closed for this event.');
@@ -378,17 +396,28 @@ export default function EventDetailScreen() {
     }
 
     // General Admission flow
-    const firstTier = event.ticketTypes?.[0];
-    if (!firstTier) {
+    const targetTier = activeTier;
+    if (!targetTier) {
       Alert.alert('Error', 'No ticket allocation available.');
       return;
     }
 
-    const priceAud = ((firstTier.priceCents || 0) / 100).toFixed(0);
+    const availableSeats = targetTier.available ?? 999;
+    if (availableSeats <= 0) {
+      Alert.alert('Tier Sold Out', 'The selected ticket tier is sold out. Please select another tier.');
+      return;
+    }
+
+    if (selectedQuantity > availableSeats) {
+      Alert.alert('Insufficient Tickets', `Only ${availableSeats} tickets available for this tier.`);
+      return;
+    }
+
+    const totalPriceAud = ((targetTier.priceCents || 0) / 100 * selectedQuantity).toFixed(0);
 
     Alert.alert(
       'Confirm Ticket Booking',
-      `Event: ${event.title}\nTicket: ${firstTier.name || 'General Admission'}\nPrice: $${priceAud} AUD\n\nInstant digital ticket with fraud-proof QR pass will be issued to your account.`,
+      `Event: ${event.title}\nTicket: ${targetTier.name || 'General Admission'} (x${selectedQuantity})\nTotal: $${totalPriceAud} AUD\n\nInstant digital tickets with fraud-proof QR pass will be issued to your account.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -403,8 +432,8 @@ export default function EventDetailScreen() {
                   'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                  ticketTypeId: firstTier.id,
-                  quantity: 1,
+                  ticketTypeId: targetTier.id,
+                  quantity: selectedQuantity,
                 }),
               });
 
@@ -433,7 +462,7 @@ export default function EventDetailScreen() {
 
               Alert.alert(
                 'Booking Confirmed! 🎉',
-                `Your digital entry pass for "${event.title}" has been issued successfully!`,
+                `Your ${selectedQuantity} digital entry pass${selectedQuantity > 1 ? 'es' : ''} for "${event.title}" have been issued successfully!`,
                 [
                   {
                     text: 'View My Tickets',
@@ -529,10 +558,16 @@ export default function EventDetailScreen() {
               <Ionicons name="ticket" size={18} color="#D97706" />
               <Text style={styles.trustText}>Official digital pass with verifiable QR code</Text>
             </View>
-            <View style={styles.trustItem}>
+            <TouchableOpacity
+              style={styles.trustItem}
+              onPress={() => Linking.openURL('tel:0455600003')}
+              activeOpacity={0.7}
+            >
               <Ionicons name="call" size={18} color="#D97706" />
-              <Text style={styles.trustText}>Questions or special requests? Call 0455 600 003</Text>
-            </View>
+              <Text style={[styles.trustText, { textDecorationLine: 'underline' }]}>
+                Questions or special requests? Call 0455 600 003
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Interactive Seat Picker (Numbered Seating) OR Ticket Options (General Admission) */}
@@ -559,29 +594,112 @@ export default function EventDetailScreen() {
           ) : (
             /* Ticket Options Section (General Admission) */
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Ticket Options</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Select Tickets</Text>
+                <View style={styles.generalBadge}>
+                  <Text style={styles.generalBadgeText}>GENERAL ADMISSION</Text>
+                </View>
+              </View>
+              <Text style={styles.sectionSubtitle}>
+                Select a tier and choose your ticket quantity (max 10).
+              </Text>
+
               {event.ticketTypes && event.ticketTypes.length > 0 ? (
                 event.ticketTypes.map((tier: any, index: number) => {
                   const tierPrice = (tier.priceCents || 0) / 100;
                   const tierAvailable = tier.available ?? 0;
                   const tierSoldOut = tierAvailable <= 0;
+                  const isSelected = selectedTierId === tier.id;
+
                   return (
-                    <View key={tier.id || index} style={styles.ticketTierCard}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.tierName}>{tier.name || 'General Admission'}</Text>
-                        <Text style={styles.tierSeats}>
-                          {tierSoldOut ? 'Sold out' : `${tierAvailable} seats available`}
-                        </Text>
+                    <TouchableOpacity
+                      key={tier.id || index}
+                      style={[
+                        styles.ticketTierCard,
+                        isSelected && !tierSoldOut && styles.ticketTierCardSelected,
+                        tierSoldOut && styles.ticketTierCardDisabled,
+                      ]}
+                      onPress={() => {
+                        if (!tierSoldOut) {
+                          setSelectedTierId(tier.id);
+                        }
+                      }}
+                      activeOpacity={tierSoldOut ? 1 : 0.7}
+                      disabled={tierSoldOut}
+                    >
+                      <View style={styles.tierRadioRow}>
+                        <View
+                          style={[
+                            styles.tierRadioCircle,
+                            isSelected && !tierSoldOut && styles.tierRadioCircleSelected,
+                          ]}
+                        >
+                          {isSelected && !tierSoldOut && <View style={styles.tierRadioDot} />}
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.tierName, isSelected && styles.tierNameSelected]}>
+                            {tier.name || 'General Admission'}
+                          </Text>
+                          <Text style={styles.tierSeats}>
+                            {tierSoldOut ? 'Sold out' : `${tierAvailable} tickets remaining`}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={styles.tierPrice}>${tierPrice.toFixed(0)} AUD</Text>
+                          {tierSoldOut ? (
+                            <View style={styles.tierSoldOutBadge}>
+                              <Text style={styles.tierSoldOutText}>Sold Out</Text>
+                            </View>
+                          ) : null}
+                        </View>
                       </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={styles.tierPrice}>${tierPrice.toFixed(0)} AUD</Text>
-                        {tierSoldOut ? (
-                          <View style={styles.tierSoldOutBadge}>
-                            <Text style={styles.tierSoldOutText}>Sold Out</Text>
+
+                      {/* Stepper only shown on selected active tier */}
+                      {isSelected && !tierSoldOut && (
+                        <View style={styles.tierStepperRow}>
+                          <Text style={styles.stepperLabel}>Quantity</Text>
+                          <View style={styles.stepperControl}>
+                            <TouchableOpacity
+                              style={[styles.stepperBtn, selectedQuantity <= 1 && styles.stepperBtnDisabled]}
+                              onPress={() => setSelectedQuantity((q) => Math.max(1, q - 1))}
+                              disabled={selectedQuantity <= 1}
+                              activeOpacity={0.6}
+                            >
+                              <Ionicons
+                                name="remove"
+                                size={18}
+                                color={selectedQuantity <= 1 ? '#94A3B8' : '#0F172A'}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.stepperValue}>{selectedQuantity}</Text>
+                            <TouchableOpacity
+                              style={[
+                                styles.stepperBtn,
+                                (selectedQuantity >= 10 || selectedQuantity >= tierAvailable) &&
+                                  styles.stepperBtnDisabled,
+                              ]}
+                              onPress={() =>
+                                setSelectedQuantity((q) =>
+                                  Math.min(10, tierAvailable, q + 1)
+                                )
+                              }
+                              disabled={selectedQuantity >= 10 || selectedQuantity >= tierAvailable}
+                              activeOpacity={0.6}
+                            >
+                              <Ionicons
+                                name="add"
+                                size={18}
+                                color={
+                                  selectedQuantity >= 10 || selectedQuantity >= tierAvailable
+                                    ? '#94A3B8'
+                                    : '#0F172A'
+                                }
+                              />
+                            </TouchableOpacity>
                           </View>
-                        ) : null}
-                      </View>
-                    </View>
+                        </View>
+                      )}
+                    </TouchableOpacity>
                   );
                 })
               ) : (
@@ -612,6 +730,8 @@ export default function EventDetailScreen() {
           <Text style={styles.bottomPriceLabel}>
             {event.seatingType === 'RESERVED' && selectedSeats.length > 0
               ? `${selectedSeats.length} SEAT${selectedSeats.length > 1 ? 'S' : ''} SELECTED`
+              : event.seatingType !== 'RESERVED' && activeTier
+              ? `${selectedQuantity} TICKET${selectedQuantity > 1 ? 'S' : ''} SELECTED`
               : 'TICKETS FROM'}
           </Text>
           <Text style={styles.bottomPriceValue}>
@@ -621,6 +741,8 @@ export default function EventDetailScreen() {
               ? 'Sold Out'
               : event.seatingType === 'RESERVED' && selectedSeats.length > 0
               ? `$${reservedTotalPrice.toFixed(0)} AUD`
+              : event.seatingType !== 'RESERVED' && activeTier
+              ? `$${gaTotalPrice.toFixed(0)} AUD`
               : minPrice > 0
               ? `$${minPrice.toFixed(0)} AUD`
               : 'Free'}
@@ -632,24 +754,35 @@ export default function EventDetailScreen() {
             styles.bookButton,
             (isBookingClosed ||
               isSoldOut ||
-              (event.seatingType === 'RESERVED' && selectedSeats.length === 0)) &&
+              (event.seatingType === 'RESERVED' && selectedSeats.length === 0) ||
+              (event.seatingType !== 'RESERVED' && (!activeTier || (activeTier.available ?? 0) <= 0))) &&
               styles.bookButtonDisabled,
           ]}
           onPress={handleBookTickets}
-          disabled={isBookingClosed || isSoldOut}
+          disabled={
+            isBookingClosed ||
+            isSoldOut ||
+            (event.seatingType === 'RESERVED' && selectedSeats.length === 0) ||
+            (event.seatingType !== 'RESERVED' && (!activeTier || (activeTier.available ?? 0) <= 0)) ||
+            holding
+          }
           activeOpacity={0.8}
         >
-          <Text style={styles.bookButtonText}>
-            {isBookingClosed
-              ? 'Booking Closed'
-              : isSoldOut
-              ? 'Sold Out'
-              : event.seatingType === 'RESERVED'
-              ? selectedSeats.length > 0
-                ? `Book ${selectedSeats.length} Seat${selectedSeats.length > 1 ? 's' : ''}`
-                : 'Select Seats'
-              : 'Book Tickets'}
-          </Text>
+          {holding ? (
+            <ActivityIndicator color="#0F172A" size="small" />
+          ) : (
+            <Text style={styles.bookButtonText}>
+              {isBookingClosed
+                ? 'Booking Closed'
+                : isSoldOut
+                ? 'Sold Out'
+                : event.seatingType === 'RESERVED'
+                ? selectedSeats.length > 0
+                  ? `Book ${selectedSeats.length} Seat${selectedSeats.length > 1 ? 's' : ''}`
+                  : 'Select Seats'
+                : `Book ${selectedQuantity} Ticket${selectedQuantity > 1 ? 's' : ''}`}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -851,25 +984,77 @@ const styles = StyleSheet.create({
     color: '#B45309',
     letterSpacing: 0.5,
   },
+  generalBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  generalBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#0369A1',
+    letterSpacing: 0.5,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 12,
+    marginTop: -4,
+  },
   ticketTierCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     padding: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    marginBottom: 8,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
   },
+  ticketTierCardSelected: {
+    borderColor: '#F6C636',
+    backgroundColor: '#FFFDF5',
+  },
+  ticketTierCardDisabled: {
+    opacity: 0.6,
+    backgroundColor: '#F8FAFC',
+  },
+  tierRadioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  tierRadioCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tierRadioCircleSelected: {
+    borderColor: '#F6C636',
+  },
+  tierRadioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#F6C636',
+  },
   tierName: {
     fontSize: 14,
     fontWeight: '800',
     color: '#0F172A',
+  },
+  tierNameSelected: {
+    color: '#0F172A',
+    fontWeight: '900',
   },
   tierSeats: {
     fontSize: 11,
@@ -892,6 +1077,50 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     color: '#DC2626',
+  },
+  tierStepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#FEF3C7',
+  },
+  stepperLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  stepperControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    gap: 8,
+  },
+  stepperBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperBtnDisabled: {
+    backgroundColor: '#F8FAFC',
+    opacity: 0.5,
+  },
+  stepperValue: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#0F172A',
+    minWidth: 24,
+    textAlign: 'center',
   },
   description: {
     fontSize: 14,
