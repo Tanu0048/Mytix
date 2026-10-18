@@ -369,10 +369,29 @@ export default function Home() {
   const nextSlide = () => setCurrentSlide((prev) => prev + 1);
   const prevSlide = () => setCurrentSlide((prev) => prev - 1);
 
-  const allTrending = [...(homeData?.featuredEvents || []), ...(homeData?.trendingEvents || [])].filter((item: any) => {
-    const startsAt = item.startsAt || item.startDate;
-    return startsAt && new Date(startsAt).getTime() > Date.now();
-  });
+  const allTrending = React.useMemo(() => {
+    const rawList = [
+      ...(homeData?.featuredEvents || []),
+      ...(homeData?.trendingEvents || [])
+    ];
+    const seen = new Set<string>();
+    const unique: any[] = [];
+    const now = Date.now();
+
+    for (const item of rawList) {
+      if (!item) continue;
+      const key = String(item.id || item.slug || '');
+      if (!key || seen.has(key)) continue;
+
+      const startsAt = item.startsAt || item.startDate;
+      if (!startsAt || new Date(startsAt).getTime() <= now) continue;
+
+      seen.add(key);
+      unique.push(item);
+    }
+    return unique;
+  }, [homeData]);
+
   const cityFiltered = selectedCity && selectedCity !== 'All Cities'
     ? allTrending.filter((item: any) => item.venue?.city?.toLowerCase() === selectedCity.toLowerCase())
     : allTrending;
@@ -591,7 +610,7 @@ export default function Home() {
             const isSoldOut = totalAvailable <= 0;
 
             return (
-              <div key={item.id} className="flex flex-col">
+              <div key={`featured-${item.id || item.slug}`} className="flex flex-col">
                 <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-4/5 rounded-2xl overflow-hidden mb-3 shadow-sm block border border-slate-200/90 bg-slate-100">
                   <SafeImage src={item.posterPath} alt={title} fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover" />
                   <div className="absolute top-2.5 left-2.5 bg-amber-400 text-slate-950 text-[10px] uppercase font-black px-2.5 py-1 rounded-lg shadow-sm">
@@ -737,7 +756,7 @@ export default function Home() {
               const isSoldOut = totalAvailable <= 0;
 
               return (
-                <div key={item.id} className="flex flex-col bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-3 shadow-xs">
+                <div key={`cat-${item.id || item.slug}`} className="flex flex-col bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-3 shadow-xs">
                   {/* Poster Link */}
                   <Link href={`/events/${item.slug}`} className="relative aspect-4/5 rounded-xl sm:rounded-2xl overflow-hidden bg-slate-100 block mb-3">
                     <SafeImage 
@@ -1080,7 +1099,7 @@ export default function Home() {
 
               return (
                 <div 
-                  key={`coming-${item.id}`} 
+                  key={`coming-${item.id || item.slug}`} 
                   className="relative flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white border border-slate-200/80 shadow-2xs gap-4"
                 >
                   {/* Left Block: Date Badge + Thumbnail + Details */}
