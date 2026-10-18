@@ -68,7 +68,7 @@ export default function HomeScreen() {
         fetch(`${API_BASE}/banners`).catch(() => null),
         fetch(`${API_BASE}/home`).catch(() => null),
         fetch(`${API_BASE}/categories`).catch(() => null),
-        fetch(`${API_BASE}/events`).catch(() => null),
+        fetch(`${API_BASE}/events?upcoming=true`).catch(() => null),
         fetch(`${API_BASE}/venues`).catch(() => null),
       ]);
 
@@ -86,9 +86,15 @@ export default function HomeScreen() {
       }
 
       let evList: any[] = [];
+      const now = Date.now();
       if (eventsRes && eventsRes.ok) {
         const eData = await eventsRes.json();
-        evList = Array.isArray(eData) ? eData : (eData.data || eData.events || []);
+        const rawList = Array.isArray(eData) ? eData : (eData.data || eData.events || []);
+        // Strictly filter out any event whose time has passed
+        evList = rawList.filter((e: any) => {
+          const startsAt = e.startsAt || e.startDate;
+          return startsAt && new Date(startsAt).getTime() > now;
+        });
         setAllEvents(evList);
       } else {
         setAllEvents([]);
@@ -105,8 +111,13 @@ export default function HomeScreen() {
 
       if (homeRes && homeRes.ok) {
         const hData = await homeRes.json();
-        setFeaturedEvents(hData.featuredEvents || []);
-        setTrendingEvents(hData.trendingEvents || []);
+        const filterUpcoming = (list: any[]) =>
+          (list || []).filter((e: any) => {
+            const startsAt = e.startsAt || e.startDate;
+            return startsAt && new Date(startsAt).getTime() > now;
+          });
+        setFeaturedEvents(filterUpcoming(hData.featuredEvents));
+        setTrendingEvents(filterUpcoming(hData.trendingEvents));
 
         // Dynamically extract cities configured by admin across venues & events
         const dynamicCities = [
@@ -187,10 +198,16 @@ export default function HomeScreen() {
   };
 
   const filterByCity = (list: any[]) => {
+    const now = Date.now();
+    const upcomingList = (list || []).filter((e: any) => {
+      const startsAt = e.startsAt || e.startDate;
+      return startsAt && new Date(startsAt).getTime() > now;
+    });
+
     if (!selectedCity || selectedCity === 'All Cities' || selectedCity === 'All of Australia') {
-      return list;
+      return upcomingList;
     }
-    return list.filter(
+    return upcomingList.filter(
       (e) => e.venue?.city && e.venue.city.toLowerCase() === selectedCity.toLowerCase()
     );
   };

@@ -369,7 +369,10 @@ export default function Home() {
   const nextSlide = () => setCurrentSlide((prev) => prev + 1);
   const prevSlide = () => setCurrentSlide((prev) => prev - 1);
 
-  const allTrending = [...(homeData?.featuredEvents || []), ...(homeData?.trendingEvents || [])];
+  const allTrending = [...(homeData?.featuredEvents || []), ...(homeData?.trendingEvents || [])].filter((item: any) => {
+    const startsAt = item.startsAt || item.startDate;
+    return startsAt && new Date(startsAt).getTime() > Date.now();
+  });
   const cityFiltered = selectedCity && selectedCity !== 'All Cities'
     ? allTrending.filter((item: any) => item.venue?.city?.toLowerCase() === selectedCity.toLowerCase())
     : allTrending;
