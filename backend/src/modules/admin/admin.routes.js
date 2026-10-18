@@ -10,10 +10,12 @@ import {
   resetOrganiserPasswordSchema,
   updateOrganiserStatusSchema,
   listOrganisersQuerySchema,
-  listOrdersQuerySchema
+  listOrdersQuerySchema,
+  cancelEventSchema
 } from "./admin.schema.js";
 
 export const adminRouter = Router();
+
 
 // Enforce authentication and strictly ADMIN role for all routes in this module
 adminRouter.use(authenticate, authorize("ADMIN"));
@@ -47,3 +49,9 @@ adminRouter.delete("/organisers/:id", adminController.deleteOrganiser);
 // ----------------------------------------------------
 adminRouter.get("/orders", validate(listOrdersQuerySchema), adminController.listOrders);
 adminRouter.get("/orders/:id", adminController.getOrderDetails);
+
+// ----------------------------------------------------
+// EVENT CANCELLATION & BULK REFUNDS (Admin-only)
+// ----------------------------------------------------
+adminRouter.post("/events/:id/cancel", validate(cancelEventSchema), adminController.cancelEvent);
+

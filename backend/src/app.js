@@ -9,21 +9,39 @@ import { notFound } from "./middleware/notFound.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import apiRoutes from "./routes.js";
 import { webhookRouter } from "./modules/webhooks/webhook.routes.js";
+import { env } from "./config/env.js";
 
 const app = express();
 
 // 1. Security Headers & CORS
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
-  })
-);
+app.use(helmet());
+
+const allowedOrigins = (env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+if (env.FRONTEND_URL && !allowedOrigins.includes(env.FRONTEND_URL)) {
+  allowedOrigins.push(env.FRONTEND_URL);
+}
+if (env.ADMIN_URL && !allowedOrigins.includes(env.ADMIN_URL)) {
+  allowedOrigins.push(env.ADMIN_URL);
+}
+
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (env.NODE_ENV === "development" || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS error: Origin ${origin} not permitted.`));
+    },
     credentials: true
   })
 );
+
 
 // 2. Stripe Webhook mounted BEFORE express.json() to preserve raw body buffer
 app.use("/api/v1/webhooks", webhookRouter);

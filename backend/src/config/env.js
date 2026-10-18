@@ -6,7 +6,11 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.string().default("5000"),
   FRONTEND_URL: z.string().default("http://localhost:3000"),
+  ADMIN_URL: z.string().default("http://localhost:3001"),
+  ALLOWED_ORIGINS: z.string().default("http://localhost:3000,http://localhost:3001"),
+  COOKIE_DOMAIN: z.string().optional(),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+
   DIRECT_URL: z.string().optional(),
   JWT_ACCESS_SECRET: z.string().min(16, "JWT_ACCESS_SECRET must be at least 16 chars"),
   JWT_REFRESH_SECRET: z.string().min(16, "JWT_REFRESH_SECRET must be at least 16 chars"),

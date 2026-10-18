@@ -191,3 +191,24 @@ export async function getOrderDetails(req, res, next) {
     next(error);
   }
 }
+
+// ----------------------------------------------------
+// EVENT CANCELLATION & BULK REFUNDS
+// ----------------------------------------------------
+
+export async function cancelEvent(req, res, next) {
+  try {
+    const result = await adminService.cancelEventAndRefundOrders(
+      req.params.id,
+      req.body?.reason,
+      req.user.id
+    );
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

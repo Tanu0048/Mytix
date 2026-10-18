@@ -4,6 +4,8 @@ import { logger } from "../../lib/logger.js";
 import { renderWelcomeEmail } from "./templates/welcome.js";
 import { renderOrderConfirmationEmail } from "./templates/orderConfirmation.js";
 import { renderPasswordResetEmail } from "./templates/passwordReset.js";
+import { renderEventCancellationEmail } from "./templates/eventCancellation.js";
+
 
 /**
  * Checks if an email address is on the bounce/complaint suppression list.
@@ -65,3 +67,30 @@ export async function sendPasswordResetNotification({ email, name, resetUrl, exp
     text: template.text
   });
 }
+
+export async function sendEventCancellationNotification({
+  recipientEmail,
+  recipientName,
+  orderNumber,
+  eventTitle,
+  cancellationReason,
+  refundAmountAud,
+  currency = "AUD"
+}) {
+  const template = renderEventCancellationEmail({
+    recipientName,
+    orderNumber,
+    eventTitle,
+    cancellationReason,
+    refundAmountAud,
+    currency
+  });
+
+  return sendEmail({
+    to: recipientEmail,
+    subject: template.subject,
+    html: template.html,
+    text: template.text
+  });
+}
+

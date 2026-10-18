@@ -62,3 +62,13 @@ export const listOrdersQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   cursor: z.string().uuid().optional()
 });
+
+export const cancelEventSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid event ID format.")
+  }),
+  body: z.object({
+    reason: z.string().min(3, "Cancellation reason must be at least 3 characters").max(255).optional()
+  }).optional()
+};
+
