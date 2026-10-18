@@ -1,6 +1,46 @@
 import * as adminService from "./admin.service.js";
 
 // ----------------------------------------------------
+// CATEGORIES
+// ----------------------------------------------------
+
+export async function listCategories(_req, res, next) {
+  try {
+    const categories = await adminService.listCategories();
+    res.status(200).json({
+      success: true,
+      data: categories
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createCategory(req, res, next) {
+  try {
+    const category = await adminService.createCategory(req.body);
+    res.status(201).json({
+      success: true,
+      data: category
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteCategory(req, res, next) {
+  try {
+    const result = await adminService.deleteCategory(req.params.id);
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ----------------------------------------------------
 // BANNERS
 // ----------------------------------------------------
 
@@ -90,6 +130,18 @@ export async function updateOrganiserStatus(req, res, next) {
     res.status(200).json({
       success: true,
       data: organiser
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteOrganiser(req, res, next) {
+  try {
+    const result = await adminService.deleteOrganiser(req.params.id, req.user.id);
+    res.status(200).json({
+      success: true,
+      data: result
     });
   } catch (error) {
     next(error);

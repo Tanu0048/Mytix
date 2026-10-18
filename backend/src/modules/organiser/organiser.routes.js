@@ -31,5 +31,7 @@ router.get("/orders", authorize("ORGANISER", "ADMIN"), organiserController.getOr
 
 // Venues
 router.post("/venues", authorize("ORGANISER", "ADMIN"), organiserController.createVenue);
+router.patch("/venues/:id", authorize("ORGANISER", "ADMIN"), organiserController.updateVenue);
+router.delete("/venues/:id", authorize("ORGANISER", "ADMIN"), organiserController.deleteVenue);
 
 export default router;

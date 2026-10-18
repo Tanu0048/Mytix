@@ -240,7 +240,12 @@ export async function getOrganiserDetails(idOrSlug) {
 
 export async function listVenues() {
   const venues = await prisma.venue.findMany({
-    orderBy: { name: 'asc' }
+    orderBy: { name: 'asc' },
+    include: {
+      _count: {
+        select: { events: true }
+      }
+    }
   });
   return venues;
 }
@@ -250,4 +255,18 @@ export async function listArtists() {
     orderBy: { name: 'asc' }
   });
   return artists;
+}
+
+export async function getUniqueCategories() {
+  const cacheKey = "categories:unique";
+  let categories = await getCached(cacheKey);
+  if (categories) return categories;
+
+  const results = await prisma.category.findMany({
+    orderBy: { name: 'asc' }
+  });
+
+  categories = results.map(r => r.name).filter(Boolean);
+  await setCached(cacheKey, categories, 3600);
+  return categories;
 }

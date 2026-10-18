@@ -13,7 +13,11 @@ import { webhookRouter } from "./modules/webhooks/webhook.routes.js";
 const app = express();
 
 // 1. Security Headers & CORS
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  })
+);
 app.use(
   cors({
     origin: true,

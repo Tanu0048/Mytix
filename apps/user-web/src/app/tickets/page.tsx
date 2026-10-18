@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { Calendar, MapPin, Ticket as TicketIcon, Loader2, User } from 'lucide-react';
 import QRCode from 'react-qr-code';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+import { API_BASE } from '@/config/api';
 
 export default function MyTicketsPage() {
   const router = useRouter();
@@ -27,11 +27,8 @@ export default function MyTicketsPage() {
 
   const fetchTickets = async () => {
     try {
-      const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/me/tickets`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include'
       });
 
       if (res.ok) {
@@ -48,7 +45,7 @@ export default function MyTicketsPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+        <Loader2 className="w-10 h-10 text-amber-500 animate-spin mb-4" />
         <p className="text-gray-500 font-medium animate-pulse">Loading your tickets...</p>
       </div>
     );
@@ -59,7 +56,7 @@ export default function MyTicketsPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 shadow-sm border border-blue-200">
+          <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 shadow-sm border border-amber-300/80">
             <TicketIcon className="w-6 h-6" />
           </div>
           <div>
@@ -70,14 +67,14 @@ export default function MyTicketsPage() {
 
         {tickets.length === 0 ? (
           <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-            <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <TicketIcon className="w-10 h-10 text-gray-300" />
+            <div className="w-24 h-24 bg-amber-50/60 rounded-full flex items-center justify-center mx-auto mb-6 border border-amber-100">
+              <TicketIcon className="w-10 h-10 text-amber-400" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">No tickets yet</h3>
-            <p className="text-gray-500 mb-8 max-w-md mx-auto text-base">Looks like you haven't booked any events yet. Explore what's happening and grab your tickets!</p>
+            <p className="text-gray-500 mb-8 max-w-md mx-auto text-base">Looks like you haven&apos;t booked any events yet. Explore what&apos;s happening and grab your tickets!</p>
             <button 
               onClick={() => router.push('/events')}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition-colors shadow-md hover:shadow-lg"
+              className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold py-3 px-8 rounded-full shadow-lg shadow-amber-400/20 transition-all cursor-pointer"
             >
               Explore Events
             </button>
@@ -95,9 +92,9 @@ export default function MyTicketsPage() {
                   {/* Left Side: Event Details */}
                   <div className="flex-1 p-6 md:p-8 relative">
                     {/* Decorative element */}
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-blue-50 rounded-bl-full -z-10 opacity-70"></div>
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-amber-50/70 rounded-bl-full -z-10 opacity-70"></div>
                     
-                    <div className="inline-block px-4 py-1.5 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-widest mb-4 shadow-sm border border-green-200">
+                    <div className="inline-block px-4 py-1.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full uppercase tracking-widest mb-4 shadow-xs border border-emerald-200">
                       {ticket.status}
                     </div>
                     
@@ -107,8 +104,8 @@ export default function MyTicketsPage() {
                     
                     <div className="space-y-4">
                       <div className="flex items-center text-gray-600">
-                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mr-4 border border-gray-100 shrink-0">
-                          <Calendar className="w-5 h-5 text-blue-500" />
+                        <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mr-4 border border-amber-100 shrink-0">
+                          <Calendar className="w-5 h-5 text-amber-600" />
                         </div>
                         <div>
                           <div className="font-bold text-gray-900 text-sm">{formattedDate}</div>
@@ -117,8 +114,8 @@ export default function MyTicketsPage() {
                       </div>
                       
                       <div className="flex items-center text-gray-600">
-                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mr-4 border border-gray-100 shrink-0">
-                          <MapPin className="w-5 h-5 text-blue-500" />
+                        <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mr-4 border border-amber-100 shrink-0">
+                          <MapPin className="w-5 h-5 text-amber-600" />
                         </div>
                         <div>
                           <div className="font-bold text-gray-900 text-sm truncate max-w-48 sm:max-w-xs">{ticket.order.event.venue.name}</div>
@@ -127,8 +124,8 @@ export default function MyTicketsPage() {
                       </div>
                       
                       <div className="flex items-center text-gray-600 pt-3 border-t border-gray-100 mt-2">
-                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mr-4 border border-gray-100 shrink-0">
-                          <User className="w-5 h-5 text-blue-500" />
+                        <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mr-4 border border-amber-100 shrink-0">
+                          <User className="w-5 h-5 text-amber-600" />
                         </div>
                         <div>
                           <div className="font-bold text-gray-900 text-sm">{ticket.attendeeName}</div>

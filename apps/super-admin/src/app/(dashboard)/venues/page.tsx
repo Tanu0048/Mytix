@@ -202,7 +202,7 @@ export default function VenuesAndCitiesPage() {
           onClick={openCreateModal}
           className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-black text-slate-950 transition-all shadow-sm hover:scale-[1.01] cursor-pointer"
         >
-          <Plus className="w-4 h-4 stroke-[3]" /> Add City & Venue
+          <Plus className="w-4 h-4 stroke-3" /> Add City & Venue
         </button>
       </div>
 

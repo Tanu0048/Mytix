@@ -1,9 +1,11 @@
 import { create } from 'zustand';
+import { API_BASE } from '@/config/api';
 
 interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string | null;
   role: string;
 }
 
@@ -17,57 +19,40 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
+  token: null,
   loading: true,
   setUser: (user) => set({ user, loading: false }),
-  setToken: (token) => {
-    if (token) {
-      localStorage.setItem('token', token);
-    } else {
-      localStorage.removeItem('token');
-    }
-    set({ token });
-  },
+  setToken: (token) => set({ token }),
   fetchUser: async () => {
-    const { token } = get();
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/me`, { 
-        headers,
+      const res = await fetch(`${API_BASE}/me`, { 
         credentials: 'include' 
       });
       if (res.ok) {
         const data = await res.json();
-        set({ user: data, loading: false });
+        set({ user: data.data || data, loading: false });
       } else {
         set({ user: null, loading: false });
       }
-    } catch (error) {
+    } catch {
       set({ user: null, loading: false });
     }
   },
   logout: async () => {
-    const { token } = get();
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, { 
+      await fetch(`${API_BASE}/auth/logout`, { 
         method: 'POST', 
-        headers,
         credentials: 'include' 
       });
     } catch (error) {
       console.error('Logout failed', error);
     } finally {
-      localStorage.removeItem('token');
-      set({ user: null, token: null });
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+      }
+      set({ user: null, token: null, loading: false });
     }
   }
 }));

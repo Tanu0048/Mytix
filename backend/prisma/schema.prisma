@@ -132,6 +132,8 @@ model Event {
   doorsOpenAt   DateTime?     @map("doors_open_at") @db.Timestamptz(6)
   status        EventStatus   @default(DRAFT)
   category      String        @default("Concert") @db.VarChar(64)
+  seatingType   String        @default("GENERAL") @map("seating_type") @db.VarChar(32)
+  seatingConfig Json?         @map("seating_config")
   createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   banners       Banner[]
@@ -198,6 +200,7 @@ model InventoryHold {
   userId       String     @map("user_id") @db.Uuid
   ticketTypeId String     @map("ticket_type_id") @db.Uuid
   quantity     Int
+  selectedSeats Json?      @map("selected_seats")
   status       HoldStatus @default(ACTIVE)
   expiresAt    DateTime   @map("expires_at") @db.Timestamptz(6)
   createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -243,6 +246,7 @@ model OrderItem {
   ticketTypeId   String     @map("ticket_type_id") @db.Uuid
   quantity       Int
   unitPriceCents Int        @map("unit_price_cents")
+  selectedSeats  Json?      @map("selected_seats")
   order          Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
   ticketType     TicketType @relation(fields: [ticketTypeId], references: [id])
 
@@ -256,6 +260,9 @@ model Ticket {
   attendeeName  String       @map("attendee_name") @db.VarChar(255)
   attendeeEmail String       @map("attendee_email") @db.VarChar(255)
   qrTokenHash   String       @unique @map("qr_token_hash") @db.VarChar(255)
+  seatRow       String?      @map("seat_row") @db.VarChar(32)
+  seatNumber    String?      @map("seat_number") @db.VarChar(32)
+  sectionName   String?      @map("section_name") @db.VarChar(64)
   status        TicketStatus @default(VALID)
   usedAt        DateTime?    @map("used_at") @db.Timestamptz(6)
   usedGate      String?      @map("used_gate") @db.VarChar(64)
@@ -499,4 +506,13 @@ enum ScanResult {
   INVALID
   WRONG_EVENT
   CANCELLED
+}
+
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique @db.VarChar(128)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("categories")
 }

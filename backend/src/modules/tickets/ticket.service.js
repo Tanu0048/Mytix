@@ -57,6 +57,29 @@ export async function generateTicketsForOrder(orderId, attendeesList = []) {
         orderId: order.id
       });
 
+      let seatRow = null;
+      let seatNumber = null;
+      let sectionName = null;
+
+      if (Array.isArray(item.selectedSeats) && item.selectedSeats[i]) {
+        const seatVal = item.selectedSeats[i];
+        if (typeof seatVal === "string") {
+          const parts = seatVal.split("-");
+          if (parts.length === 2) {
+            seatRow = parts[0];
+            seatNumber = parts[1];
+          } else if (parts.length >= 3) {
+            sectionName = parts[0];
+            seatRow = parts[1];
+            seatNumber = parts[2];
+          }
+        } else if (typeof seatVal === "object") {
+          seatRow = seatVal.row || null;
+          seatNumber = seatVal.seatNumber?.toString() || seatVal.seat?.toString() || null;
+          sectionName = seatVal.section || null;
+        }
+      }
+
       const ticket = await prisma.ticket.create({
         data: {
           id: ticketId,
@@ -64,6 +87,9 @@ export async function generateTicketsForOrder(orderId, attendeesList = []) {
           attendeeName: attendee.name,
           attendeeEmail: attendee.email,
           qrTokenHash: tokenHash,
+          seatRow,
+          seatNumber,
+          sectionName,
           status: "VALID"
         }
       });

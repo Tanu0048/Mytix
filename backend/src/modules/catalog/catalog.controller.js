@@ -1,7 +1,7 @@
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import * as catalogService from "./catalog.service.js";
 import { getHomePageData } from "./home.service.js";
-import { getEventAvailability } from "./availability.service.js";
+import { getEventAvailability, getEventSeats } from "./availability.service.js";
 
 export const getHome = asyncHandler(async (_req, res) => {
   const data = await getHomePageData();
@@ -28,6 +28,11 @@ export const getAvailability = asyncHandler(async (req, res) => {
   res.status(200).json(data);
 });
 
+export const getSeats = asyncHandler(async (req, res) => {
+  const data = await getEventSeats(req.params.slug);
+  res.status(200).json(data);
+});
+
 export const getArtistBySlug = asyncHandler(async (req, res) => {
   const artist = await catalogService.getArtistDetails(req.params.slug);
   res.status(200).json(artist);
@@ -41,6 +46,11 @@ export const getVenueBySlug = asyncHandler(async (req, res) => {
 export const getOrganiserBySlug = asyncHandler(async (req, res) => {
   const organiser = await catalogService.getOrganiserDetails(req.params.slug);
   res.status(200).json(organiser);
+});
+
+export const getCategories = asyncHandler(async (req, res) => {
+  const categories = await catalogService.getUniqueCategories();
+  res.status(200).json(categories);
 });
 
 export const getVenues = asyncHandler(async (req, res) => {

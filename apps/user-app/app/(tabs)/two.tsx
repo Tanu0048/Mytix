@@ -1,287 +1,821 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
+  StatusBar,
+  Alert,
+  ActivityIndicator,
+  Platform,
+  Modal,
+} from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+
+import { API_BASE } from '../../constants/api';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [token, setToken] = useState<string | null>(null);
 
-  // Re-check user data every time this tab comes into focus
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
-      const loadUser = async () => {
+      const loadProfile = async () => {
         try {
-          const userData = await AsyncStorage.getItem('user');
-          if (userData) {
-            setUser(JSON.parse(userData));
+          const storedUser = await AsyncStorage.getItem('user');
+          const storedToken = await AsyncStorage.getItem('token');
+          if (storedUser && storedToken) {
+            const parsed = JSON.parse(storedUser);
+            setUser(parsed);
+            setToken(storedToken);
+            setName(parsed.name || '');
+            setPhone(parsed.phone || '');
           } else {
             setUser(null);
+            setToken(null);
           }
-        } catch (e) {
+        } catch {
           setUser(null);
+          setToken(null);
         }
       };
-      loadUser();
+      loadProfile();
     }, [])
   );
 
-  const handleLogout = async () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
+  const handleSaveChanges = async () => {
+    if (!token) return;
+    setSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      const res = await fetch(`${API_BASE}/me`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim() || null,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const updatedUser = data.user || { ...user, name: name.trim(), phone: phone.trim() };
+        await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+        Alert.alert('Success', 'Profile updated successfully!');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        Alert.alert('Error', errData.error?.message || 'Failed to update profile.');
+      }
+    } catch {
+      Alert.alert('Error', 'Network error. Please check your connection.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogout = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to log out of your Mytix account?', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Logout',
+        text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
           await AsyncStorage.multiRemove(['user', 'token', 'refreshToken']);
           setUser(null);
+          setToken(null);
         },
       },
     ]);
   };
 
-  const getInitials = (name: string) => {
-    return name
+  const handleDeleteAccount = async () => {
+    if (!token) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE}/me`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        await AsyncStorage.multiRemove(['user', 'token', 'refreshToken']);
+        setUser(null);
+        setToken(null);
+        setIsDeleteModalOpen(false);
+        Alert.alert('Account Deleted', 'Your account and personal data have been removed.');
+      } else {
+        Alert.alert('Error', 'Failed to delete account. Please try again.');
+      }
+    } catch {
+      Alert.alert('Error', 'Network error while attempting account deletion.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const getInitials = (userName: string) => {
+    if (!userName) return 'U';
+    return userName
       .split(' ')
-      .map((word) => word[0])
+      .map((w) => w[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* Header (Clean White) */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>Account Profile</Text>
+        <Text style={styles.headerSubtitle}>Manage your profile, tickets and security</Text>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {user ? (
-          /* ===== LOGGED IN VIEW ===== */
-          <>
-            <View style={styles.profileCard}>
+          /* ================= LOGGED IN VIEW ================= */
+          <View style={styles.sectionContainer}>
+            {/* Top User Card */}
+            <View style={styles.profileHeroCard}>
               <View style={styles.avatarCircle}>
-                <Text style={styles.avatarText}>{getInitials(user.name || 'U')}</Text>
+                <Text style={styles.avatarText}>{getInitials(user.name || user.email)}</Text>
               </View>
-              <Text style={styles.userName}>{user.name}</Text>
-              <Text style={styles.userEmail}>{user.email}</Text>
-              <View style={styles.roleBadge}>
-                <Ionicons name="shield-checkmark" size={14} color="#f84464" />
-                <Text style={styles.roleText}>{user.role || 'User'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.profileName} numberOfLines={1}>
+                  {user.name || 'Mytix User'}
+                </Text>
+                <Text style={styles.profileEmail} numberOfLines={1}>
+                  {user.email}
+                </Text>
+                <View style={styles.roleBadge}>
+                  <Ionicons name="shield-checkmark" size={12} color="#92400E" />
+                  <Text style={styles.roleText}>{user.role || 'Member'}</Text>
+                </View>
               </View>
             </View>
 
-            <View style={styles.menuList}>
-              <TouchableOpacity style={styles.menuItem}>
-                <Ionicons name="ticket-outline" size={24} color="#333" />
-                <Text style={styles.menuItemText}>My Bookings</Text>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
+            {/* Section 1: Personal Info Form */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardIconBox}>
+                  <Ionicons name="person" size={16} color="#D97706" />
+                </View>
+                <View>
+                  <Text style={styles.cardTitle}>Personal Information</Text>
+                  <Text style={styles.cardSubtitle}>Keep your contact info up to date</Text>
+                </View>
+              </View>
 
-              <TouchableOpacity style={styles.menuItem}>
-                <Ionicons name="heart-outline" size={24} color="#333" />
-                <Text style={styles.menuItemText}>Wishlist</Text>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
+              {/* Name Field */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Full Name</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="person-outline" size={18} color="#94A3B8" />
+                  <TextInput
+                    style={styles.textInput}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Enter your name"
+                    placeholderTextColor="#94A3B8"
+                  />
+                </View>
+              </View>
 
-              <TouchableOpacity style={styles.menuItem}>
-                <Ionicons name="notifications-outline" size={24} color="#333" />
-                <Text style={styles.menuItemText}>Notifications</Text>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
+              {/* Email Field (Locked) */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email Address</Text>
+                <View style={[styles.inputWrapper, styles.inputDisabled]}>
+                  <Ionicons name="mail-outline" size={18} color="#94A3B8" />
+                  <TextInput
+                    style={[styles.textInput, { color: '#64748B' }]}
+                    value={user.email}
+                    editable={false}
+                  />
+                  <Ionicons name="lock-closed" size={14} color="#94A3B8" />
+                </View>
+                <Text style={styles.inputHelp}>
+                  Email is locked because all tickets and invoices are tied to this address.
+                </Text>
+              </View>
 
-              <TouchableOpacity style={styles.menuItem}>
-                <Ionicons name="help-buoy-outline" size={24} color="#333" />
-                <Text style={styles.menuItemText}>Help & Support</Text>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
+              {/* Phone Field */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Phone Number (Optional)</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="call-outline" size={18} color="#94A3B8" />
+                  <TextInput
+                    style={styles.textInput}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="+61 400 000 000"
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="phone-pad"
+                  />
+                </View>
+              </View>
 
-              <TouchableOpacity style={styles.menuItem}>
-                <Ionicons name="settings-outline" size={24} color="#333" />
-                <Text style={styles.menuItemText}>Settings</Text>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={22} color="#f84464" />
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          /* ===== GUEST VIEW ===== */
-          <>
-            <View style={styles.guestCard}>
-              <Ionicons name="person-circle-outline" size={80} color="#ccc" />
-              <Text style={styles.guestTitle}>Hi, Guest!</Text>
-              <Text style={styles.guestSubtitle}>
-                Login to book tickets, manage events & more.
-              </Text>
+              {/* Save Button */}
               <TouchableOpacity
-                style={styles.loginButton}
-                onPress={() => router.push('/auth')}
+                style={[styles.saveButton, saving && { opacity: 0.7 }]}
+                onPress={handleSaveChanges}
+                disabled={saving}
+                activeOpacity={0.8}
               >
-                <Text style={styles.loginButtonText}>Login / Register</Text>
+                {saving ? (
+                  <ActivityIndicator size="small" color="#0F172A" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name={saveSuccess ? 'checkmark-circle' : 'save-outline'}
+                      size={18}
+                      color="#0F172A"
+                    />
+                    <Text style={styles.saveButtonText}>
+                      {saveSuccess ? 'Changes Saved!' : 'Save Changes'}
+                    </Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
 
-            <View style={styles.menuList}>
-              <TouchableOpacity style={styles.menuItem}>
-                <Ionicons name="help-buoy-outline" size={24} color="#333" />
-                <Text style={styles.menuItemText}>Help & Support</Text>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
+            {/* Section 2: My Tickets Quick Card */}
+            <TouchableOpacity
+              style={styles.ticketsBanner}
+              activeOpacity={0.9}
+              onPress={() => router.push('/(tabs)/live')}
+            >
+              <View style={styles.ticketsBannerIcon}>
+                <Ionicons name="ticket" size={24} color="#0F172A" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ticketsBannerTitle}>My Tickets & Entry Passes</Text>
+                <Text style={styles.ticketsBannerSubtitle}>
+                  View booked events, dates, and live QR passes to scan at the gate.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#D97706" />
+            </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem}>
-                <Ionicons name="settings-outline" size={24} color="#333" />
-                <Text style={styles.menuItemText}>Settings</Text>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
+            {/* Section 3: Account & Security */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={[styles.cardIconBox, { backgroundColor: '#FEE2E2' }]}>
+                  <Ionicons name="shield-outline" size={16} color="#DC2626" />
+                </View>
+                <View>
+                  <Text style={styles.cardTitle}>Account & Security</Text>
+                  <Text style={styles.cardSubtitle}>Manage session and permanent account actions</Text>
+                </View>
+              </View>
+
+              {/* Sign Out Option */}
+              <View style={styles.securityRow}>
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <Text style={styles.securityTitle}>Sign Out</Text>
+                  <Text style={styles.securitySubtitle}>Safely log out of this device.</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.logoutBtn}
+                  onPress={handleLogout}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="log-out-outline" size={16} color="#0F172A" />
+                  <Text style={styles.logoutBtnText}>Log Out</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.divider} />
+
+              {/* Delete Account Option */}
+              <View style={styles.securityRow}>
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <Text style={[styles.securityTitle, { color: '#DC2626' }]}>Delete Account</Text>
+                  <Text style={styles.securitySubtitle}>
+                    Permanently wipe your account and data. This action is irreversible.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.deleteBtn}
+                  onPress={() => setIsDeleteModalOpen(true)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="trash-outline" size={16} color="#DC2626" />
+                  <Text style={styles.deleteBtnText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </>
+          </View>
+        ) : (
+          /* ================= GUEST VIEW ================= */
+          <View style={styles.guestContainer}>
+            <View style={styles.guestIconCircle}>
+              <Ionicons name="person-outline" size={48} color="#D97706" />
+            </View>
+            <Text style={styles.guestTitle}>Hi, Guest!</Text>
+            <Text style={styles.guestSubtitle}>
+              Sign in to manage your tickets, access entry passes, and update your personal details.
+            </Text>
+            <TouchableOpacity
+              style={styles.guestLoginButton}
+              onPress={() => router.push('/auth')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.guestLoginText}>Login / Register</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.guestBrowseButton}
+              onPress={() => router.push('/(tabs)/movies')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.guestBrowseText}>Explore Live Events</Text>
+            </TouchableOpacity>
+          </View>
         )}
-      </View>
+      </ScrollView>
+
+      {/* Delete Account Confirmation Modal */}
+      <Modal
+        visible={isDeleteModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsDeleteModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIconBox}>
+              <Ionicons name="warning-outline" size={32} color="#DC2626" />
+            </View>
+            <Text style={styles.modalTitle}>Delete your account?</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure? All personal details and tickets will be permanently removed. This action
+              cannot be undone.
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setIsDeleteModalOpen(false)}
+                disabled={deleting}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirmBtn}
+                onPress={handleDeleteAccount}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.modalConfirmText}>Yes, Delete</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
   },
   header: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'android' ? 14 : 8,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#F1F5F9',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: -0.5,
   },
-  content: {
-    flex: 1,
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: 50,
+    backgroundColor: '#F8FAFC',
   },
-  /* ===== Logged In Styles ===== */
-  profileCard: {
+  sectionContainer: {
+    gap: 18,
+  },
+  profileHeroCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#f84464',
-    justifyContent: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#F6C636',
     alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#f84464',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    justifyContent: 'center',
+    shadowColor: '#F6C636',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 3,
   },
   avatarText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  userName: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#222',
+    fontWeight: '900',
+    color: '#0F172A',
   },
-  userEmail: {
-    fontSize: 14,
-    color: '#888',
-    marginTop: 4,
+  profileName: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  profileEmail: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
   },
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
     gap: 4,
-    marginTop: 10,
-    backgroundColor: '#fff0f3',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 20,
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
   },
   roleText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#f84464',
-    textTransform: 'capitalize',
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#92400E',
+    textTransform: 'uppercase',
   },
-  logoutButton: {
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  cardIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  cardSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 1,
+  },
+  inputGroup: {
+    marginBottom: 14,
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 12,
+    height: 48,
+    gap: 10,
+  },
+  inputDisabled: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#E2E8F0',
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 13,
+    color: '#0F172A',
+    fontWeight: '500',
+  },
+  inputHelp: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 4,
+    lineHeight: 14,
+  },
+  saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 20,
-    padding: 14,
+    backgroundColor: '#F6C636',
+    height: 48,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#f84464',
+    marginTop: 6,
+    gap: 8,
+    shadowColor: '#F6C636',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#f84464',
+  saveButtonText: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#0F172A',
   },
-  /* ===== Guest Styles ===== */
-  guestCard: {
+  ticketsBanner: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 30,
+    backgroundColor: '#FFFBEB',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    gap: 12,
+  },
+  ticketsBannerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#F6C636',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ticketsBannerTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  ticketsBannerSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    lineHeight: 15,
+  },
+  securityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  securityTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  securitySubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 6,
+  },
+  logoutBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    gap: 6,
+  },
+  deleteBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#DC2626',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 12,
+  },
+  guestContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+  },
+  guestIconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   guestTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 10,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginBottom: 8,
   },
   guestSubtitle: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: '#64748B',
     textAlign: 'center',
-    marginTop: 5,
+    lineHeight: 20,
+    marginBottom: 26,
+    maxWidth: 290,
+  },
+  guestLoginButton: {
+    width: '100%',
+    backgroundColor: '#F6C636',
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    shadowColor: '#F6C636',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  guestLoginText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  guestBrowseButton: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guestBrowseText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  modalIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
     marginBottom: 20,
   },
-  loginButton: {
-    backgroundColor: '#f84464',
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 8,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  /* ===== Menu Styles ===== */
-  menuList: {
-    gap: 5,
-  },
-  menuItem: {
+  modalActions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    gap: 12,
+    width: '100%',
   },
-  menuItemText: {
+  modalCancelBtn: {
     flex: 1,
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 15,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  modalConfirmBtn: {
+    flex: 1,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#DC2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalConfirmText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });

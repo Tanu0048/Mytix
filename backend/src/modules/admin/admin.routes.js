@@ -19,6 +19,13 @@ export const adminRouter = Router();
 adminRouter.use(authenticate, authorize("ADMIN"));
 
 // ----------------------------------------------------
+// CATEGORIES (Master List)
+// ----------------------------------------------------
+adminRouter.get("/categories", adminController.listCategories);
+adminRouter.post("/categories", adminController.createCategory);
+adminRouter.delete("/categories/:id", adminController.deleteCategory);
+
+// ----------------------------------------------------
 // BANNERS (Hero Slider)
 // ----------------------------------------------------
 adminRouter.get("/banners", adminController.listBanners);
@@ -33,6 +40,7 @@ adminRouter.post("/organisers", validate(createOrganiserSchema), adminController
 adminRouter.get("/organisers", validate(listOrganisersQuerySchema), adminController.listOrganisers);
 adminRouter.patch("/organisers/:id/status", validate(updateOrganiserStatusSchema), adminController.updateOrganiserStatus);
 adminRouter.patch("/organisers/:id/reset-password", validate(resetOrganiserPasswordSchema), adminController.resetOrganiserPassword);
+adminRouter.delete("/organisers/:id", adminController.deleteOrganiser);
 
 // ----------------------------------------------------
 // GLOBAL ORDERS (Support & Inquiries)

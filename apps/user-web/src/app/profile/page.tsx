@@ -1,418 +1,355 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '@/store/useAuthStore';
-import { Ticket, User, Settings, LogOut, Calendar, MapPin, ChevronRight, Clock, Package, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
-
-function getFullImageUrl(path: string | undefined): string {
-  if (!path) return '';
-  if (path.startsWith('http')) return path;
-  return `${BACKEND_URL}${path}`;
-}
-
-function getStatusStyle(status: string) {
-  switch (status?.toUpperCase()) {
-    case 'CONFIRMED': return 'bg-green-100 text-green-700';
-    case 'PENDING': return 'bg-yellow-100 text-yellow-700';
-    case 'CANCELLED': return 'bg-red-100 text-red-700';
-    case 'REFUNDED': return 'bg-gray-100 text-gray-600';
-    default: return 'bg-blue-100 text-blue-700';
-  }
-}
+import { useAuthStore } from '@/store/useAuthStore';
+import { API_BASE } from '@/config/api';
+import { 
+  User as UserIcon, 
+  Mail, 
+  Phone, 
+  Lock, 
+  Ticket, 
+  LogOut, 
+  Trash2, 
+  AlertTriangle, 
+  Loader2, 
+  CheckCircle2, 
+  ArrowRight,
+  ShieldAlert
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ProfilePage() {
-  const { user, loading: authLoading, logout } = useAuthStore();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'bookings' | 'profile' | 'settings'>('bookings');
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: '', phone: '' });
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [profileMsg, setProfileMsg] = useState('');
+  const { user, fetchUser, logout, loading: authLoading, setUser } = useAuthStore();
+
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/auth');
+      return;
     }
+
     if (user) {
-      setProfileForm({ name: user.name || '', phone: (user as any).phone || '' });
+      setName(user.name || '');
+      setPhone(user.phone || '');
     }
-  }, [authLoading, user, router]);
+  }, [user, authLoading, router]);
 
-  useEffect(() => {
-    if (user && activeTab === 'bookings') {
-      fetchOrders();
-    }
-  }, [user, activeTab]);
-
-  async function fetchOrders() {
-    try {
-      setLoadingOrders(true);
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/me/orders`, {
-        credentials: 'include',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setOrders(data.data || data.orders || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch orders:', error);
-    } finally {
-      setLoadingOrders(false);
-    }
-  }
-
-  async function handleSaveProfile(e: React.FormEvent) {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSavingProfile(true);
-    setProfileMsg('');
+    const trimmedName = name.trim();
+    if (!trimmedName || trimmedName.length < 2) {
+      toast.error('Name must be at least 2 characters long');
+      return;
+    }
+
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/me`, {
+      setSaving(true);
+      const res = await fetch(`${API_BASE}/me`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name: profileForm.name, phone: profileForm.phone }),
+        body: JSON.stringify({ 
+          name: trimmedName,
+          phone: phone.trim() || undefined
+        }),
       });
+
       if (res.ok) {
-        setProfileMsg('Profile updated successfully!');
+        const updated = await res.json();
+        setUser(updated);
+        toast.success('Profile updated successfully!');
       } else {
-        setProfileMsg('Failed to update profile. Please try again.');
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || 'Failed to update profile');
       }
     } catch {
-      setProfileMsg('Something went wrong.');
+      toast.error('Network error. Please try again.');
     } finally {
-      setSavingProfile(false);
+      setSaving(false);
     }
-  }
+  };
 
   const handleLogout = async () => {
     await logout();
+    toast.success('Logged out successfully');
     router.push('/');
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      setDeleting(true);
+      const res = await fetch(`${API_BASE}/me`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (res.ok) {
+        await logout();
+        setIsDeleteModalOpen(false);
+        toast.success('Your account has been deleted.');
+        router.push('/');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.message || 'Failed to delete account.');
+      }
+    } catch {
+      toast.error('Network error. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-400" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <Loader2 className="w-10 h-10 text-amber-500 animate-spin mb-4" />
+        <p className="text-gray-500 font-medium">Loading profile...</p>
       </div>
     );
   }
 
-  const initials = user.name?.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || 'U';
+  const initials = user.name
+    ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'U';
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10">
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50/70 py-10 sm:py-14">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6">
+        
+        {/* Profile Hero Header */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <div className="w-20 h-20 rounded-full bg-linear-to-tr from-amber-400 to-yellow-300 flex items-center justify-center text-slate-950 font-black text-2xl shadow-md shadow-amber-400/20 shrink-0 border-4 border-white">
+            {initials}
+          </div>
+          <div className="text-center sm:text-left flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+              <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight truncate">
+                {user.name}
+              </h1>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 self-center sm:self-auto">
+                Verified Member
+              </span>
+            </div>
+            <p className="text-gray-500 text-sm font-medium truncate">{user.email}</p>
+          </div>
+        </div>
 
-        {/* Page Title */}
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-8">My Account</h1>
+        <div className="space-y-8">
 
-        <div className="flex flex-col md:flex-row gap-7">
+          {/* Section 1: Personal Details */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100 shrink-0">
+                <UserIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Personal Information</h2>
+                <p className="text-xs text-gray-500">Update your public name and contact phone number.</p>
+              </div>
+            </div>
 
-          {/* ===== Sidebar ===== */}
-          <aside className="w-full md:w-64 shrink-0">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
-              {/* Avatar + Name */}
-              <div className="p-6 bg-gradient from-yellow-50 to-yellow-100 border-b border-yellow-100">
-                <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-white font-extrabold text-2xl mb-3 shadow-md">
-                  {initials}
+            <form onSubmit={handleUpdateProfile} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    placeholder="Enter your name"
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-sm font-medium text-gray-900 bg-white transition-all"
+                  />
                 </div>
-                <h2 className="font-bold text-gray-900 text-lg leading-tight">{user.name}</h2>
-                <p className="text-xs text-gray-500 mt-0.5 truncate">{user.email}</p>
-                <span className="mt-2 inline-block text-xs font-semibold bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full capitalize">
-                  {(user as any).role?.toLowerCase() || 'user'}
-                </span>
               </div>
 
-              {/* Nav Links */}
-              <nav className="p-2">
-                {[
-                  { key: 'bookings', icon: <Package className="w-4 h-4" />, label: 'My Bookings' },
-                  { key: 'profile', icon: <User className="w-4 h-4" />, label: 'Profile Details' },
-                  { key: 'settings', icon: <Settings className="w-4 h-4" />, label: 'Settings' },
-                ].map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => setActiveTab(item.key as any)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors text-left ${
-                      activeTab === item.key
-                        ? 'bg-yellow-50 text-yellow-600'
-                        : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {item.icon}
-                    {item.label}
-                    {activeTab === item.key && <ChevronRight className="w-4 h-4 ml-auto text-yellow-400" />}
-                  </button>
-                ))}
-                <div className="h-px bg-gray-100 my-2" />
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Email Address
+                  </label>
+                  <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">
+                    <Lock className="w-3 h-3" /> Locked
+                  </span>
+                </div>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    value={user.email}
+                    disabled
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 text-gray-500 text-sm font-medium cursor-not-allowed select-none"
+                  />
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1.5">
+                  Email is locked because all purchased event tickets and invoices are sent to this address.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                  Phone Number (Optional)
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+61 400 000 000"
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-sm font-medium text-gray-900 bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end">
                 <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                  type="submit"
+                  disabled={saving}
+                  className="px-6 py-3 rounded-2xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold text-sm shadow-md shadow-amber-400/20 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
                 >
-                  <LogOut className="w-4 h-4" />
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Section 2: My Tickets Quick Card */}
+          <div className="bg-linear-to-br from-amber-50 via-yellow-50/60 to-white rounded-3xl p-6 sm:p-8 shadow-sm border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-400 flex items-center justify-center text-slate-950 shrink-0 shadow-sm">
+                <Ticket className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">My Tickets & Entry Passes</h2>
+                <p className="text-sm text-gray-600 max-w-md">
+                  View your purchased tickets, event dates, and live QR codes to scan at the gate.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/tickets"
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shrink-0 shadow-md cursor-pointer"
+            >
+              <span>View Tickets</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Section 3: Account & Security */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600 border border-red-100 shrink-0">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Account & Security</h2>
+                <p className="text-xs text-gray-500">Manage session security and permanent account deletion.</p>
+              </div>
+            </div>
+
+            <div className="divide-y divide-gray-100">
+              {/* Log Out */}
+              <div className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900">Sign Out</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Safely log out of your account on this device.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
                   Log Out
                 </button>
-              </nav>
+              </div>
+
+              {/* Delete Account */}
+              <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-bold text-red-600">Delete Account</h3>
+                  <p className="text-xs text-gray-500 mt-0.5 max-w-md">
+                    Permanently wipe and anonymize your personal information. This action is irreversible.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  className="px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete Account
+                </button>
+              </div>
             </div>
-          </aside>
+          </div>
 
-          {/* ===== Main Content ===== */}
-          <main className="flex-1 min-w-0">
-
-            {/* MY BOOKINGS TAB */}
-            {activeTab === 'bookings' && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">My Bookings</h2>
-                  <span className="text-sm text-gray-500">{orders.length} booking{orders.length !== 1 ? 's' : ''}</span>
-                </div>
-
-                {loadingOrders ? (
-                  <div className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="bg-white rounded-2xl p-5 flex gap-5 animate-pulse border border-gray-100">
-                        <div className="w-28 h-28 bg-gray-200 rounded-xl shrink-0" />
-                        <div className="flex-1 space-y-3 py-2">
-                          <div className="h-5 bg-gray-200 rounded w-2/3" />
-                          <div className="h-4 bg-gray-200 rounded w-1/2" />
-                          <div className="h-4 bg-gray-200 rounded w-1/3" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : orders.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
-                    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-5 border border-gray-100">
-                      <Ticket className="w-10 h-10 text-gray-300" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">No bookings yet</h3>
-                    <p className="text-gray-500 text-sm mb-7">You haven&apos;t booked any events yet. Start exploring!</p>
-                    <Link
-                      href="/"
-                      className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-8 rounded-xl transition-colors inline-block text-sm"
-                    >
-                      Browse Events
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {orders.map((order: any) => {
-                      const event = order.event;
-                      const totalItems = order.items?.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 0;
-                      const totalAmount = order.totalAmountCents ? (order.totalAmountCents / 100).toLocaleString('en-IN') : '0';
-                      const isUpcoming = event?.startsAt ? new Date(event.startsAt) > new Date() : false;
-
-                      return (
-                        <div
-                          key={order.id}
-                          className="bg-white rounded-2xl border border-gray-100 hover:border-yellow-200 hover:shadow-md transition-all overflow-hidden"
-                        >
-                          <div className="flex flex-col sm:flex-row gap-0">
-                            {/* Event Poster */}
-                            <div className="relative w-full sm:w-36 h-36 sm:h-auto shrink-0 bg-gray-100">
-                              {event?.posterPath ? (
-                                <Image
-                                  src={getFullImageUrl(event.posterPath)}
-                                  alt={event.title || 'Event'}
-                                  fill
-                                  className="object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Ticket className="w-10 h-10 text-gray-300" />
-                                </div>
-                              )}
-                              {isUpcoming && (
-                                <div className="absolute top-2 left-2">
-                                  <span className="text-[10px] font-bold bg-green-500 text-white px-2 py-0.5 rounded-full">
-                                    Upcoming
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Order Details */}
-                            <div className="flex-1 p-5">
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <div>
-                                  <p className="text-xs text-gray-400 font-mono mb-1">
-                                    Order #{order.orderNumber || order.id?.slice(-8).toUpperCase()}
-                                  </p>
-                                  <h3 className="font-bold text-gray-900 text-lg leading-tight">
-                                    {event?.title || 'Event Booking'}
-                                  </h3>
-                                </div>
-                                <span className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ${getStatusStyle(order.status)}`}>
-                                  {order.status || 'CONFIRMED'}
-                                </span>
-                              </div>
-
-                              {/* Event Meta */}
-                              <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-gray-500 mb-4">
-                                {event?.venue && (
-                                  <span className="flex items-center gap-1.5">
-                                    <MapPin className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                                    {event.venue.name}, {event.venue.city}
-                                  </span>
-                                )}
-                                {event?.startsAt && (
-                                  <span className="flex items-center gap-1.5">
-                                    <Calendar className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                                    {new Date(event.startsAt).toLocaleDateString('en-IN', {
-                                      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
-                                    })}
-                                  </span>
-                                )}
-                                {event?.startsAt && (
-                                  <span className="flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                                    {new Date(event.startsAt).toLocaleTimeString('en-IN', {
-                                      hour: '2-digit', minute: '2-digit'
-                                    })}
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Ticket types */}
-                              {order.items?.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                  {order.items.map((item: any, i: number) => (
-                                    <span key={i} className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium">
-                                      {item.quantity}x {item.ticketType?.name || 'Ticket'}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Footer */}
-                              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                                <div>
-                                  <p className="text-xs text-gray-400">Total Paid</p>
-                                  <p className="text-base font-extrabold text-gray-900">₹{totalAmount}</p>
-                                </div>
-                                <div className="flex gap-2">
-                                  {event?.slug && (
-                                    <Link
-                                      href={`/events/${event.slug}`}
-                                      className="text-xs font-semibold text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300 px-4 py-2 rounded-lg transition-colors"
-                                    >
-                                      View Event
-                                    </Link>
-                                  )}
-                                  <Link
-                                    href={`/tickets?order=${order.orderNumber || order.id}`}
-                                    className="text-xs font-semibold bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded-lg transition-colors"
-                                  >
-                                    View Tickets
-                                  </Link>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* PROFILE DETAILS TAB */}
-            {activeTab === 'profile' && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
-                <h2 className="text-2xl font-bold text-gray-900 mb-7">Profile Details</h2>
-                <form onSubmit={handleSaveProfile} className="max-w-md space-y-5">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
-                    <input
-                      type="text"
-                      value={profileForm.name}
-                      onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                      className="w-full p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 outline-none transition-all text-gray-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
-                    <input
-                      type="email"
-                      value={user.email}
-                      disabled
-                      className="w-full p-3.5 border border-gray-100 bg-gray-50 rounded-xl text-gray-400 outline-none cursor-not-allowed"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Email cannot be changed.</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Phone Number</label>
-                    <input
-                      type="tel"
-                      value={profileForm.phone}
-                      onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                      placeholder="+91 9876543210"
-                      className="w-full p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 outline-none transition-all text-gray-900"
-                    />
-                  </div>
-                  {profileMsg && (
-                    <div className={`flex items-center gap-2 text-sm p-3 rounded-xl ${profileMsg.includes('success') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      {profileMsg}
-                    </div>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={savingProfile}
-                    className="bg-yellow-400 hover:bg-yellow-500 disabled:opacity-60 text-black font-bold py-3 px-8 rounded-xl transition-colors text-sm"
-                  >
-                    {savingProfile ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {/* SETTINGS TAB */}
-            {activeTab === 'settings' && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
-                <h2 className="text-2xl font-bold text-gray-900 mb-7">Settings</h2>
-                <div className="max-w-md space-y-4">
-                  <div className="border border-gray-100 rounded-xl p-5">
-                    <h3 className="font-semibold text-gray-800 mb-1">Notifications</h3>
-                    <p className="text-sm text-gray-500 mb-4">Manage your email notification preferences.</p>
-                    <div className="space-y-3">
-                      {['Booking confirmations', 'Event reminders', 'New events from followed artists'].map((item) => (
-                        <label key={item} className="flex items-center justify-between cursor-pointer">
-                          <span className="text-sm text-gray-700">{item}</span>
-                          <input type="checkbox" defaultChecked className="w-4 h-4 accent-yellow-400" />
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="border border-red-100 rounded-xl p-5">
-                    <h3 className="font-semibold text-red-700 mb-1">Danger Zone</h3>
-                    <p className="text-sm text-gray-500 mb-4">Once deleted, your account and personal data will be permanently removed.</p>
-                    <button className="text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 px-5 py-2.5 rounded-lg transition-colors">
-                      Delete My Account
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-          </main>
         </div>
+
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-100">
+            <div className="w-12 h-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-4 border border-red-100">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete your account?</h3>
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+              Are you sure you want to delete your account? This action is permanent and cannot be undone. All your personal data will be anonymized, and you will immediately lose access to your account and tickets.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={deleting}
+                className="px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="px-5 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-xl transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Yes, Delete Account'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

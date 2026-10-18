@@ -11,7 +11,7 @@ const COOKIE_OPTIONS = {
 function attachAuthCookies(res, accessToken, refreshToken) {
   res.cookie("access_token", accessToken, {
     ...COOKIE_OPTIONS,
-    maxAge: 15 * 60 * 1000 // 15 minutes
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   });
 
   res.cookie("refresh_token", refreshToken, {

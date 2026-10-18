@@ -27,7 +27,7 @@ export const getEvent = asyncHandler(async (req, res) => {
 });
 
 export const deleteEvent = asyncHandler(async (req, res) => {
-  await organiserService.deleteEvent(req.user.id, req.params.id);
+  await organiserService.deleteEvent(req.user.id, req.params.id, req.user?.role);
   res.status(200).json({ success: true, message: "Event deleted successfully." });
 });
 
@@ -59,5 +59,15 @@ export const createVenue = asyncHandler(async (req, res) => {
 export const getOrders = asyncHandler(async (req, res) => {
   const orders = await organiserService.listOrganiserOrders(req.user.id, req.query);
   res.status(200).json(orders);
+});
+
+export const updateVenue = asyncHandler(async (req, res) => {
+  const venue = await organiserService.updateVenue(req.params.id, req.body);
+  res.status(200).json(venue);
+});
+
+export const deleteVenue = asyncHandler(async (req, res) => {
+  const result = await organiserService.deleteVenue(req.params.id);
+  res.status(200).json(result);
 });
 

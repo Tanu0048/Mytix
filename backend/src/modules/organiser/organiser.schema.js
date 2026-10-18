@@ -20,6 +20,8 @@ export const createEventSchema = {
     description: z.string().min(10),
     venueId: z.string().uuid("A valid venue UUID is required."),
     category: z.string().default("Concert"),
+    seatingType: z.string().default("GENERAL").optional(),
+    seatingConfig: z.any().optional(),
     posterPath: z.string().max(512).optional(),
     startsAt: z.string().datetime(),
     doorsOpenAt: z.string().datetime().optional(),
@@ -31,8 +33,8 @@ export const createEventSchema = {
       name: z.string().min(1).max(128),
       priceCents: z.number().int().min(0),
       quantity: z.number().int().min(1),
-      saleStartsAt: z.string().datetime(),
-      saleEndsAt: z.string().datetime(),
+      saleStartsAt: z.string().datetime().optional(),
+      saleEndsAt: z.string().datetime().optional(),
       minPerOrder: z.number().int().min(1).default(1),
       maxPerOrder: z.number().int().min(1).default(10)
     })).min(1, "At least one ticket type must be defined.")
@@ -45,6 +47,8 @@ export const updateEventSchema = {
     description: z.string().min(10).optional(),
     venueId: z.string().uuid().optional(),
     category: z.string().optional(),
+    seatingType: z.string().optional(),
+    seatingConfig: z.any().optional(),
     posterPath: z.string().max(512).optional(),
     status: z.string().optional(),
     startsAt: z.string().datetime().optional(),

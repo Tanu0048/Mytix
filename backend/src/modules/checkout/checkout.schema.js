@@ -9,9 +9,6 @@ export const attendeeSchema = z.object({
 export const checkoutSchema = {
   body: z.object({
     holdId: z.string().uuid("Invalid hold ID format."),
-    attendees: z
-      .array(attendeeSchema)
-      .min(ORDER_LIMITS.MIN_TICKETS, `At least ${ORDER_LIMITS.MIN_TICKETS} attendee must be specified.`)
-      .max(ORDER_LIMITS.MAX_TICKETS, `Maximum of ${ORDER_LIMITS.MAX_TICKETS} attendees allowed.`)
+    attendees: z.array(attendeeSchema).optional()
   })
 };

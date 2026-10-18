@@ -43,7 +43,7 @@ export async function getActiveHolds(userId) {
   }));
 }
 
-export async function createHold(userId, { ticketTypeId, quantity }) {
+export async function createHold(userId, { ticketTypeId, quantity, selectedSeats }) {
   const now = new Date();
 
   const ticketType = await prisma.ticketType.findUnique({
@@ -54,7 +54,8 @@ export async function createHold(userId, { ticketTypeId, quantity }) {
           id: true,
           title: true,
           slug: true,
-          status: true
+          status: true,
+          startsAt: true
         }
       }
     }
@@ -68,12 +69,37 @@ export async function createHold(userId, { ticketTypeId, quantity }) {
     throw new AppError("EVENT_NOT_AVAILABLE", 400, "Event is not published for ticket sales.");
   }
 
-  if (now < ticketType.saleStartsAt) {
-    throw new AppError("SALE_NOT_STARTED", 400, "Ticket sales have not started yet.");
+  // 1-Hour Cutoff: Ticket booking closes 1 hour before show starts
+  if (ticketType.event.startsAt) {
+    const oneHourBeforeShow = new Date(new Date(ticketType.event.startsAt).getTime() - 60 * 60 * 1000);
+    if (now >= oneHourBeforeShow) {
+      throw new AppError("BOOKING_CLOSED", 400, "Ticket bookings close 1 hour before the show starts.");
+    }
   }
 
-  if (now > ticketType.saleEndsAt) {
-    throw new AppError("SALE_ENDED", 400, "Ticket sales for this tier have ended.");
+  // Sold Out check
+  if (ticketType.available <= 0) {
+    throw new AppError("SOLD_OUT", 400, "All tickets for this tier are sold out.");
+  }
+
+  if (ticketType.available < quantity) {
+    throw new AppError("NOT_ENOUGH_TICKETS", 400, `Only ${ticketType.available} tickets available in this category.`);
+  }
+
+  // Only check SALE_NOT_STARTED if saleStartsAt is explicitly before the event start and hasn't arrived
+  if (ticketType.saleStartsAt && now < ticketType.saleStartsAt) {
+    const eventStartsAt = ticketType.event?.startsAt ? new Date(ticketType.event.startsAt) : null;
+    if (eventStartsAt && ticketType.saleStartsAt < eventStartsAt) {
+      throw new AppError("SALE_NOT_STARTED", 400, "Ticket sales have not started yet.");
+    }
+  }
+
+  // Only check SALE_ENDED if saleEndsAt is explicitly before event start and has passed
+  if (ticketType.saleEndsAt && now > ticketType.saleEndsAt) {
+    const eventStartsAt = ticketType.event?.startsAt ? new Date(ticketType.event.startsAt) : null;
+    if (eventStartsAt && ticketType.saleEndsAt < eventStartsAt) {
+      throw new AppError("SALE_ENDED", 400, "Ticket sales for this tier have ended.");
+    }
   }
 
   if (quantity < ticketType.minPerOrder) {
@@ -114,6 +140,54 @@ export async function createHold(userId, { ticketTypeId, quantity }) {
     };
   }
 
+  // Validate selectedSeats against already booked or currently held seats
+  if (Array.isArray(selectedSeats) && selectedSeats.length > 0) {
+    const seatKeys = selectedSeats.map((s) => (typeof s === "string" ? s : `${s.row}-${s.seatNumber}`));
+
+    // 1. Check if any seat is already booked
+    const existingTickets = await prisma.ticket.findMany({
+      where: {
+        order: { eventId: ticketType.event.id, status: { in: ["PAID", "PENDING"] } },
+        status: { not: "CANCELLED" }
+      },
+      select: { seatRow: true, seatNumber: true, sectionName: true }
+    });
+
+    for (const t of existingTickets) {
+      const cleanRow = t.seatRow?.includes(":") ? t.seatRow.split(":")[1] : t.seatRow;
+      const tKey1 = `${cleanRow}-${t.seatNumber}`;
+      const tKey2 = `${t.seatRow}-${t.seatNumber}`;
+      const tKey3 = t.sectionName ? `${t.sectionName}:${cleanRow}-${t.seatNumber}` : null;
+
+      for (const reqSeat of seatKeys) {
+        if (reqSeat === tKey1 || reqSeat === tKey2 || reqSeat === tKey3 || reqSeat.endsWith(`:${cleanRow}-${t.seatNumber}`) || reqSeat.endsWith(`-${cleanRow}-${t.seatNumber}`)) {
+          throw new AppError("SEAT_ALREADY_BOOKED", 409, `Seat ${reqSeat} has already been booked. Please choose another seat.`);
+        }
+      }
+    }
+
+    // 2. Check if any seat is held by another user
+    const otherHolds = await prisma.inventoryHold.findMany({
+      where: {
+        ticketType: { eventId: ticketType.event.id },
+        status: "ACTIVE",
+        expiresAt: { gt: now },
+        userId: { not: userId }
+      },
+      select: { selectedSeats: true }
+    });
+
+    for (const h of otherHolds) {
+      if (Array.isArray(h.selectedSeats)) {
+        for (const heldSeat of h.selectedSeats) {
+          if (seatKeys.includes(heldSeat)) {
+            throw new AppError("SEAT_HELD", 409, `Seat ${heldSeat} is currently held by another user. Please choose another seat.`);
+          }
+        }
+      }
+    }
+  }
+
   const expiresAt = new Date(now.getTime() + HOLD_DURATION_MINUTES * 60 * 1000);
 
   // Atomic Compare-And-Swap stock decrement and hold creation in one transaction
@@ -137,6 +211,7 @@ export async function createHold(userId, { ticketTypeId, quantity }) {
         userId,
         ticketTypeId,
         quantity,
+        selectedSeats: selectedSeats || null,
         status: "ACTIVE",
         expiresAt
       },

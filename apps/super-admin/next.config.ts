@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
         hostname: "in.bmscdn.com",
       },
       {
+        protocol: "https",
+        hostname: "mytix.onrender.com",
+      },
+      {
         protocol: "http",
         hostname: "localhost",
       },

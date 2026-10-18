@@ -8,7 +8,8 @@ export const createHoldSchema = z.object({
     .number()
     .int({ message: "Quantity must be an integer" })
     .min(ORDER_LIMITS.MIN_TICKETS, { message: `Minimum quantity is ${ORDER_LIMITS.MIN_TICKETS}` })
-    .max(ORDER_LIMITS.MAX_TICKETS, { message: `Maximum quantity is ${ORDER_LIMITS.MAX_TICKETS}` })
+    .max(ORDER_LIMITS.MAX_TICKETS, { message: `Maximum quantity is ${ORDER_LIMITS.MAX_TICKETS}` }),
+  selectedSeats: z.array(z.string()).optional()
 });
 
 export const holdIdParamSchema = z.object({

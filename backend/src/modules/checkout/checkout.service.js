@@ -8,7 +8,7 @@ import { AppError } from "../../utils/errors.js";
  * Initiates the checkout pipeline for an active inventory hold.
  * Generates an order in PENDING status and creates a Stripe PaymentIntent.
  */
-export async function createCheckoutSession(userId, { holdId, attendees }, idempotencyKey) {
+export async function createCheckoutSession(userId, { holdId, attendees = [] }, idempotencyKey) {
   const now = new Date();
 
   const hold = await prisma.inventoryHold.findUnique({
@@ -49,7 +49,18 @@ export async function createCheckoutSession(userId, { holdId, attendees }, idemp
     );
   }
 
-  if (attendees.length !== hold.quantity) {
+  // Auto-populate attendees from buyer account if not provided or empty
+  let finalAttendees = Array.isArray(attendees) ? [...attendees] : [];
+  if (finalAttendees.length === 0) {
+    const buyer = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true }
+    });
+    finalAttendees = Array(hold.quantity).fill(null).map(() => ({
+      name: buyer?.name || "Event Attendee",
+      email: buyer?.email || "attendee@mytix.com"
+    }));
+  } else if (finalAttendees.length !== hold.quantity) {
     throw new AppError(
       "ATTENDEE_COUNT_MISMATCH",
       400,
@@ -94,7 +105,8 @@ export async function createCheckoutSession(userId, { holdId, attendees }, idemp
           orderId: createdOrder.id,
           ticketTypeId: hold.ticketTypeId,
           quantity: hold.quantity,
-          unitPriceCents: hold.ticketType.priceCents
+          unitPriceCents: hold.ticketType.priceCents,
+          selectedSeats: hold.selectedSeats || null
         }
       });
 
@@ -114,7 +126,7 @@ export async function createCheckoutSession(userId, { holdId, attendees }, idemp
         orderNumber: order.orderNumber,
         userId,
         holdId: hold.id,
-        attendees: JSON.stringify(attendees)
+        attendees: JSON.stringify(finalAttendees)
       },
       idempotencyKey
     });
@@ -134,12 +146,12 @@ export async function createCheckoutSession(userId, { holdId, attendees }, idemp
           orderNumber: order.orderNumber,
           userId,
           holdId: hold.id,
-          attendees: JSON.stringify(attendees)
+          attendees: JSON.stringify(finalAttendees)
         }
       };
       await fulfillOrderAfterPayment(paymentIntent);
       // Generate tickets synchronously in demo mode to avoid pgboss queue delays
-      await generateTicketsForOrder(order.id, attendees);
+      await generateTicketsForOrder(order.id, finalAttendees);
     } else {
       throw err;
     }

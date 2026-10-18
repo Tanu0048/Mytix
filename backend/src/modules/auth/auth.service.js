@@ -41,8 +41,10 @@ export async function registerUser({ email, name, password, phone }) {
 }
 
 export async function loginUser({ email, password }) {
+  const normalizedEmail = email ? email.toLowerCase().trim() : "";
   const user = await prisma.user.findUnique({
-    where: { email }
+    where: { email: normalizedEmail },
+    include: { organiser: true }
   });
 
   if (!user || !user.passwordHash) {
@@ -52,6 +54,10 @@ export async function loginUser({ email, password }) {
   const isValid = await verifyPassword(user.passwordHash, password);
   if (!isValid) {
     throw new AppError("INVALID_CREDENTIALS", 401, "Invalid email or password.");
+  }
+
+  if (user.role === "ORGANISER" && user.organiser && user.organiser.status === "SUSPENDED") {
+    throw new AppError("ACCOUNT_SUSPENDED", 403, "Your organiser account is currently suspended. Please contact platform administration.");
   }
 
   const accessToken = generateAccessToken(user);

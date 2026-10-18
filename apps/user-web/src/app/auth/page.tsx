@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Mail, Lock, User, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
+import { API_BASE } from '@/config/api';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function AuthPage() {
     const payload = isLogin ? { email, password } : { name, email, password };
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -47,8 +48,7 @@ export default function AuthPage() {
         throw new Error(data.error?.message || data.message || 'Authentication failed');
       }
 
-      // Update global state and redirect to home on success
-      useAuthStore.getState().setToken(data.tokens?.accessToken);
+      // Session cookies are automatically stored by browser. Fetch authenticated user profile:
       await fetchUser();
       toast.success(isLogin ? 'Logged in successfully!' : 'Account created successfully!');
       router.push('/');

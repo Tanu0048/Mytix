@@ -4,6 +4,7 @@ import { generateSlug } from "../../utils/slug.js";
 import { AppError } from "../../utils/errors.js";
 import { parseCursorPagination, formatPaginatedResponse } from "../../utils/pagination.js";
 import { generateTicketsForOrder } from "../tickets/ticket.service.js";
+import { deleteCached } from "../../lib/cache.js";
 
 export async function applyForOrganiser(userId, data) {
   const existing = await prisma.organiser.findUnique({
@@ -30,12 +31,32 @@ export async function applyForOrganiser(userId, data) {
 }
 
 export async function createEvent(userId, data) {
-  const organiser = await prisma.organiser.findUnique({
+  let organiser = await prisma.organiser.findUnique({
     where: { userId }
   });
 
   if (!organiser || organiser.status !== "APPROVED") {
-    throw new AppError("FORBIDDEN", 403, "Approved organiser account is required to create events.");
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user?.role === "ADMIN") {
+      // Find an existing approved organiser or auto-create an admin organiser profile
+      organiser = await prisma.organiser.findFirst({ where: { status: "APPROVED" } });
+      if (!organiser) {
+        organiser = await prisma.organiser.upsert({
+          where: { userId: user.id },
+          create: {
+            userId: user.id,
+            businessName: "Platform Administration",
+            contactEmail: user.email,
+            status: "APPROVED"
+          },
+          update: {
+            status: "APPROVED"
+          }
+        });
+      }
+    } else {
+      throw new AppError("FORBIDDEN", 403, "Approved organiser account is required to create events.");
+    }
   }
 
   const venue = await prisma.venue.findUnique({
@@ -53,6 +74,19 @@ export async function createEvent(userId, data) {
     slug = `${slug}-${Date.now().toString(36)}`;
   }
 
+  // Ensure category exists in Master list
+  if (data.category) {
+    const trimmedCat = data.category.trim();
+    if (trimmedCat) {
+      await prisma.category.upsert({
+        where: { name: trimmedCat },
+        update: {},
+        create: { name: trimmedCat }
+      });
+      data.category = trimmedCat;
+    }
+  }
+
   const event = await prisma.event.create({
     data: {
       organiserId: organiser.id,
@@ -65,6 +99,8 @@ export async function createEvent(userId, data) {
       doorsOpenAt: data.doorsOpenAt ? new Date(data.doorsOpenAt) : null,
       status: "PUBLISHED", // Published upon creation for testing Phase 3
       category: data.category || "Concert",
+      seatingType: data.seatingType || "GENERAL",
+      seatingConfig: data.seatingConfig || null,
       artists: data.artists?.length
         ? {
             create: data.artists.map((a) => ({
@@ -79,8 +115,8 @@ export async function createEvent(userId, data) {
           priceCents: t.priceCents,
           quantity: t.quantity,
           available: t.quantity,
-          saleStartsAt: new Date(t.saleStartsAt),
-          saleEndsAt: new Date(t.saleEndsAt),
+          saleStartsAt: t.saleStartsAt && new Date(t.saleStartsAt) < new Date(data.startsAt) ? new Date(t.saleStartsAt) : new Date(),
+          saleEndsAt: t.saleEndsAt && new Date(t.saleEndsAt) > new Date() ? new Date(t.saleEndsAt) : new Date(data.startsAt),
           minPerOrder: t.minPerOrder || 1,
           maxPerOrder: t.maxPerOrder || 10
         }))
@@ -97,11 +133,14 @@ export async function createEvent(userId, data) {
 }
 
 export async function updateEvent(userId, eventId, data) {
-  const organiser = await prisma.organiser.findUnique({
+  let organiser = await prisma.organiser.findUnique({
     where: { userId }
   });
 
-  if (!organiser || organiser.status !== "APPROVED") {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const isAdmin = user?.role === "ADMIN";
+
+  if (!isAdmin && (!organiser || organiser.status !== "APPROVED")) {
     throw new AppError("FORBIDDEN", 403, "Approved organiser account is required to update events.");
   }
 
@@ -109,7 +148,7 @@ export async function updateEvent(userId, eventId, data) {
     where: { id: eventId }
   });
 
-  if (!existingEvent || existingEvent.organiserId !== organiser.id) {
+  if (!existingEvent || (!isAdmin && existingEvent.organiserId !== organiser?.id)) {
     throw new AppError("NOT_FOUND", 404, "Event not found or you do not have permission.");
   }
 
@@ -129,6 +168,8 @@ export async function updateEvent(userId, eventId, data) {
   if (data.description !== undefined) updateData.description = data.description;
   if (data.posterPath !== undefined) updateData.posterPath = data.posterPath;
   if (data.category !== undefined) updateData.category = data.category;
+  if (data.seatingType !== undefined) updateData.seatingType = data.seatingType;
+  if (data.seatingConfig !== undefined) updateData.seatingConfig = data.seatingConfig;
   if (data.status !== undefined) updateData.status = data.status;
   if (data.startsAt !== undefined) updateData.startsAt = new Date(data.startsAt);
   if (data.doorsOpenAt !== undefined) updateData.doorsOpenAt = data.doorsOpenAt ? new Date(data.doorsOpenAt) : null;
@@ -147,6 +188,7 @@ export async function updateEvent(userId, eventId, data) {
           const newQty = Math.max(sold, t.quantity);
           const newAvailable = Math.max(0, newQty - sold);
 
+          const eventStartsAt = updateData.startsAt || existingEvent.startsAt;
           await prisma.ticketType.update({
             where: { id: t.id },
             data: {
@@ -154,14 +196,19 @@ export async function updateEvent(userId, eventId, data) {
               priceCents: t.priceCents,
               quantity: newQty,
               available: newAvailable,
-              ...(t.saleStartsAt ? { saleStartsAt: new Date(t.saleStartsAt) } : {}),
-              ...(t.saleEndsAt ? { saleEndsAt: new Date(t.saleEndsAt) } : {}),
+              saleStartsAt: t.saleStartsAt && eventStartsAt && new Date(t.saleStartsAt) < new Date(eventStartsAt)
+                ? new Date(t.saleStartsAt)
+                : new Date(),
+              saleEndsAt: t.saleEndsAt && new Date(t.saleEndsAt) > new Date()
+                ? new Date(t.saleEndsAt)
+                : (eventStartsAt ? new Date(eventStartsAt) : undefined),
               minPerOrder: t.minPerOrder || 1,
               maxPerOrder: t.maxPerOrder || 10,
             }
           });
         }
       } else {
+        const eventStartsAt = updateData.startsAt || existingEvent.startsAt;
         await prisma.ticketType.create({
           data: {
             eventId,
@@ -170,8 +217,12 @@ export async function updateEvent(userId, eventId, data) {
             quantity: t.quantity,
             available: t.quantity,
             sold: 0,
-            saleStartsAt: t.saleStartsAt ? new Date(t.saleStartsAt) : new Date(),
-            saleEndsAt: t.saleEndsAt ? new Date(t.saleEndsAt) : (updateData.startsAt || existingEvent.startsAt),
+            saleStartsAt: t.saleStartsAt && eventStartsAt && new Date(t.saleStartsAt) < new Date(eventStartsAt)
+              ? new Date(t.saleStartsAt)
+              : new Date(),
+            saleEndsAt: t.saleEndsAt && new Date(t.saleEndsAt) > new Date()
+              ? new Date(t.saleEndsAt)
+              : (eventStartsAt ? new Date(eventStartsAt) : new Date()),
             minPerOrder: t.minPerOrder || 1,
             maxPerOrder: t.maxPerOrder || 10,
           }
@@ -193,27 +244,103 @@ export async function updateEvent(userId, eventId, data) {
   return updatedEvent;
 }
 
-export async function deleteEvent(userId, eventId) {
-  const organiser = await prisma.organiser.findUnique({
-    where: { userId }
-  });
-
-  if (!organiser || organiser.status !== "APPROVED") {
-    throw new AppError("FORBIDDEN", 403, "Approved organiser account is required to delete events.");
-  }
-
+export async function deleteEvent(userId, eventId, userRole) {
   const existingEvent = await prisma.event.findUnique({
     where: { id: eventId }
   });
 
-  if (!existingEvent || existingEvent.organiserId !== organiser.id) {
-    throw new AppError("NOT_FOUND", 404, "Event not found or you do not have permission.");
+  if (!existingEvent) {
+    throw new AppError("NOT_FOUND", 404, "Event not found.");
   }
 
-  // First delete dependencies like artists and ticket types to avoid foreign key constraints
-  await prisma.eventArtist.deleteMany({ where: { eventId } });
-  await prisma.ticketType.deleteMany({ where: { eventId } });
+  // 1. Role / Ownership Verification
+  let isAdmin = userRole === "ADMIN";
+  if (!isAdmin) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    });
+    if (user?.role === "ADMIN") {
+      isAdmin = true;
+    }
+  }
 
+  if (!isAdmin) {
+    const organiser = await prisma.organiser.findUnique({
+      where: { userId }
+    });
+
+    if (!organiser || organiser.status !== "APPROVED") {
+      throw new AppError("FORBIDDEN", 403, "Approved organiser account is required to delete events.");
+    }
+
+    if (existingEvent.organiserId !== organiser.id) {
+      throw new AppError("FORBIDDEN", 403, "You do not own this event.");
+    }
+  }
+
+  // 2. Safe Dependency Cleanup before deleting Event
+  // Unlink Banners referencing this event
+  await prisma.banner.updateMany({
+    where: { eventId },
+    data: { eventId: null }
+  });
+
+  // Delete Artist associations
+  await prisma.eventArtist.deleteMany({
+    where: { eventId }
+  });
+
+  // Find ticket types for this event
+  const ticketTypes = await prisma.ticketType.findMany({
+    where: { eventId },
+    select: { id: true }
+  });
+  const ticketTypeIds = ticketTypes.map((t) => t.id);
+
+  if (ticketTypeIds.length > 0) {
+    // Delete inventory holds on these tickets
+    await prisma.inventoryHold.deleteMany({
+      where: { ticketTypeId: { in: ticketTypeIds } }
+    });
+  }
+
+  // Clean up any orders/tickets on this event
+  const orders = await prisma.order.findMany({
+    where: { eventId },
+    select: { id: true }
+  });
+  const orderIds = orders.map((o) => o.id);
+
+  if (orderIds.length > 0) {
+    await prisma.ticket.deleteMany({
+      where: { orderId: { in: orderIds } }
+    });
+    await prisma.orderItem.deleteMany({
+      where: { orderId: { in: orderIds } }
+    });
+    await prisma.ledgerEntry.deleteMany({
+      where: { orderId: { in: orderIds } }
+    });
+    await prisma.payment.deleteMany({
+      where: { orderId: { in: orderIds } }
+    });
+    await prisma.order.deleteMany({
+      where: { id: { in: orderIds } }
+    });
+  }
+
+  // Delete any direct ledger entries referencing the event
+  await prisma.ledgerEntry.deleteMany({
+    where: { eventId }
+  });
+
+  // Delete ticket types
+  await prisma.ticketType.deleteMany({
+    where: { eventId }
+  });
+
+  // Finally delete the event
   await prisma.event.delete({
     where: { id: eventId }
   });
@@ -226,14 +353,19 @@ export async function listOrganiserEvents(userId, query = {}) {
     where: { userId }
   });
 
-  if (!organiser) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const isAdmin = user?.role === "ADMIN";
+
+  if (!organiser && !isAdmin) {
     throw new AppError("FORBIDDEN", 403, "Organiser profile not found.");
   }
 
   const { limit, cursor } = parseCursorPagination(query);
 
+  const where = organiser ? { organiserId: organiser.id } : {};
+
   const events = await prisma.event.findMany({
-    where: { organiserId: organiser.id },
+    where,
     take: limit + 1,
     cursor: cursor ? { id: cursor } : undefined,
     skip: cursor ? 1 : 0,
@@ -261,7 +393,10 @@ export async function getOrganiserEvent(userId, eventId) {
     where: { userId }
   });
 
-  if (!organiser) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const isAdmin = user?.role === "ADMIN";
+
+  if (!organiser && !isAdmin) {
     throw new AppError("FORBIDDEN", 403, "Organiser profile not found.");
   }
 
@@ -506,7 +641,39 @@ export async function createVenue(data) {
     }
   });
 
+  deleteCached("catalog:home");
   return venue;
+}
+
+export async function updateVenue(venueId, data) {
+  const { name, city, state, address, timezone, capacity } = data;
+  const venue = await prisma.venue.update({
+    where: { id: venueId },
+    data: {
+      ...(name && { name }),
+      ...(city && { city }),
+      ...(state !== undefined && { state }),
+      ...(address && { address }),
+      ...(timezone && { timezone }),
+      ...(capacity !== undefined && { capacity: Number(capacity) })
+    }
+  });
+  deleteCached("catalog:home");
+  return venue;
+}
+
+export async function deleteVenue(venueId) {
+  const eventCount = await prisma.event.count({
+    where: { venueId }
+  });
+  if (eventCount > 0) {
+    throw new AppError("CANNOT_DELETE_VENUE", 400, `Cannot delete venue because ${eventCount} event(s) are associated with it.`);
+  }
+  await prisma.venue.delete({
+    where: { id: venueId }
+  });
+  deleteCached("catalog:home");
+  return { success: true, message: "Venue deleted successfully." };
 }
 
 export async function listOrganiserOrders(userId, query = {}) {

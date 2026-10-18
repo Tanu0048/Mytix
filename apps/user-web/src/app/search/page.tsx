@@ -6,8 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Search, MapPin, Calendar, Music, Building2, X } from 'lucide-react';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+import { BACKEND_HOST as BACKEND_URL, API_BASE as API_URL } from '@/config/api';
 
 function getFullImageUrl(path: string | undefined): string {
   if (!path) return '';
@@ -80,7 +79,7 @@ function SearchPageContent() {
         <div className="max-w-5xl mx-auto px-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
             {query ? (
-              <>Search results for <span className="text-blue-600">&quot;{query}&quot;</span></>
+              <>Search results for <span className="text-amber-600 font-extrabold">&quot;{query}&quot;</span></>
             ) : (
               'Search Events, Artists & Venues'
             )}
@@ -100,14 +99,14 @@ function SearchPageContent() {
                   onClick={() => setActiveTab(tab.key)}
                   className={`px-4 py-2.5 text-sm font-semibold rounded-t-lg transition-colors relative ${
                     activeTab === tab.key
-                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50'
+                      ? 'text-amber-800 border-b-2 border-amber-500 bg-amber-50/70 font-bold'
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   {tab.label}
                   {tab.count > 0 && (
                     <span className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full ${
-                      activeTab === tab.key ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                      activeTab === tab.key ? 'bg-amber-200 text-amber-950 font-bold' : 'bg-gray-100 text-gray-500'
                     }`}>
                       {tab.count}
                     </span>
@@ -149,7 +148,7 @@ function SearchPageContent() {
               We couldn&apos;t find anything for &quot;<strong>{query}</strong>&quot;. Try different keywords.
             </p>
             <div className="flex flex-wrap gap-2 justify-center text-sm">
-              {['Concerts', 'Bollywood', 'Delhi', 'Stand-up Comedy'].map((suggestion) => (
+              {['Concerts', 'Bollywood', 'Sydney', 'Melbourne'].map((suggestion) => (
                 <button
                   key={suggestion}
                   onClick={() => {
@@ -158,7 +157,7 @@ function SearchPageContent() {
                     router.push(`/search?q=${encodeURIComponent(suggestion)}`);
                     fetchResults(suggestion);
                   }}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-full hover:border-blue-300 hover:text-blue-600 transition-colors"
+                  className="px-4 py-2 bg-white border border-gray-200 rounded-full hover:border-amber-400 hover:text-amber-700 transition-colors font-medium"
                 >
                   {suggestion}
                 </button>
@@ -170,8 +169,8 @@ function SearchPageContent() {
         {/* Empty state before search */}
         {!loading && !hasSearched && (
           <div className="text-center py-24">
-            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5">
-              <Search className="w-9 h-9 text-blue-400" />
+            <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-5 border border-amber-100">
+              <Search className="w-9 h-9 text-amber-500" />
             </div>
             <h2 className="text-xl font-bold text-gray-800 mb-2">Start searching</h2>
             <p className="text-gray-500">Search for events, artists, concerts, or venues above.</p>
@@ -187,7 +186,7 @@ function SearchPageContent() {
               <section>
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-500" />
+                    <Calendar className="w-5 h-5 text-amber-600" />
                     Events
                     <span className="text-sm font-normal text-gray-400">({results.events.length})</span>
                   </h2>
@@ -201,7 +200,7 @@ function SearchPageContent() {
                       <Link
                         key={event.id}
                         href={`/events/${event.slug}`}
-                        className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-blue-200 hover:shadow-lg transition-all group"
+                        className="bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-amber-300 hover:shadow-lg transition-all group"
                       >
                         <div className="relative aspect-video bg-gray-100 overflow-hidden">
                           {event.posterPath ? (
@@ -217,32 +216,32 @@ function SearchPageContent() {
                             </div>
                           )}
                           <div className="absolute top-2 left-2">
-                            <span className="text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded-full">
+                            <span className="text-xs font-bold bg-amber-400 text-slate-950 px-2 py-1 rounded-full shadow-xs">
                               {event.category || 'Event'}
                             </span>
                           </div>
                         </div>
                         <div className="p-4">
-                          <h3 className="font-bold text-gray-900 text-base line-clamp-2 mb-2 group-hover:text-blue-600 transition-colors">
+                          <h3 className="font-bold text-gray-900 text-base line-clamp-2 mb-2 group-hover:text-amber-600 transition-colors">
                             {event.title}
                           </h3>
                           {event.venue && (
                             <p className="text-sm text-gray-500 flex items-center gap-1 mb-1">
-                              <MapPin className="w-3.5 h-3.5 shrink-0" />
+                              <MapPin className="w-3.5 h-3.5 shrink-0 text-amber-500" />
                               {event.venue.name}, {event.venue.city}
                             </p>
                           )}
                           {event.startsAt && (
                             <p className="text-sm text-gray-500 flex items-center gap-1">
                               <Calendar className="w-3.5 h-3.5 shrink-0" />
-                              {new Date(event.startsAt).toLocaleDateString('en-IN', {
+                              {new Date(event.startsAt).toLocaleDateString('en-AU', {
                                 day: 'numeric', month: 'short', year: 'numeric'
                               })}
                             </p>
                           )}
                           {minPrice !== null && (
-                            <p className="mt-3 text-sm font-bold text-blue-700">
-                              From ₹{(minPrice / 100).toLocaleString('en-IN')}
+                            <p className="mt-3 text-sm font-bold text-amber-700">
+                              From ${(minPrice / 100).toLocaleString('en-AU')}
                             </p>
                           )}
                         </div>
@@ -263,11 +262,12 @@ function SearchPageContent() {
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {results.artists.map((artist: any) => (
-                    <div
+                    <Link
                       key={artist.id}
-                      className="bg-white rounded-2xl p-4 text-center border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all group cursor-pointer"
+                      href={`/events?search=${encodeURIComponent(artist.name)}`}
+                      className="bg-white rounded-2xl p-4 text-center border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all group cursor-pointer block"
                     >
-                      <div className="w-16 h-16  from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-3 overflow-hidden relative border-2 border-white shadow-md">
+                      <div className="w-16 h-16 from-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-3 overflow-hidden relative border-2 border-white shadow-md">
                         {artist.imagePath ? (
                           <Image
                             src={getFullImageUrl(artist.imagePath)}
@@ -282,7 +282,7 @@ function SearchPageContent() {
                       <p className="font-semibold text-gray-900 text-sm group-hover:text-purple-600 transition-colors">
                         {artist.name}
                       </p>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </section>
@@ -298,9 +298,10 @@ function SearchPageContent() {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {results.venues.map((venue: any) => (
-                    <div
+                    <Link
                       key={venue.id}
-                      className="bg-white rounded-2xl p-4 flex items-center gap-4 border border-gray-100 hover:border-green-200 hover:shadow-md transition-all cursor-pointer group"
+                      href={`/events?city=${encodeURIComponent(venue.city)}`}
+                      className="bg-white rounded-2xl p-4  items-center gap-4 border border-gray-100 hover:border-green-200 hover:shadow-md transition-all cursor-pointer group block"
                     >
                       <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-green-100 transition-colors">
                         <Building2 className="w-6 h-6 text-green-600" />
@@ -312,7 +313,7 @@ function SearchPageContent() {
                           {venue.city}{venue.state ? `, ${venue.state}` : ''}
                         </p>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </section>

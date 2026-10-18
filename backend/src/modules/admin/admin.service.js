@@ -3,6 +3,38 @@ import { AppError } from "../../utils/errors.js";
 import { parseCursorPagination, formatPaginatedResponse } from "../../utils/pagination.js";
 import { invalidateBannerCache } from "../banners/banner.service.js";
 import { hashPassword } from "../auth/password.service.js";
+import { deleteCached } from "../../lib/cache.js";
+
+// ----------------------------------------------------
+// CATEGORIES MANAGEMENT
+// ----------------------------------------------------
+export async function listCategories() {
+  return prisma.category.findMany({
+    orderBy: { name: "asc" }
+  });
+}
+
+export async function createCategory(data) {
+  const existing = await prisma.category.findUnique({
+    where: { name: data.name }
+  });
+  if (existing) {
+    throw new AppError("CONFLICT", 409, "Category already exists");
+  }
+  const created = await prisma.category.create({
+    data: { name: data.name }
+  });
+  deleteCached("categories:unique");
+  return created;
+}
+
+export async function deleteCategory(id) {
+  const deleted = await prisma.category.delete({
+    where: { id }
+  });
+  deleteCached("categories:unique");
+  return deleted;
+}
 
 // ----------------------------------------------------
 // BANNERS MANAGEMENT
@@ -190,6 +222,45 @@ export async function updateOrganiserStatus(organiserId, newStatus, adminUserId)
   });
 
   return result;
+}
+
+export async function deleteOrganiser(organiserId, adminUserId) {
+  const organiser = await prisma.organiser.findUnique({
+    where: { id: organiserId },
+    include: { user: true }
+  });
+
+  if (!organiser) {
+    throw new AppError("NOT_FOUND", 404, "Organiser not found.");
+  }
+
+  if (organiser.status !== "SUSPENDED") {
+    throw new AppError("BAD_REQUEST", 400, "Organiser must be suspended before deletion.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Delete the user record (which should cascade delete the organiser record, depending on schema, but we'll do both explicitly to be safe)
+    await tx.organiser.delete({
+      where: { id: organiserId }
+    });
+    
+    await tx.user.delete({
+      where: { id: organiser.userId }
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actorId: adminUserId,
+        action: "ORGANISER_DELETED",
+        entity: "Organiser",
+        entityId: organiserId,
+        before: { id: organiserId, email: organiser.user.email },
+        after: {}
+      }
+    });
+  });
+
+  return { deleted: true, id: organiserId };
 }
 
 export async function createOrganiserAccount(data, adminUserId) {

@@ -63,26 +63,30 @@ export async function getHomePageData() {
       }
     }),
 
-    // Active cities
+    // Configured cities from venues
     prisma.venue.findMany({
       where: {
-        events: {
-          some: {
-            status: "PUBLISHED",
-            startsAt: { gte: now }
-          }
-        }
+        city: { not: "" }
       },
       select: { city: true },
-      distinct: ["city"]
+      distinct: ["city"],
+      orderBy: { city: "asc" }
     })
   ]);
+
+  const uniqueCities = Array.from(
+    new Set(
+      venues
+        .map((v) => v.city?.trim())
+        .filter(Boolean)
+    )
+  );
 
   const response = {
     featuredEvents,
     trendingEvents,
     upcomingArtists,
-    cities: venues.map((v) => v.city)
+    cities: uniqueCities
   };
 
   setCached(cacheKey, response, CACHE_TTL.STATIC_PAGES_SECONDS * 1000);
