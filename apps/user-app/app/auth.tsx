@@ -94,26 +94,16 @@ export default function AuthScreen() {
         await AsyncStorage.setItem('user', JSON.stringify(user));
       }
 
-      Alert.alert(
-        'Success',
-        isLogin ? 'Logged in successfully!' : 'Account created successfully!',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace('/(tabs)');
-              }
-            },
-          },
-        ]
-      );
+      // Instant navigation upon successful login/register
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (err: any) {
       const msg = err.message || 'Something went wrong. Please check your credentials.';
       setError(msg);
-      Alert.alert('Error', msg);
+      Alert.alert('Authentication Failed', msg);
     } finally {
       setLoading(false);
     }
@@ -238,6 +228,13 @@ export default function AuthScreen() {
             </View>
           )}
 
+          {Boolean(error) && (
+            <View style={styles.errorBanner}>
+              <Ionicons name="alert-circle" size={18} color="#DC2626" />
+              <Text style={styles.errorBannerText}>{error}</Text>
+            </View>
+          )}
+
           <TouchableOpacity
             style={[styles.submitButton, loading && styles.submitButtonDisabled]}
             onPress={handleSubmit}
@@ -245,7 +242,12 @@ export default function AuthScreen() {
             activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator color="#0F172A" size="small" />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <ActivityIndicator color="#0F172A" size="small" />
+                <Text style={styles.submitButtonText}>
+                  {isLogin ? 'Signing In...' : 'Creating Account...'}
+                </Text>
+              </View>
             ) : (
               <Text style={styles.submitButtonText}>
                 {isLogin ? 'Sign In to Mytix' : 'Create Account'}
