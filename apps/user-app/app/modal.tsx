@@ -62,12 +62,12 @@ export default function GuaranteeModalScreen() {
 
           <View style={styles.featureCard}>
             <View style={styles.featureIcon}>
-              <Ionicons name="call" size={22} color="#D97706" />
+              <Ionicons name="mail-unread" size={22} color="#D97706" />
             </View>
             <View style={styles.featureTextCol}>
               <Text style={styles.featureTitle}>Dedicated Australian Support</Text>
               <Text style={styles.featureDesc}>
-                Need assistance with your booking or venue accessibility? Our Australian team is ready to help 7 days a week.
+                Need assistance with your booking or venue accessibility? Our Australian team is ready to help via email 7 days a week.
               </Text>
             </View>
           </View>
@@ -77,20 +77,11 @@ export default function GuaranteeModalScreen() {
         <View style={styles.contactSection}>
           <TouchableOpacity
             style={styles.contactBtn}
-            onPress={() => Linking.openURL('tel:0455600003')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="call" size={16} color="#0F172A" />
-            <Text style={styles.contactBtnText}>Call 0455 600 003</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.contactBtn, styles.contactBtnSecondary]}
             onPress={() => Linking.openURL('mailto:support@mytix.com.au')}
             activeOpacity={0.8}
           >
-            <Ionicons name="mail" size={16} color="#0F172A" />
-            <Text style={styles.contactBtnText}>Email Support</Text>
+            <Ionicons name="mail" size={18} color="#0F172A" />
+            <Text style={styles.contactBtnText}>Email Support (support@mytix.com.au)</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

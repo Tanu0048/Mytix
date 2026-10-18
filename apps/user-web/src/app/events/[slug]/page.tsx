@@ -169,7 +169,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
             <ul className="space-y-4 text-sm text-gray-700 font-medium">
               <li className="flex items-start gap-3"><CheckCircle className="w-5 h-5 text-amber-600 shrink-0" /> Every booking confirmed by our team</li>
               <li className="flex items-start gap-3"><Ticket className="w-5 h-5 text-amber-600 shrink-0" /> No payment taken on the website</li>
-              <li className="flex items-start gap-3"><Info className="w-5 h-5 text-amber-600 shrink-0" /> Questions? Call 0455 600 003</li>
+              <li className="flex items-start gap-3"><Info className="w-5 h-5 text-amber-600 shrink-0" /> Questions? Email support@mytix.com.au</li>
             </ul>
           </div>
         </div>

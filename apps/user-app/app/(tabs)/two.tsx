@@ -11,7 +11,6 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
-  Linking,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -45,7 +44,6 @@ export default function ProfileScreen() {
   const [token, setToken] = useState<string | null>(null);
 
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -62,7 +60,6 @@ export default function ProfileScreen() {
             setUser(parsed);
             setToken(storedToken);
             setName(parsed.name || '');
-            setPhone(parsed.phone || '');
           } else {
             setUser(null);
             setToken(null);
@@ -88,13 +85,12 @@ export default function ProfileScreen() {
         },
         body: JSON.stringify({
           name: name.trim(),
-          phone: phone.trim() || null,
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        const updatedUser = data.user || { ...user, name: name.trim(), phone: phone.trim() };
+        const updatedUser = data.user || { ...user, name: name.trim() };
         await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
         setUser(updatedUser);
         setSaveSuccess(true);
@@ -254,22 +250,6 @@ export default function ProfileScreen() {
                 </Text>
               </View>
 
-              {/* Phone Field */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Phone Number (Optional)</Text>
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="call-outline" size={18} color="#94A3B8" />
-                  <TextInput
-                    style={styles.textInput}
-                    value={phone}
-                    onChangeText={setPhone}
-                    placeholder="+61 400 000 000"
-                    placeholderTextColor="#94A3B8"
-                    keyboardType="phone-pad"
-                  />
-                </View>
-              </View>
-
               {/* Save Button */}
               <TouchableOpacity
                 style={[styles.saveButton, saving && { opacity: 0.7 }]}
@@ -323,28 +303,6 @@ export default function ProfileScreen() {
                   <Text style={styles.cardSubtitle}>Australian ticketing assistance & FAQs</Text>
                 </View>
               </View>
-
-              {/* Australian Concierge Call Banner */}
-              <TouchableOpacity
-                style={styles.helpCallBanner}
-                activeOpacity={0.8}
-                onPress={() =>
-                  Linking.openURL('tel:0455600003').catch(() => {
-                    Alert.alert('Australian Support', 'Call us at 0455 600 003 for direct concierge assistance.');
-                  })
-                }
-              >
-                <View style={styles.helpCallIconBox}>
-                  <Ionicons name="headset" size={20} color="#D97706" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.helpCallTitle}>Australian Phone Support</Text>
-                  <Text style={styles.helpCallSubtitle}>Call 0455 600 003 • 7 Days a Week</Text>
-                </View>
-                <View style={styles.callNowBadge}>
-                  <Text style={styles.callNowBadgeText}>Call Now</Text>
-                </View>
-              </TouchableOpacity>
 
               {/* FAQs Accordion */}
               <View style={styles.faqList}>
@@ -458,27 +416,6 @@ export default function ProfileScreen() {
                   <Text style={styles.cardSubtitle}>Australian ticketing assistance & FAQs</Text>
                 </View>
               </View>
-
-              <TouchableOpacity
-                style={styles.helpCallBanner}
-                activeOpacity={0.8}
-                onPress={() =>
-                  Linking.openURL('tel:0455600003').catch(() => {
-                    Alert.alert('Australian Support', 'Call us at 0455 600 003 for direct concierge assistance.');
-                  })
-                }
-              >
-                <View style={styles.helpCallIconBox}>
-                  <Ionicons name="headset" size={20} color="#D97706" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.helpCallTitle}>Australian Phone Support</Text>
-                  <Text style={styles.helpCallSubtitle}>Call 0455 600 003 • 7 Days a Week</Text>
-                </View>
-                <View style={styles.callNowBadge}>
-                  <Text style={styles.callNowBadgeText}>Call Now</Text>
-                </View>
-              </TouchableOpacity>
 
               <View style={styles.faqList}>
                 {PROFILE_FAQS.map((faq, index) => {
@@ -853,47 +790,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#0F172A',
-  },
-  helpCallBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    gap: 12,
-    marginBottom: 14,
-  },
-  helpCallIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  helpCallTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#92400E',
-  },
-  helpCallSubtitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#B45309',
-    marginTop: 1,
-  },
-  callNowBadge: {
-    backgroundColor: '#D97706',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-  },
-  callNowBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
   },
   faqList: {
     gap: 8,

@@ -8,7 +8,6 @@ import { API_BASE } from '@/config/api';
 import { 
   User as UserIcon, 
   Mail, 
-  Phone, 
   Lock, 
   Ticket, 
   LogOut, 
@@ -26,7 +25,6 @@ export default function ProfilePage() {
   const { user, fetchUser, logout, loading: authLoading, setUser } = useAuthStore();
 
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -39,7 +37,6 @@ export default function ProfilePage() {
 
     if (user) {
       setName(user.name || '');
-      setPhone(user.phone || '');
     }
   }, [user, authLoading, router]);
 
@@ -59,7 +56,6 @@ export default function ProfilePage() {
         credentials: 'include',
         body: JSON.stringify({ 
           name: trimmedName,
-          phone: phone.trim() || undefined
         }),
       });
 
@@ -196,22 +192,6 @@ export default function ProfilePage() {
                 <p className="text-[11px] text-gray-400 mt-1.5">
                   Email is locked because all purchased event tickets and invoices are sent to this address.
                 </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                  Phone Number (Optional)
-                </label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+61 400 000 000"
-                    className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-sm font-medium text-gray-900 bg-white transition-all"
-                  />
-                </div>
               </div>
 
               <div className="pt-2 flex justify-end">

@@ -560,12 +560,12 @@ export default function EventDetailScreen() {
             </View>
             <TouchableOpacity
               style={styles.trustItem}
-              onPress={() => Linking.openURL('tel:0455600003')}
+              onPress={() => Linking.openURL('mailto:support@mytix.com.au')}
               activeOpacity={0.7}
             >
-              <Ionicons name="call" size={18} color="#D97706" />
+              <Ionicons name="mail" size={18} color="#D97706" />
               <Text style={[styles.trustText, { textDecorationLine: 'underline' }]}>
-                Questions or special requests? Call 0455 600 003
+                Questions or special requests? support@mytix.com.au
               </Text>
             </TouchableOpacity>
           </View>
