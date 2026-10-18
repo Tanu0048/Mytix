@@ -41,6 +41,8 @@ export default function HomeScreen() {
   const [categories, setCategories] = useState<string[]>([]);
   const [featuredEvents, setFeaturedEvents] = useState<any[]>([]);
   const [trendingEvents, setTrendingEvents] = useState<any[]>([]);
+  const [allEvents, setAllEvents] = useState<any[]>([]);
+  const [venues, setVenues] = useState<any[]>([]);
   const [selectedCity, setSelectedCity] = useState<string>(LocationStore.getCity());
   const [availableCities, setAvailableCities] = useState<string[]>(['All Cities']);
 
@@ -62,10 +64,12 @@ export default function HomeScreen() {
 
   const loadData = useCallback(async () => {
     try {
-      const [bannersRes, homeRes, catRes] = await Promise.all([
+      const [bannersRes, homeRes, catRes, eventsRes, venuesRes] = await Promise.all([
         fetch(`${API_BASE}/banners`).catch(() => null),
         fetch(`${API_BASE}/home`).catch(() => null),
         fetch(`${API_BASE}/categories`).catch(() => null),
+        fetch(`${API_BASE}/events`).catch(() => null),
+        fetch(`${API_BASE}/venues`).catch(() => null),
       ]);
 
       if (catRes && catRes.ok) {
@@ -81,6 +85,24 @@ export default function HomeScreen() {
         setBanners([]);
       }
 
+      let evList: any[] = [];
+      if (eventsRes && eventsRes.ok) {
+        const eData = await eventsRes.json();
+        evList = Array.isArray(eData) ? eData : (eData.data || eData.events || []);
+        setAllEvents(evList);
+      } else {
+        setAllEvents([]);
+      }
+
+      let vList: any[] = [];
+      if (venuesRes && venuesRes.ok) {
+        const vData = await venuesRes.json();
+        vList = Array.isArray(vData) ? vData : (vData.data || []);
+        setVenues(vList);
+      } else {
+        setVenues([]);
+      }
+
       if (homeRes && homeRes.ok) {
         const hData = await homeRes.json();
         setFeaturedEvents(hData.featuredEvents || []);
@@ -91,6 +113,8 @@ export default function HomeScreen() {
           ...(hData.cities || []),
           ...(hData.featuredEvents || []).map((e: any) => e.venue?.city),
           ...(hData.trendingEvents || []).map((e: any) => e.venue?.city),
+          ...evList.map((e: any) => e.venue?.city),
+          ...vList.map((v: any) => v.city),
         ]
           .map((c: string) => c?.trim())
           .filter(Boolean);
@@ -173,6 +197,14 @@ export default function HomeScreen() {
 
   const filteredFeatured = filterByCity(featuredEvents);
   const filteredTrending = filterByCity(trendingEvents);
+  const displayTrending =
+    filteredTrending.length > 0
+      ? filteredTrending
+      : filterByCity(allEvents.length > 0 ? allEvents : featuredEvents);
+  const filteredVenues =
+    !selectedCity || selectedCity === 'All Cities' || selectedCity === 'All of Australia'
+      ? venues
+      : venues.filter((v: any) => v.city?.toLowerCase() === selectedCity.toLowerCase());
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -495,55 +527,183 @@ export default function HomeScreen() {
         </View>
 
         {/* Trending Events Vertical List */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <View>
-              <Text style={styles.sectionHeading}>Trending Across Australia</Text>
-              <Text style={styles.sectionSubheading}>Shows selling out quickly this week</Text>
+        {/* Trending Events Vertical List */}
+        {displayTrending.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <View>
+                <Text style={styles.sectionHeading}>Trending Across Australia</Text>
+                <Text style={styles.sectionSubheading}>Shows selling out quickly this week</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/movies')}>
+                <Text style={styles.seeAllText}>View All</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/movies')}>
-              <Text style={styles.seeAllText}>View All</Text>
-            </TouchableOpacity>
-          </View>
 
-          <View style={styles.verticalList}>
-            {filteredTrending.map((event) => {
-              const minPrice = event.ticketTypes?.length
-                ? Math.min(...event.ticketTypes.map((t: any) => t.priceCents || 0)) / 100
-                : 0;
-              return (
-                <TouchableOpacity
-                  key={event.id || event.slug}
-                  style={styles.verticalCard}
-                  activeOpacity={0.8}
-                  onPress={() => router.push(`/event/${event.slug}`)}
-                >
-                  <Image
-                    source={{ uri: getFullImageUrl(event.posterPath) }}
-                    style={styles.verticalThumbnail}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.verticalDetails}>
-                    <Text style={styles.verticalCategory}>
-                      {event.category?.toUpperCase() || 'LIVE EVENT'}
-                    </Text>
-                    <Text style={styles.verticalTitle} numberOfLines={1}>
-                      {event.title}
-                    </Text>
-                    <Text style={styles.verticalVenue} numberOfLines={1}>
-                      {event.venue?.city ? `${event.venue.city} • ` : ''}
-                      {event.venue?.name || 'Australia'}
-                    </Text>
-                    <Text style={styles.verticalPrice}>
-                      {minPrice > 0 ? `From $${minPrice.toFixed(0)} AUD` : 'Explore'}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
-                </TouchableOpacity>
-              );
-            })}
+            <View style={styles.verticalList}>
+              {displayTrending.map((event) => {
+                const minPrice = event.ticketTypes?.length
+                  ? Math.min(...event.ticketTypes.map((t: any) => t.priceCents || 0)) / 100
+                  : 0;
+                return (
+                  <TouchableOpacity
+                    key={event.id || event.slug}
+                    style={styles.verticalCard}
+                    activeOpacity={0.8}
+                    onPress={() => router.push(`/event/${event.slug}`)}
+                  >
+                    <Image
+                      source={{ uri: getFullImageUrl(event.posterPath) }}
+                      style={styles.verticalThumbnail}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.verticalDetails}>
+                      <Text style={styles.verticalCategory}>
+                        {event.category?.toUpperCase() || 'LIVE EVENT'}
+                      </Text>
+                      <Text style={styles.verticalTitle} numberOfLines={1}>
+                        {event.title}
+                      </Text>
+                      <Text style={styles.verticalVenue} numberOfLines={1}>
+                        {event.venue?.city ? `${event.venue.city} • ` : ''}
+                        {event.venue?.name || 'Australia'}
+                      </Text>
+                      <Text style={styles.verticalPrice}>
+                        {minPrice > 0 ? `From $${minPrice.toFixed(0)} AUD` : 'Explore'}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        )}
+
+        {/* Explore Iconic Australian Venues */}
+        {filteredVenues.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <View>
+                <Text style={styles.sectionHeading}>Iconic Venues</Text>
+                <Text style={styles.sectionSubheading}>
+                  {selectedCity && selectedCity !== 'All Cities' && selectedCity !== 'All of Australia'
+                    ? `Premier stages in ${selectedCity}`
+                    : 'Premier stages & entertainment hubs'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/movies')}>
+                <Text style={styles.seeAllText}>Explore</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalVenuesScroll}
+            >
+              {filteredVenues.map((venue: any) => (
+                <TouchableOpacity
+                  key={venue.id || venue.name}
+                  style={styles.venueCard}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(tabs)/movies',
+                      params: { q: venue.name },
+                    })
+                  }
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.venueIconBox}>
+                    <Ionicons name="business" size={18} color="#D97706" />
+                  </View>
+                  <Text style={styles.venueName} numberOfLines={1}>
+                    {venue.name}
+                  </Text>
+                  <Text style={styles.venueCity} numberOfLines={1}>
+                    {venue.city ? `${venue.city}${venue.state ? `, ${venue.state}` : ''}` : 'Australia'}
+                  </Text>
+                  <View style={styles.venueActionRow}>
+                    <Text style={styles.venueActionText}>View Events</Text>
+                    <Ionicons name="chevron-forward" size={12} color="#D97706" />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* All Live Shows Discovery Grid */}
+        {allEvents.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <View>
+                <Text style={styles.sectionHeading}>Upcoming Live Shows</Text>
+                <Text style={styles.sectionSubheading}>Instant booking with verified digital passes</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/movies')}>
+                <Text style={styles.seeAllText}>View All</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.discoveryGrid}>
+              {filterByCity(allEvents).map((event: any) => {
+                const minPrice = event.ticketTypes?.length
+                  ? Math.min(...event.ticketTypes.map((t: any) => t.priceCents || 0)) / 100
+                  : 0;
+                const totalAvail =
+                  event.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
+                return (
+                  <TouchableOpacity
+                    key={event.id || event.slug}
+                    style={styles.gridCard}
+                    activeOpacity={0.88}
+                    onPress={() => router.push(`/event/${event.slug}`)}
+                  >
+                    <View style={styles.gridPosterContainer}>
+                      <Image
+                        source={{ uri: getFullImageUrl(event.posterPath) }}
+                        style={styles.gridPoster}
+                        resizeMode="cover"
+                      />
+                      {event.category && (
+                        <View style={styles.gridCategoryBadge}>
+                          <Text style={styles.gridCategoryText}>{event.category.toUpperCase()}</Text>
+                        </View>
+                      )}
+                      <View style={styles.gridSeatsBadge}>
+                        <View
+                          style={[
+                            styles.seatsDot,
+                            { backgroundColor: totalAvail <= 10 ? '#FB923C' : '#10B981' },
+                          ]}
+                        />
+                        <Text style={styles.gridSeatsText}>{totalAvail} Seats</Text>
+                      </View>
+                    </View>
+                    <View style={styles.gridInfo}>
+                      <Text style={styles.gridTitle} numberOfLines={1}>
+                        {event.title}
+                      </Text>
+                      <Text style={styles.gridVenue} numberOfLines={1}>
+                        {event.venue?.city ? `${event.venue.city} • ` : ''}
+                        {event.venue?.name || 'Australia'}
+                      </Text>
+                      <View style={styles.gridFooter}>
+                        <Text style={styles.gridPrice}>
+                          {minPrice > 0 ? `$${minPrice.toFixed(0)} AUD` : 'Explore'}
+                        </Text>
+                        <View style={styles.gridBookPill}>
+                          <Text style={styles.gridBookText}>Book</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
         {/* Australian Verified Ticketing Guarantee Sleek Banner */}
         <View style={styles.guaranteeSection}>
@@ -1202,5 +1362,153 @@ const styles = StyleSheet.create({
   cityTextSelected: {
     fontWeight: '800',
     color: '#92400E',
+  },
+  horizontalVenuesScroll: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  venueCard: {
+    width: 170,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  venueIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  venueName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  venueCity: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 10,
+    fontWeight: '500',
+  },
+  venueActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  venueActionText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#D97706',
+  },
+  discoveryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  gridCard: {
+    width: (width - 44) / 2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 2,
+    marginBottom: 4,
+  },
+  gridPosterContainer: {
+    width: '100%',
+    aspectRatio: 0.82,
+    position: 'relative',
+    backgroundColor: '#F1F5F9',
+  },
+  gridPoster: {
+    width: '100%',
+    height: '100%',
+  },
+  gridCategoryBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  gridCategoryText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#0F172A',
+    letterSpacing: 0.5,
+  },
+  gridSeatsBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  gridSeatsText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  gridInfo: {
+    padding: 10,
+  },
+  gridTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 2,
+  },
+  gridVenue: {
+    fontSize: 11,
+    color: '#64748B',
+    marginBottom: 8,
+  },
+  gridFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  gridPrice: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#D97706',
+  },
+  gridBookPill: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  gridBookText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#B45309',
   },
 });

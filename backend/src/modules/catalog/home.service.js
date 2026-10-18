@@ -33,11 +33,10 @@ export async function getHomePageData() {
         status: "PUBLISHED",
         startsAt: { gte: now }
       },
-      skip: 5,
       take: 8,
       orderBy: { createdAt: "desc" },
       include: {
-        venue: { select: { name: true, city: true } },
+        venue: { select: { name: true, city: true, state: true } },
         ticketTypes: { select: { priceCents: true, available: true, quantity: true, sold: true } }
       }
     }),
