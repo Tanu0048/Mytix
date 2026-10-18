@@ -378,16 +378,25 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoriesScroll}
             >
-              {categories.map((catName) => (
-                <TouchableOpacity
-                  key={catName}
-                  style={styles.categoryPillCard}
-                  onPress={() => handleCategoryPress(catName)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={styles.categoryPillTitle}>{catName}</Text>
-                </TouchableOpacity>
-              ))}
+              <TouchableOpacity
+                style={styles.categoryPillCard}
+                onPress={() => handleCategoryPress('All')}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.categoryPillTitle}>All</Text>
+              </TouchableOpacity>
+              {categories
+                .filter((catName) => catName.trim().toLowerCase() !== 'all')
+                .map((catName) => (
+                  <TouchableOpacity
+                    key={catName}
+                    style={styles.categoryPillCard}
+                    onPress={() => handleCategoryPress(catName)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={styles.categoryPillTitle}>{catName}</Text>
+                  </TouchableOpacity>
+                ))}
             </ScrollView>
           </View>
         )}
