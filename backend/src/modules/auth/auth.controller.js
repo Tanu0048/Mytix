@@ -59,15 +59,13 @@ export const register = asyncHandler(async (req, res) => {
       email: result.user.email,
       name: result.user.name,
       role: result.user.role
-    }
-  };
-
-  if (isMobileClient(req)) {
-    responseData.tokens = {
+    },
+    tokens: {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken
-    };
-  }
+    },
+    token: result.accessToken
+  };
 
   res.status(201).json(responseData);
 });
@@ -82,15 +80,13 @@ export const login = asyncHandler(async (req, res) => {
       email: result.user.email,
       name: result.user.name,
       role: result.user.role
-    }
-  };
-
-  if (isMobileClient(req)) {
-    responseData.tokens = {
+    },
+    tokens: {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken
-    };
-  }
+    },
+    token: result.accessToken
+  };
 
   res.status(200).json(responseData);
 });
