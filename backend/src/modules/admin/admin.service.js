@@ -3,8 +3,10 @@ import { AppError } from "../../utils/errors.js";
 import { parseCursorPagination, formatPaginatedResponse } from "../../utils/pagination.js";
 import { invalidateBannerCache } from "../banners/banner.service.js";
 import { hashPassword } from "../auth/password.service.js";
-<<<<<<< HEAD
 import { deleteCached } from "../../lib/cache.js";
+import { getPaymentProvider } from "../../providers/payment/index.js";
+import { logger } from "../../lib/logger.js";
+import { sendEventCancellationNotification } from "../notifications/email.service.js";
 
 // ----------------------------------------------------
 // CATEGORIES MANAGEMENT
@@ -36,13 +38,6 @@ export async function deleteCategory(id) {
   deleteCached("categories:unique");
   return deleted;
 }
-=======
-import { getPaymentProvider } from "../../providers/payment/index.js";
-import { logger } from "../../lib/logger.js";
-import { sendEventCancellationNotification } from "../notifications/email.service.js";
-
-
->>>>>>> 34f8ff070b9e22cda06c3de7c02fb58c66d5c3c3
 
 // ----------------------------------------------------
 // BANNERS MANAGEMENT
