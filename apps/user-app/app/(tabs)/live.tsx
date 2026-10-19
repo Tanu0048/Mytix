@@ -11,6 +11,8 @@ import {
   StatusBar,
   RefreshControl,
   Platform,
+  Linking,
+  Share,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -211,6 +213,48 @@ export default function MyTicketsScreen() {
 
     const shortId = (item.id || 'PASS').slice(0, 8).toUpperCase();
 
+    const handleShareTicketPass = async (ticketItem: any) => {
+      try {
+        const orderObj = ticketItem.order || ticketItem.orders || {};
+        const ev = orderObj.event || orderObj.events || ticketItem.event || {};
+        const ven = ev.venue || ev.venues || {};
+        const rawD = ev.startsAt || ev.starts_at;
+        const fDate = rawD
+          ? new Date(rawD).toLocaleDateString('en-AU', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })
+          : 'Date TBA';
+        const fTime = rawD
+          ? new Date(rawD).toLocaleTimeString('en-AU', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            })
+          : 'TBA';
+
+        const attendee = ticketItem.attendeeName || ticketItem.attendee_name || user?.name || 'Attendee';
+        const rawRow = ticketItem.seatRow || ticketItem.seat_row;
+        const rawNum = ticketItem.seatNumber || ticketItem.seat_number;
+        const cleanRow = rawRow ? (rawRow.includes(':') ? rawRow.split(':')[1] : rawRow) : null;
+        const seatLabel = cleanRow && rawNum ? `Seat ${cleanRow}${rawNum}` : 'General Admission';
+        const passId = (ticketItem.id || 'PASS').slice(0, 8).toUpperCase();
+        const qrData = ticketItem.qrTokenHash || ticketItem.qr_token_hash || ticketItem.id || 'MYTIX-PASS';
+        const qrPassUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=4&data=${encodeURIComponent(qrData)}`;
+
+        const shareText = `🎟️ Mytix Verified Digital Entry Pass\n\nEvent: ${ev.title || 'Event'}\nAttendee: ${attendee}\nAccess: ${seatLabel}\nDate: ${fDate} at ${fTime}\nVenue: ${ven.name || 'Venue TBA'}, ${ven.city || 'Australia'}\nPass Ref: #${passId}\n\n📱 Entry QR Pass:\n${qrPassUrl}\n\nPresent this verified QR code at the turnstile gate for instant admission.`;
+
+        await Share.share({
+          title: `Entry Pass: ${ev.title || 'Mytix Ticket'}`,
+          message: shareText,
+        });
+      } catch (e) {
+        console.warn('Share ticket pass error:', e);
+      }
+    };
+
     const rawRow = item.seatRow || item.seat_row;
     const rawNum = item.seatNumber || item.seat_number;
     const cleanRow = rawRow ? (rawRow.includes(':') ? rawRow.split(':')[1] : rawRow) : null;
@@ -247,15 +291,34 @@ export default function MyTicketsScreen() {
           </View>
 
           {venue.name ? (
-            <View style={styles.metaRow}>
+            <TouchableOpacity
+              style={styles.metaRow}
+              onPress={() => {
+                const vName = venue.name || '';
+                const vCity = venue.city || '';
+                const vState = venue.state || '';
+                const full = [vName, vCity, vState, 'Australia'].filter(Boolean).join(', ');
+                const enc = encodeURIComponent(full);
+                const url = Platform.select({
+                  ios: `maps:0,0?q=${enc}`,
+                  android: `geo:0,0?q=${enc}`,
+                  default: `https://www.google.com/maps/search/?api=1&query=${enc}`,
+                });
+                Linking.openURL(url!).catch(() => {
+                  Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${enc}`);
+                });
+              }}
+              activeOpacity={0.7}
+            >
               <View style={styles.metaIconCircle}>
                 <Ionicons name="location" size={14} color="#D97706" />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.metaPrimary}>{venue.name}</Text>
                 <Text style={styles.metaSecondary}>{venue.city || 'Australia'}</Text>
               </View>
-            </View>
+              <Ionicons name="navigate-outline" size={14} color="#D97706" />
+            </TouchableOpacity>
           ) : null}
 
           <View style={styles.attendeeRow}>
@@ -287,6 +350,15 @@ export default function MyTicketsScreen() {
             <Ionicons name="scan-outline" size={14} color="#0F172A" />
             <Text style={styles.scanBadgeText}>Scan this code at the gate</Text>
           </View>
+
+          <TouchableOpacity
+            style={styles.sharePassButton}
+            onPress={() => handleShareTicketPass(item)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="share-outline" size={15} color="#0F172A" />
+            <Text style={styles.sharePassButtonText}>Share Pass with Friend</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -588,6 +660,25 @@ const styles = StyleSheet.create({
   scanBadgeText: {
     fontSize: 11,
     fontWeight: '800',
+    color: '#0F172A',
+  },
+  sharePassButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    width: '100%',
+  },
+  sharePassButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
     color: '#0F172A',
   },
   centerContainer: {

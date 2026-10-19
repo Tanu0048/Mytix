@@ -13,6 +13,7 @@ import {
   StatusBar,
   Alert,
   Linking,
+  Share,
 } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -248,6 +249,46 @@ export default function EventDetailScreen() {
   const formattedTime = startsAt
     ? startsAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })
     : 'TBA';
+
+  const handleOpenMap = () => {
+    if (!event?.venue) return;
+    const venueName = event.venue.name || '';
+    const venueAddress = event.venue.address || '';
+    const venueCity = event.venue.city || '';
+    const venueState = event.venue.state || '';
+
+    const queryParts = [venueName, venueAddress, venueCity, venueState, 'Australia']
+      .filter((part) => Boolean(part && String(part).trim()));
+    const fullQuery = queryParts.join(', ');
+    const encoded = encodeURIComponent(fullQuery);
+
+    const mapUrl = Platform.select({
+      ios: `maps:0,0?q=${encoded}`,
+      android: `geo:0,0?q=${encoded}`,
+      default: `https://www.google.com/maps/search/?api=1&query=${encoded}`,
+    });
+
+    Linking.openURL(mapUrl!).catch(() => {
+      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encoded}`);
+    });
+  };
+
+  const handleShareEvent = async () => {
+    if (!event) return;
+    try {
+      const shareUrl = `https://mytix.com.au/events/${event.slug || slug}`;
+      const venueStr = event.venue?.name ? `${event.venue.name}, ${event.venue?.city || 'Australia'}` : 'Australia';
+      const message = `🎟️ Join me at "${event.title}"!\n\n📅 Date: ${formattedDate} (${formattedTime})\n📍 Venue: ${venueStr}\n\nBook verified tickets on Mytix:\n${shareUrl}`;
+
+      await Share.share({
+        title: event.title,
+        message,
+        url: shareUrl,
+      });
+    } catch (error) {
+      console.warn('Share error:', error);
+    }
+  };
 
   const handleToggleSeat = (seatKey: string, tierId: string) => {
     if (isBookingClosed) {
@@ -487,10 +528,14 @@ export default function EventDetailScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Floating Back Button */}
+      {/* Floating Header (Back & Share Buttons) */}
       <View style={styles.floatingHeader}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={22} color="#0F172A" />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleShareEvent} style={styles.shareButton} activeOpacity={0.8}>
+          <Ionicons name="share-social-outline" size={20} color="#0F172A" />
         </TouchableOpacity>
       </View>
 
@@ -531,13 +576,23 @@ export default function EventDetailScreen() {
               </View>
             </View>
 
-            {/* Venue Card */}
-            <View style={styles.metaCard}>
+            {/* Venue Card with Direct Maps Directions */}
+            <TouchableOpacity
+              style={styles.metaCard}
+              onPress={handleOpenMap}
+              activeOpacity={0.7}
+            >
               <View style={styles.metaIconBox}>
                 <Ionicons name="location" size={18} color="#D97706" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.metaCardLabel}>VENUE</Text>
+                <View style={styles.metaCardHeaderRow}>
+                  <Text style={styles.metaCardLabel}>VENUE</Text>
+                  <View style={styles.directionsBadge}>
+                    <Ionicons name="navigate" size={10} color="#D97706" />
+                    <Text style={styles.directionsBadgeText}>Directions</Text>
+                  </View>
+                </View>
                 <Text style={styles.metaCardPrimary}>
                   {event.venue?.name || 'Venue TBA'}
                 </Text>
@@ -545,7 +600,8 @@ export default function EventDetailScreen() {
                   {event.venue?.city ? `${event.venue.city} ${event.venue?.state || ''}` : 'Australia'}
                 </Text>
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
+            </TouchableOpacity>
           </View>
 
           {/* Trust Guarantees */}
@@ -828,7 +884,27 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Platform.OS === 'ios' ? 54 : 36,
     left: 16,
+    right: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     zIndex: 20,
+    pointerEvents: 'box-none',
+  },
+  shareButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   backButton: {
     width: 40,
@@ -916,6 +992,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#FDE68A',
+  },
+  metaCardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  directionsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    gap: 3,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  directionsBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#D97706',
+    letterSpacing: 0.2,
   },
   metaCardLabel: {
     fontSize: 9,

@@ -321,6 +321,24 @@ export default function ProfileScreen() {
               <Ionicons name="chevron-forward" size={20} color="#D97706" />
             </TouchableOpacity>
 
+            {/* Section 2.5: Order History & Invoices Quick Card */}
+            <TouchableOpacity
+              style={[styles.ticketsBanner, { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0' }]}
+              activeOpacity={0.9}
+              onPress={() => router.push('/orders')}
+            >
+              <View style={[styles.ticketsBannerIcon, { backgroundColor: '#FEF3C7' }]}>
+                <Ionicons name="receipt-outline" size={22} color="#D97706" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ticketsBannerTitle}>Order History & Invoices</Text>
+                <Text style={styles.ticketsBannerSubtitle}>
+                  View past booking receipts, order numbers & GST tax invoice breakdowns.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#D97706" />
+            </TouchableOpacity>
+
             {/* Section 3: Help Center & FAQs */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
