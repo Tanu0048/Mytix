@@ -581,6 +581,39 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
             </div>
           </div>
 
+          {/* Performing Artists / Lineup */}
+          {event.artists && event.artists.length > 0 && (
+            <div className="mb-12 border-t border-gray-200 pt-10">
+              <h2 className="text-xl font-extrabold text-gray-900 mb-6">Artist Lineup</h2>
+              <div className="flex items-center gap-6 overflow-x-auto pb-4">
+                {event.artists.map((item: any, idx: number) => {
+                  const art = item.artist || item;
+                  return (
+                    <div key={art.id || idx} className="flex flex-col items-center text-center w-24 shrink-0">
+                      <div className="w-16 h-16 rounded-full bg-amber-50 border-2 border-amber-300 overflow-hidden relative mb-2 shadow-xs">
+                        {art.imagePath ? (
+                          <Image src={art.imagePath} alt={art.name} fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center font-bold text-amber-700 text-lg">
+                            {art.name ? art.name[0] : 'A'}
+                          </div>
+                        )}
+                      </div>
+                      <span className="font-bold text-xs text-gray-900 truncate max-w-full">
+                        {art.name}
+                      </span>
+                      {item.isHeadline && (
+                        <span className="mt-1 text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+                          Headliner
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* About This Event */}
           <div className="mb-12 border-t border-gray-200 pt-10">
             <h2 className="text-xl font-extrabold text-gray-900 mb-4">About this event</h2>

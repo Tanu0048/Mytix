@@ -770,6 +770,39 @@ export default function EventDetailScreen() {
             </View>
           )}
 
+          {/* Performing Artists / Lineup */}
+          {event.artists && event.artists.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Artist Lineup</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.artistsScrollContainer}
+              >
+                {event.artists.map((item: any, idx: number) => {
+                  const art = item.artist || item;
+                  return (
+                    <View key={art.id || idx} style={styles.artistCard}>
+                      <Image
+                        source={{ uri: getFullImageUrl(art.imagePath) }}
+                        style={styles.artistAvatar}
+                        resizeMode="cover"
+                      />
+                      <Text style={styles.artistName} numberOfLines={1}>
+                        {art.name || 'Artist'}
+                      </Text>
+                      {item.isHeadline ? (
+                        <View style={styles.headlinerBadge}>
+                          <Text style={styles.headlinerBadgeText}>HEADLINER</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          ) : null}
+
           {/* About The Event */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>About The Event</Text>
@@ -777,6 +810,23 @@ export default function EventDetailScreen() {
               {event.description || 'Join us for this premier live event in Australia.'}
             </Text>
           </View>
+
+          {/* Organiser Info */}
+          {event.organiser?.businessName ? (
+            <View style={styles.organiserContainer}>
+              <View style={styles.organiserIconBox}>
+                <Ionicons name="business" size={16} color="#D97706" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.organiserLabel}>EVENT ORGANISER</Text>
+                <Text style={styles.organiserName}>{event.organiser.businessName}</Text>
+              </View>
+              <View style={styles.verifiedOrganiserBadge}>
+                <Ionicons name="checkmark-circle" size={12} color="#166534" />
+                <Text style={styles.verifiedOrganiserText}>Verified</Text>
+              </View>
+            </View>
+          ) : null}
         </View>
       </ScrollView>
 
@@ -1226,6 +1276,88 @@ const styles = StyleSheet.create({
     color: '#475569',
     lineHeight: 22,
     fontWeight: '400',
+  },
+  artistsScrollContainer: {
+    paddingVertical: 4,
+    gap: 14,
+  },
+  artistCard: {
+    alignItems: 'center',
+    width: 82,
+  },
+  artistAvatar: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: '#F1F5F9',
+    marginBottom: 6,
+    borderWidth: 2,
+    borderColor: '#FDE68A',
+  },
+  artistName: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F172A',
+    textAlign: 'center',
+  },
+  headlinerBadge: {
+    marginTop: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+  },
+  headlinerBadgeText: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#D97706',
+    letterSpacing: 0.4,
+  },
+  organiserContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 10,
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  organiserIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  organiserLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  organiserName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 1,
+  },
+  verifiedOrganiserBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  verifiedOrganiserText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#166534',
   },
   bottomBar: {
     position: 'absolute',
