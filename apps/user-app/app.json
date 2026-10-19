@@ -48,6 +48,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5a2b3166-dd60-4a56-b9a3-e7e4246f8839"
+      }
+    },
+    "owner": "mytix"
   }
 }
