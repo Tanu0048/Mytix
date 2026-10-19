@@ -160,7 +160,7 @@ export default function EventDetailScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView scrollEnabled={false} bounces={false} overScrollMode="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* Edge-to-edge Poster Skeleton */}
           <View style={styles.posterContainer}>
             <Skeleton width="100%" height="100%" borderRadius={0} />

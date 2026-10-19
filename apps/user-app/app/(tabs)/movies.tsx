@@ -361,6 +361,9 @@ export default function ExploreEventsScreen() {
       {/* Event Grid / List */}
       {loading ? (
         <ScrollView
+          scrollEnabled={false}
+          bounces={false}
+          overScrollMode="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
         >

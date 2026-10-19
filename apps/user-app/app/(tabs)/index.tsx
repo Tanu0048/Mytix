@@ -284,7 +284,7 @@ export default function HomeScreen() {
       </View>
 
       {loading ? (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView scrollEnabled={false} bounces={false} overScrollMode="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* Search bar skeleton */}
           <View style={{ marginBottom: 16 }}>
             <Skeleton width="100%" height={46} borderRadius={16} />
@@ -294,18 +294,18 @@ export default function HomeScreen() {
             <Skeleton width="100%" height={BANNER_CARD_HEIGHT} borderRadius={18} />
           </View>
           {/* Categories chips skeleton */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, marginBottom: 24 }}>
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24, overflow: 'hidden' }}>
             {[90, 110, 95, 120, 85].map((w, idx) => (
               <Skeleton key={idx} width={w} height={38} borderRadius={22} />
             ))}
-          </ScrollView>
+          </View>
           {/* Section 1 header skeleton */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
             <Skeleton width={160} height={20} borderRadius={6} />
             <Skeleton width={50} height={14} borderRadius={4} />
           </View>
           {/* Horizontal cards skeleton */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 28 }}>
+          <View style={{ flexDirection: 'row', marginBottom: 28, overflow: 'hidden' }}>
             {[1, 2, 3].map((i) => (
               <View key={i} style={{ width: 170, marginRight: 14 }}>
                 <Skeleton width={170} height={210} borderRadius={14} style={{ marginBottom: 8 }} />
@@ -313,7 +313,7 @@ export default function HomeScreen() {
                 <Skeleton width={90} height={12} borderRadius={4} />
               </View>
             ))}
-          </ScrollView>
+          </View>
           {/* Section 2 header skeleton */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
             <Skeleton width={140} height={20} borderRadius={6} />
