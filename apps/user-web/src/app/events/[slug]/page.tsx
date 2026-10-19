@@ -3,7 +3,7 @@
 import React, { useEffect, useState, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Calendar, MapPin, Clock, Info, AlertCircle, User, Ticket, CheckCircle, ChevronRight } from 'lucide-react';
+import { Calendar, MapPin, Clock, Info, AlertCircle, User, Ticket, CheckCircle, ChevronRight, Share2, Navigation } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { EventDetailsSkeleton } from '@/components/ui/Skeleton';
@@ -131,8 +131,29 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
         toast.error("Maximum 10 seats allowed per booking.");
         return;
       }
-      setSelectedSeats(prev => [...prev, seatKey]);
-      setSeatTierMap(prev => ({ ...prev, [seatKey]: tierId }));
+    }
+  };
+
+  const handleShareEvent = async () => {
+    if (!event) return;
+    const url = typeof window !== 'undefined' ? window.location.href : `https://mytix.com.au/events/${slug}`;
+    const title = event.title;
+    const text = `🎟️ Join me at "${event.title}"! Book tickets on Mytix:`;
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+        return;
+      } catch {
+        // User cancelled share dialog
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Event link copied to clipboard!');
+    } catch {
+      toast.error('Could not copy link');
     }
   };
 
@@ -176,10 +197,17 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
 
         {/* Right Column (Details & Tickets) */}
         <div className="w-full md:w-[65%] flex flex-col">
-          <div className="mb-2">
+          <div className="flex items-center justify-between gap-4 mb-3">
             <span className="inline-block bg-amber-100 text-amber-900 text-[10px] font-black tracking-widest uppercase px-3 py-1 rounded-md border border-amber-300/50">
-              CONCERT
+              {event.category || 'CONCERT'}
             </span>
+            <button
+              onClick={handleShareEvent}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:bg-amber-50 hover:border-amber-300 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-xs"
+            >
+              <Share2 className="w-3.5 h-3.5 text-amber-600" />
+              Share Event
+            </button>
           </div>
           <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight mb-8">
             {event.title}
@@ -200,18 +228,34 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
               </div>
             </div>
 
-            <div className="flex-1 border border-gray-100 rounded-xl p-5 flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 shrink-0 border border-amber-100">
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                [event.venue?.name, event.venue?.address, event.venue?.city, event.venue?.state, 'Australia']
+                  .filter(Boolean)
+                  .join(', ')
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 border border-gray-100 rounded-xl p-5 flex items-start gap-4 hover:border-amber-300 hover:bg-amber-50/30 transition-all group cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 shrink-0 border border-amber-100 group-hover:scale-105 transition-transform">
                 <MapPin className="w-5 h-5" />
               </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Venue</p>
-                <p className="font-bold text-gray-900 text-sm">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Venue</p>
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1 group-hover:bg-amber-100 transition-colors">
+                    <Navigation className="w-2.5 h-2.5" /> Directions
+                  </span>
+                </div>
+                <p className="font-bold text-gray-900 text-sm group-hover:text-amber-800 transition-colors truncate">
                   {event.venue?.name}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">{event.venue?.city}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {[event.venue?.address, event.venue?.city, event.venue?.state].filter(Boolean).join(', ') || 'Australia'}
+                </p>
               </div>
-            </div>
+            </a>
           </div>
 
           {/* Choose Tickets Section */}

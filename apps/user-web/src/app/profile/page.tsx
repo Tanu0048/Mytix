@@ -16,7 +16,8 @@ import {
   Loader2, 
   CheckCircle2, 
   ArrowRight,
-  ShieldAlert
+  ShieldAlert,
+  Receipt
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -249,6 +250,28 @@ export default function ProfilePage() {
               className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shrink-0 shadow-md cursor-pointer"
             >
               <span>View Tickets</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Section 2.5: Order History & Invoices Quick Card */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 hover:border-amber-200 transition-all">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-700 shrink-0 shadow-xs">
+                <Receipt className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">Order History & Invoices</h2>
+                <p className="text-sm text-gray-500 max-w-md">
+                  View past booking receipts, order numbers, and official Australian GST tax invoice breakdowns.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/orders"
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-sm transition-all flex items-center justify-center gap-2 shrink-0 shadow-sm cursor-pointer"
+            >
+              <span>View Orders</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

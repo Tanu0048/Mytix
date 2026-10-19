@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronDown, MapPin, User, LogOut, Ticket, ShoppingCart, X, Check, Globe } from 'lucide-react';
+import { Search, ChevronDown, MapPin, User, LogOut, Ticket, ShoppingCart, X, Check, Globe, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -372,6 +372,14 @@ export default function Navbar() {
                     >
                       <Ticket className="w-4 h-4 text-amber-500 shrink-0" />
                       My Tickets
+                    </Link>
+                    <Link 
+                      href="/orders"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-3 w-full text-left px-3 py-2 text-sm font-semibold text-gray-800 hover:text-yellow-700 hover:bg-yellow-50 rounded-xl transition-colors cursor-pointer"
+                    >
+                      <Receipt className="w-4 h-4 text-amber-500 shrink-0" />
+                      My Orders & Invoices
                     </Link>
                   </div>
                   <div className="p-2 border-t border-gray-100">

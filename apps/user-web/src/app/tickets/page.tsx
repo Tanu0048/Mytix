@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Calendar, MapPin, Ticket as TicketIcon, Loader2, User } from 'lucide-react';
+import { Calendar, MapPin, Ticket as TicketIcon, Loader2, User, Share2, Navigation } from 'lucide-react';
 import QRCode from 'react-qr-code';
+import { toast } from 'sonner';
 
 import { API_BASE } from '@/config/api';
 
@@ -46,6 +47,37 @@ export default function MyTicketsPage() {
       console.error('Failed to fetch tickets:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleShareTicket = async (ticket: any) => {
+    const event = ticket.order?.event || {};
+    const venue = event.venue || {};
+    const eventDate = new Date(event.startsAt);
+    const formattedDate = eventDate.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    const formattedTime = eventDate.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const qrData = ticket.qrTokenHash || ticket.id;
+    const qrPassUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=4&data=${encodeURIComponent(qrData)}`;
+
+    const text = `🎟️ Mytix Verified Digital Entry Pass\n\nEvent: ${event.title}\nAttendee: ${ticket.attendeeName}\nDate: ${formattedDate} at ${formattedTime}\nVenue: ${venue.name || ''}, ${venue.city || 'Australia'}\nPass Ref: #${ticket.id.slice(0, 8).toUpperCase()}\n\n📱 View QR Pass:\n${qrPassUrl}`;
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Mytix Pass: ${event.title}`,
+          text,
+        });
+        return;
+      } catch {
+        // user cancelled
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Ticket details & QR Pass link copied to clipboard!');
+    } catch {
+      toast.error('Could not copy pass');
     }
   };
 
@@ -120,15 +152,23 @@ export default function MyTicketsPage() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center text-gray-600">
-                        <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mr-4 border border-amber-100 shrink-0">
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([ticket.order.event.venue.name, ticket.order.event.venue.city, 'Australia'].filter(Boolean).join(', '))}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-gray-600 hover:text-amber-700 transition-colors group cursor-pointer"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mr-4 border border-amber-100 shrink-0 group-hover:scale-105 transition-transform">
                           <MapPin className="w-5 h-5 text-amber-600" />
                         </div>
-                        <div>
-                          <div className="font-bold text-gray-900 text-sm truncate max-w-48 sm:max-w-xs">{ticket.order.event.venue.name}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-gray-900 text-sm truncate max-w-48 sm:max-w-xs flex items-center gap-1.5">
+                            {ticket.order.event.venue.name}
+                            <Navigation className="w-3 h-3 text-amber-600" />
+                          </div>
                           <div className="text-sm font-medium text-gray-500">{ticket.order.event.venue.city}</div>
                         </div>
-                      </div>
+                      </a>
                       
                       <div className="flex items-center text-gray-600 pt-3 border-t border-gray-100 mt-2">
                         <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mr-4 border border-amber-100 shrink-0">
@@ -166,9 +206,17 @@ export default function MyTicketsPage() {
                         />
                       </div>
                     </div>
-                    <p className="text-sm text-gray-500 text-center font-semibold bg-white py-2 px-4 rounded-full border border-gray-200 shadow-sm">
+                    <p className="text-sm text-gray-500 text-center font-semibold bg-white py-2 px-4 rounded-full border border-gray-200 shadow-sm mb-3">
                       Scan this code at the gate
                     </p>
+
+                    <button
+                      onClick={() => handleShareTicket(ticket)}
+                      className="w-full py-2.5 px-4 rounded-xl border border-gray-200 bg-white hover:bg-amber-50 hover:border-amber-300 text-xs font-bold text-gray-800 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-amber-600" />
+                      Share Pass with Friend
+                    </button>
                   </div>
                 </div>
               );
