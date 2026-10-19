@@ -48,13 +48,6 @@
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "66d8fdc1-2be2-42c9-a694-e91f184c14fc"
-      }
-    },
-    "owner": "prince-sani"
+    }
   }
 }
