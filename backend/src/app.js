@@ -13,6 +13,9 @@ import { env } from "./config/env.js";
 
 const app = express();
 
+// Trust reverse proxy (required for Render so rate-limiters get real client IP)
+app.set("trust proxy", 1);
+
 // 1. Security Headers & CORS
 app.use(helmet());
 
