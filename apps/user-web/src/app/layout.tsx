@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Suspense } from "react";
 import { Toaster } from 'sonner';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -29,10 +30,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <Navbar />
+        <Suspense fallback={<div className="h-16 w-full bg-white" />}>
+          <Navbar />
+        </Suspense>
         {children}
         <Footer />
-        <LocationModal />
+        <Suspense fallback={null}>
+          <LocationModal />
+        </Suspense>
         <Toaster 
           position="top-center" 
           duration={2500}
