@@ -243,54 +243,21 @@ const getCategoryMeta = (cat: any) => {
   };
 };
 
-const CITY_VISUALS: Record<string, { image: string; state: string; tag: string }> = {
-  melbourne: {
-    image: 'https://images.unsplash.com/photo-1514395462725-fb4566210144?auto=format&fit=crop&w=800&q=80',
-    state: 'Victoria',
-    tag: 'Live Hub'
-  },
-  sydney: {
-    image: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=80',
-    state: 'New South Wales',
-    tag: 'Harbour City'
-  },
-  brisbane: {
-    image: 'https://images.unsplash.com/photo-1576485290814-1c72aa4bbb8e?auto=format&fit=crop&w=800&q=80',
-    state: 'Queensland',
-    tag: 'River City'
-  },
-  perth: {
-    image: 'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?auto=format&fit=crop&w=800&q=80',
-    state: 'Western Australia',
-    tag: 'West Coast'
-  },
-  adelaide: {
-    image: 'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?auto=format&fit=crop&w=800&q=80',
-    state: 'South Australia',
-    tag: 'Festival City'
-  },
-  'gold coast': {
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-    state: 'Queensland',
-    tag: 'Surfers Paradise'
-  },
-  canberra: {
-    image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=800&q=80',
-    state: 'ACT',
-    tag: 'Capital Region'
-  },
-  hobart: {
-    image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80',
-    state: 'Tasmania',
-    tag: 'Island Vibes'
-  }
+const CITY_STATES: Record<string, string> = {
+  melbourne: 'Victoria',
+  sydney: 'New South Wales',
+  brisbane: 'Queensland',
+  perth: 'Western Australia',
+  adelaide: 'South Australia',
+  'gold coast': 'Queensland',
+  canberra: 'ACT',
+  hobart: 'Tasmania',
+  darwin: 'Northern Territory',
+  newcastle: 'New South Wales',
+  geelong: 'Victoria'
 };
 
-const DEFAULT_CITY_VISUAL = {
-  image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80',
-  state: 'Australia',
-  tag: 'Live Shows'
-};
+const DEFAULT_CITY_IMAGE = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80';
 
 interface HomeData {
   featuredEvents?: any[];
@@ -1060,8 +1027,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5">
             {availableCities.map((city) => {
               const isSelected = selectedCity.toLowerCase() === city.toLowerCase();
-              const key = city.toLowerCase().trim();
-              const visual = CITY_VISUALS[key] || DEFAULT_CITY_VISUAL;
+              const stateName = CITY_STATES[city.toLowerCase().trim()] || 'Australia';
 
               return (
                 <button 
@@ -1079,7 +1045,7 @@ export default function Home() {
                 >
                   {/* City Background Photo with Zoom on Hover */}
                   <Image
-                    src={visual.image}
+                    src={DEFAULT_CITY_IMAGE}
                     alt={city}
                     fill
                     sizes="(max-width: 640px) 50vw, 25vw"
@@ -1110,7 +1076,7 @@ export default function Home() {
                   {/* Bottom City Name & Action */}
                   <div className="relative z-10">
                     <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-amber-300 mb-0.5">
-                      {visual.state}
+                      {stateName}
                     </p>
                     <h3 className="font-black text-white text-lg sm:text-2xl tracking-tight leading-tight group-hover:text-amber-300 transition-colors">
                       {city}
