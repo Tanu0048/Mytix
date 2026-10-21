@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Calendar, Filter, Search, Loader2, X } from 'lucide-react';
+import { MapPin, Calendar, Filter, Search, Loader2, X, ArrowLeft } from 'lucide-react';
 import { EventCardSkeleton } from '@/components/ui/Skeleton';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Suspense } from 'react';
@@ -143,15 +143,31 @@ function EventsExploreContent() {
     updateUrl(selectedState, selectedCategory, searchQuery, selectedCity);
   };
 
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/');
+    }
+  };
+
   return (
-    <div className="bg-gray-50 min-h-screen py-10">
+    <div className="bg-gray-50 min-h-screen py-6 sm:py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Page Header */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Explore Events</h1>
-            <p className="text-gray-500 mt-1">Discover the best events happening across Australia</p>
+            <button
+              onClick={handleBack}
+              type="button"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-gray-500 hover:text-gray-900 mb-2 sm:mb-2.5 transition-colors cursor-pointer group"
+            >
+              <ArrowLeft className="w-4 h-4 text-amber-500 group-hover:-translate-x-1 transition-transform" />
+              <span>Back</span>
+            </button>
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Explore Events</h1>
+            <p className="text-gray-500 text-xs sm:text-sm mt-1">Discover the best events happening across Australia</p>
           </div>
           
           <form onSubmit={handleSearch} className="relative w-full md:w-96">
