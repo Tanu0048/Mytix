@@ -27,11 +27,13 @@ function EventsExploreContent() {
   
   const { selectedCity, setSelectedCity, availableCities, setAvailableCities, openLocationModal } = useLocationStore();
 
-  // Initialize state from URL params
   const [selectedState, setSelectedState] = useState<string>(searchParams.get('state') || '');
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || '');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [categories, setCategories] = useState<string[]>([]);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
+  const activeFiltersCount = (selectedCategory ? 1 : 0) + (selectedCity !== 'All Cities' ? 1 : 0);
 
   // Fetch active cities from backend
   useEffect(() => {
@@ -165,10 +167,171 @@ function EventsExploreContent() {
           </form>
         </div>
 
+        {/* Mobile Filter Chips & Trigger Bar */}
+        <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-3 mb-4 no-scrollbar touch-pan-x">
+          <button
+            onClick={() => setIsMobileFilterOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-slate-900 text-white shrink-0 shadow-xs cursor-pointer"
+          >
+            <Filter className="w-3.5 h-3.5" />
+            <span>Filters</span>
+            {activeFiltersCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center justify-center">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setSelectedCity('All Cities')}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-colors cursor-pointer ${
+              selectedCity === 'All Cities'
+                ? 'bg-amber-400 text-slate-950 font-black'
+                : 'bg-white text-gray-700 border border-gray-200'
+            }`}
+          >
+            All Australia
+          </button>
+
+          {availableCities.map((city) => (
+            <button
+              key={`chip-${city}`}
+              onClick={() => setSelectedCity(city)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-colors cursor-pointer ${
+                selectedCity.toLowerCase() === city.toLowerCase()
+                  ? 'bg-amber-400 text-slate-950 font-black'
+                  : 'bg-white text-gray-700 border border-gray-200'
+              }`}
+            >
+              {city}
+            </button>
+          ))}
+
+          {categories.slice(0, 4).map((cat) => (
+            <button
+              key={`cat-chip-${cat}`}
+              onClick={() => setSelectedCategory(selectedCategory === cat ? '' : cat)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-colors cursor-pointer ${
+                selectedCategory === cat
+                  ? 'bg-amber-400 text-slate-950 font-black'
+                  : 'bg-white text-gray-700 border border-gray-200'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile Filter Slide-Over Drawer */}
+        {isMobileFilterOpen && (
+          <div className="lg:hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-150">
+            <div className="w-full max-w-sm bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+              {/* Drawer Header */}
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-gray-700" />
+                  <h3 className="font-extrabold text-base text-gray-900">Filters</h3>
+                  {activeFiltersCount > 0 && (
+                    <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">
+                      {activeFiltersCount} Active
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setSelectedCategory('');
+                      setSelectedCity('All Cities');
+                    }}
+                    className="text-xs text-red-500 font-bold hover:underline"
+                  >
+                    Clear All
+                  </button>
+                  <button
+                    onClick={() => setIsMobileFilterOpen(false)}
+                    className="p-1 rounded-lg text-gray-500 hover:bg-gray-100"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Drawer Body */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                {/* Cities */}
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Concert City</h4>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="mobCityRadio" 
+                        checked={selectedCity === 'All Cities'} 
+                        onChange={() => setSelectedCity('All Cities')}
+                        className="w-4 h-4 text-amber-500 focus:ring-amber-400"
+                      />
+                      <span className="text-sm font-medium text-gray-700">All of Australia</span>
+                    </label>
+                    {availableCities.map((city) => (
+                      <label key={`mob-${city}`} className="flex items-center gap-3 cursor-pointer">
+                        <input 
+                          type="radio" 
+                          name="mobCityRadio" 
+                          value={city}
+                          checked={selectedCity.toLowerCase() === city.toLowerCase()} 
+                          onChange={() => setSelectedCity(city)}
+                          className="w-4 h-4 text-amber-500 focus:ring-amber-400"
+                        />
+                        <span className="text-sm font-medium text-gray-700">{city}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Categories */}
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Event Category</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setSelectedCategory('')}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                        selectedCategory === '' ? 'bg-amber-400 text-slate-950 font-black' : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      All
+                    </button>
+                    {categories.map((cat) => (
+                      <button
+                        key={`mobcat-${cat}`}
+                        onClick={() => setSelectedCategory(selectedCategory === cat ? '' : cat)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                          selectedCategory === cat ? 'bg-amber-400 text-slate-950 font-black' : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="p-4 border-t border-gray-100">
+                <button
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="w-full py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black rounded-xl text-sm shadow-md"
+                >
+                  Apply & See Results
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           
-          {/* Sidebar Filters - Sticky on scroll */}
-          <aside className="w-full lg:w-64 shrink-0 lg:sticky lg:top-20 z-20 self-start">
+          {/* Desktop Sidebar Filters - Hidden on mobile */}
+          <aside className="hidden lg:block w-64 shrink-0 lg:sticky lg:top-20 z-20 self-start">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
                 <div className="flex items-center gap-2">

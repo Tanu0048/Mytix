@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronDown, MapPin, User, LogOut, Ticket, ShoppingCart, X, Check, Globe, Receipt } from 'lucide-react';
+import { Search, ChevronDown, MapPin, User, LogOut, Ticket, ShoppingCart, X, Check, Globe, Receipt, Menu, Compass } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -25,6 +25,8 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState<{events: any[], artists: any[], venues: any[]} | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [activeHolds, setActiveHolds] = useState<any[]>([]);
 
@@ -123,6 +125,11 @@ export default function Navbar() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsMobileSearchOpen(false);
+  }, [pathname]);
+
   // Don't show navbar on auth page
   if (pathname === '/auth') return null;
 
@@ -134,10 +141,10 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-white px-4 py-3 border-b border-gray-100 sticky top-0 z-50 text-gray-800 shadow-xs">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 md:gap-8">
-          <div className="flex items-center gap-4 md:gap-6">
-            <Link href="/" className="text-2xl font-black tracking-tight cursor-pointer text-gray-900 flex items-center">
+      <nav className="bg-white px-3 sm:px-4 py-3 border-b border-gray-100 sticky top-0 z-50 text-gray-800 shadow-xs">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 md:gap-8">
+          <div className="flex items-center gap-3 sm:gap-6">
+            <Link href="/" className="text-xl sm:text-2xl font-black tracking-tight cursor-pointer text-gray-900 flex items-center shrink-0">
               Myt<span className="text-yellow-500">ix</span>
             </Link>
             
@@ -242,6 +249,7 @@ export default function Navbar() {
             </div>
           </div>
 
+        {/* Desktop Search */}
         <div className="flex-1 max-w-2xl hidden md:block relative">
           <div className={`flex items-center w-full transition-all duration-200 ${isSearchOpen ? 'bg-white rounded-full border-2 border-yellow-400 ring-2 ring-yellow-400/20 px-4 py-2' : 'bg-gray-100 hover:bg-gray-50 rounded-lg px-4 py-2 border border-gray-200'}`}>
             <Search className={`w-5 h-5 mr-3 ${isSearchOpen ? 'text-yellow-500' : 'text-gray-400'}`} />
@@ -271,7 +279,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Live Search Dropdown */}
+          {/* Desktop Live Search Dropdown */}
           {isSearchOpen && searchResults && (
             <div 
               className="absolute top-full mt-3 w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50"
@@ -328,21 +336,85 @@ export default function Navbar() {
           )}
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* Right Section Actions */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Mobile Search Toggle Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileSearchOpen(prev => !prev);
+              setIsMobileMenuOpen(false);
+            }}
+            aria-label="Toggle search"
+            className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 transition-colors"
+          >
+            {isMobileSearchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
+          </button>
+
+          {/* Mobile Location Selector Button */}
+          <div className="relative md:hidden" ref={mobileLocationRef}>
+            <button
+              onClick={() => {
+                setIsLocationOpen(prev => !prev);
+                setIsMobileMenuOpen(false);
+              }}
+              type="button"
+              className="flex items-center gap-1 text-xs font-bold bg-gray-50 hover:bg-gray-100 text-gray-800 px-2.5 py-1.5 rounded-xl border border-gray-200 transition-colors cursor-pointer"
+            >
+              <MapPin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
+              <span className="truncate max-w-16">
+                {selectedCity === 'All Cities' ? 'Australia' : selectedCity}
+              </span>
+              <ChevronDown className="w-3 h-3 text-gray-400 shrink-0" />
+            </button>
+
+            {isLocationOpen && (
+              <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
+                  <button
+                    onClick={() => handleSelectCity('All Cities')}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
+                      selectedCity === 'All Cities' ? 'bg-amber-400 text-slate-950 font-bold' : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span>All of Australia</span>
+                    {selectedCity === 'All Cities' && <Check className="w-3.5 h-3.5 text-slate-950" />}
+                  </button>
+                  {allUniqueCities.map((city) => {
+                    const isSelected = selectedCity.toLowerCase() === city.toLowerCase();
+                    return (
+                      <button
+                        key={`m-${city}`}
+                        onClick={() => handleSelectCity(city)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
+                          isSelected ? 'bg-amber-400 text-slate-950 font-bold' : 'text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span>{city}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-slate-950" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
           {activeHolds.length > 0 && (
             <Link 
               href={`/checkout?holdId=${activeHolds[0].holdId}`}
-              className="relative flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+              className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
             >
-              <ShoppingCart className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white">
+              <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 sm:h-5 sm:w-5 items-center justify-center rounded-full bg-red-500 text-[9px] sm:text-[10px] font-bold text-white border-2 border-white">
                 {activeHolds.length}
               </span>
             </Link>
           )}
 
+          {/* Desktop User Menu */}
           {user ? (
-            <div className="relative" ref={userMenuRef}>
+            <div className="relative hidden md:block" ref={userMenuRef}>
               <div 
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-700 rounded-full font-semibold text-sm cursor-pointer border border-yellow-200 hover:bg-yellow-100 transition-colors"
@@ -400,60 +472,202 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <Link href="/auth" className="bg-yellow-400 text-black text-xs font-bold px-5 py-2 rounded-full hover:bg-yellow-500 transition-colors">
+            <Link href="/auth" className="hidden md:inline-flex bg-yellow-400 text-black text-xs font-bold px-5 py-2 rounded-full hover:bg-yellow-500 transition-colors">
               Login / Sign Up
             </Link>
           )}
-          {/* Mobile Location Button & Dropdown */}
-          <div className="relative md:hidden" ref={mobileLocationRef}>
-            <button
-              onClick={() => {
-                setIsLocationOpen(prev => !prev);
-                setIsUserMenuOpen(false);
-              }}
-              type="button"
-              className="flex items-center gap-1 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors cursor-pointer"
-            >
-              <MapPin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
-              <span className="truncate max-w-18.75">
-                {selectedCity === 'All Cities' ? 'All Australia' : selectedCity}
-              </span>
-              <ChevronDown className="w-3 h-3 text-gray-400 shrink-0" />
-            </button>
 
-            {isLocationOpen && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
-                  <button
-                    onClick={() => handleSelectCity('All Cities')}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
-                      selectedCity === 'All Cities' ? 'bg-amber-400 text-slate-950 font-bold' : 'text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>All of Australia</span>
-                    {selectedCity === 'All Cities' && <Check className="w-3.5 h-3.5 text-slate-950" />}
-                  </button>
-                  {allUniqueCities.map((city) => {
-                    const isSelected = selectedCity.toLowerCase() === city.toLowerCase();
-                    return (
-                      <button
-                        key={`m-${city}`}
-                        onClick={() => handleSelectCity(city)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
-                          isSelected ? 'bg-amber-400 text-slate-950 font-bold' : 'text-slate-700 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span>{city}</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-slate-950" />}
-                      </button>
-                    );
-                  })}
+          {/* Mobile Hamburger Drawer Trigger */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileMenuOpen(prev => !prev);
+              setIsMobileSearchOpen(false);
+              setIsLocationOpen(false);
+            }}
+            aria-label="Open navigation menu"
+            className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-800 transition-colors"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Expandable Mobile Search Bar */}
+      {isMobileSearchOpen && (
+        <div className="md:hidden px-3 pt-2 pb-3 border-t border-gray-100 bg-white animate-in slide-in-from-top-2 duration-150">
+          <div className="flex items-center bg-gray-100 rounded-xl px-3 py-2 border border-gray-200">
+            <Search className="w-4 h-4 text-gray-400 mr-2 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search concerts, tours, artists..."
+              className="w-full bg-transparent border-none outline-none text-sm text-gray-900 placeholder:text-gray-400"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  setIsMobileSearchOpen(false);
+                  router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                }
+              }}
+            />
+            {searchQuery && (
+              <button 
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="p-1 text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Mobile Live Search Dropdown */}
+          {searchResults && (
+            <div className="mt-2 bg-white rounded-xl shadow-lg border border-gray-200 max-h-60 overflow-y-auto p-1">
+              {(searchResults.events?.length > 0 || searchResults.artists?.length > 0) ? (
+                <>
+                  {[...(searchResults.events || []), ...(searchResults.artists || [])].map((item: any) => (
+                    <Link
+                      key={`mob-${item.id || item.slug}`}
+                      href={item.title ? `/events/${item.slug}` : `/events?search=${encodeURIComponent(item.name || '')}`}
+                      onClick={() => setIsMobileSearchOpen(false)}
+                      className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg text-left"
+                    >
+                      <div className="w-9 h-9 bg-gray-100 rounded-md shrink-0 relative overflow-hidden">
+                        {(item.posterPath || item.imagePath) && (
+                          <Image
+                            src={(item.posterPath || item.imagePath).startsWith('http') ? (item.posterPath || item.imagePath) : `${BACKEND_HOST}${(item.posterPath || item.imagePath)}`}
+                            alt={item.title || item.name}
+                            fill
+                            className="object-cover"
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-gray-900 truncate">{item.title || item.name}</p>
+                        <p className="text-[11px] text-gray-500 truncate">
+                          {item.title ? (item.venue?.city || 'Australia') : 'Artist'}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                  <div className="p-2 text-center border-t border-gray-100">
+                    <Link
+                      href={`/search?q=${searchQuery}`}
+                      onClick={() => setIsMobileSearchOpen(false)}
+                      className="text-xs font-bold text-amber-600"
+                    >
+                      View all results →
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <div className="p-4 text-center text-xs text-gray-500">No events found</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mobile Drawer Navigation Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-x-0 top-[57px] bottom-0 bg-slate-900/40 backdrop-blur-xs z-40 animate-in fade-in duration-150">
+          <div className="bg-white border-b border-gray-200 p-4 space-y-4 shadow-xl max-h-[85vh] overflow-y-auto">
+            {/* User Details / Auth Card */}
+            {user ? (
+              <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200/80 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center text-sm">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-extrabold text-gray-900 truncate">{user.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{user.email || 'Registered Attendee'}</p>
+                  </div>
                 </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-2xl bg-linear-to-r from-amber-400 to-amber-500 text-slate-950 flex items-center justify-between shadow-xs">
+                <div>
+                  <p className="text-sm font-black">Welcome to Mytix</p>
+                  <p className="text-xs font-medium text-slate-800">Sign in to book tickets & save seats</p>
+                </div>
+                <Link
+                  href="/auth"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="px-4 py-2 bg-slate-950 text-white rounded-xl text-xs font-black shadow"
+                >
+                  Sign In
+                </Link>
+              </div>
+            )}
+
+            {/* Navigation Links */}
+            <div className="space-y-1">
+              <Link
+                href="/events"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-gray-800 hover:bg-gray-100 transition-colors"
+              >
+                <Compass className="w-4 h-4 text-amber-500" />
+                Explore Events
+              </Link>
+
+              {user && (
+                <>
+                  <Link
+                    href="/profile"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-gray-800 hover:bg-gray-100 transition-colors"
+                  >
+                    <User className="w-4 h-4 text-amber-500" />
+                    My Profile
+                  </Link>
+
+                  <Link
+                    href="/tickets"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-gray-800 hover:bg-gray-100 transition-colors"
+                  >
+                    <Ticket className="w-4 h-4 text-amber-500" />
+                    My Tickets & QR Codes
+                  </Link>
+
+                  <Link
+                    href="/orders"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-gray-800 hover:bg-gray-100 transition-colors"
+                  >
+                    <Receipt className="w-4 h-4 text-amber-500" />
+                    My Orders & Invoices
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Logout button */}
+            {user && (
+              <div className="pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logout();
+                    setIsMobileMenuOpen(false);
+                    toast.success('Logged out successfully');
+                    router.push('/');
+                  }}
+                  className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
               </div>
             )}
           </div>
         </div>
-      </div>
+      )}
     </nav>
     </>
   );

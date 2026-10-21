@@ -167,6 +167,22 @@ function CheckoutContent() {
           {/* Left Main Section */}
           <div className="lg:col-span-7 space-y-6">
 
+            {/* Mobile Order Summary Header Card (Hidden on Desktop) */}
+            <div className="lg:hidden bg-slate-950 text-white p-5 rounded-3xl shadow-md border border-slate-800">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 text-amber-400 text-xs font-extrabold uppercase tracking-wider">
+                  <Ticket className="w-3.5 h-3.5" /> Order Summary
+                </div>
+                <span className="text-base font-black text-amber-400">
+                  ${finalAmount.toFixed(2)} <span className="text-[10px] text-slate-400 uppercase">AUD</span>
+                </span>
+              </div>
+              <h3 className="text-base font-black text-white leading-snug truncate">{hold.eventTitle}</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                {hold.quantity} × {hold.ticketTypeName} • Includes AUD processing fee
+              </p>
+            </div>
+
             {/* 1. Ticket Delivery / Account Card */}
             <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-gray-100">
               <div className="flex items-center justify-between mb-5">
