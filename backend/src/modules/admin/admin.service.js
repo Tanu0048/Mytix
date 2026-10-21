@@ -723,3 +723,73 @@ export async function cancelEventAndRefundOrders(eventId, reason, adminUserId) {
   };
 }
 
+// ----------------------------------------------------
+// TERMS & CONDITIONS (Dynamic Super-Admin Platform Legal)
+// ----------------------------------------------------
+export const DEFAULT_TERMS = {
+  title: "Terms and Conditions of Service",
+  subtitle: "Please read these terms carefully before booking tickets or using the Mytix entertainment platform.",
+  lastUpdated: "October 2026",
+  sections: [
+    {
+      id: "agreement",
+      title: "1. Agreement to Terms",
+      content: "By accessing or using Mytix (the 'Platform'), purchasing tickets, registering an account, or attending any event ticketed through our service, you agree to be legally bound by these Terms and Conditions and our Privacy Policy. If you do not agree with any provision of these terms, you must not use our website, mobile application, or purchase tickets."
+    },
+    {
+      id: "ticketing",
+      title: "2. Digital Ticketing & Admission",
+      content: "All tickets issued through Mytix are 100% digital electronic admissions secured with high-grade cryptographic QR verification signatures. Each QR code is strictly valid for a single entry scan at venue turnstiles. Duplicated, altered, or unreadable tickets will be denied entry by venue gate operators without entitlement to compensation."
+    },
+    {
+      id: "pricing",
+      title: "3. Pricing, Taxes & Payment Gateway",
+      content: "All ticket prices are listed in Australian Dollars (AUD) or relevant local currency inclusive of statutory Goods and Services Tax (GST) unless explicitly noted otherwise. Payment must be made in full through authorized bank gateways (credit/debit cards, Apple Pay, Google Pay). Mytix guarantees complete price transparency with zero hidden surprise fees at final checkout."
+    },
+    {
+      id: "cancellation",
+      title: "4. Event Cancellation, Rescheduling & Refunds",
+      content: "In the event that a concert, festival, or show is officially cancelled by the artist or event organizer, full ticket refunds will be automatically returned to your original payment method in compliance with Australian Consumer Law (ACL). If an event is postponed or rescheduled, existing tickets remain valid for the newly announced date."
+    },
+    {
+      id: "venue-rules",
+      title: "5. Venue Conduct & Admission Rights",
+      content: "Ticket holders must adhere to all individual venue regulations, security checks, bag inspections, and age restrictions (e.g. 18+ valid photo ID requirements). Venue management and organizers reserve the right to refuse entry or eject individuals demonstrating disorderly, abusive, or unsafe behavior."
+    },
+    {
+      id: "resale",
+      title: "6. Resale & Scalping Prohibition",
+      content: "Tickets may not be scalped, resold for commercial gain, or transferred via unauthorized third-party secondary ticketing sites at prices exceeding 110% of face value in accordance with Australian state anti-scalping legislation."
+    },
+    {
+      id: "liability",
+      title: "7. Limitation of Liability",
+      content: "To the maximum extent permitted by applicable law, Mytix acts as a ticketing agent on behalf of independent event organizers and shall not be held liable for personal injury, property loss, or artist performance changes beyond our direct operational control."
+    }
+  ]
+};
+
+export async function getTermsAndConditions() {
+  const setting = await prisma.platformSettings.findUnique({
+    where: { key: "terms_and_conditions" }
+  });
+  if (!setting || !setting.value) {
+    return DEFAULT_TERMS;
+  }
+  return setting.value;
+}
+
+export async function updateTermsAndConditions(termsData) {
+  const setting = await prisma.platformSettings.upsert({
+    where: { key: "terms_and_conditions" },
+    update: {
+      value: termsData
+    },
+    create: {
+      key: "terms_and_conditions",
+      value: termsData
+    }
+  });
+  return setting.value;
+}
+

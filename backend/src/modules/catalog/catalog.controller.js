@@ -62,3 +62,8 @@ export const getArtists = asyncHandler(async (req, res) => {
   const artists = await catalogService.listArtists();
   res.status(200).json(artists);
 });
+
+export const getTerms = asyncHandler(async (_req, res) => {
+  const terms = await catalogService.getPlatformTerms();
+  res.status(200).json(terms);
+});
