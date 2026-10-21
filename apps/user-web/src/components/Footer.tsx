@@ -22,35 +22,23 @@ export default function Footer() {
         </div>
 
         {/* Middle Section - Links */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-10">
-          <div>
-            <h4 className="text-white font-bold mb-4 uppercase text-sm">Movies By Genre</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="#" className="hover:text-white transition">Action Movies</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Comedy Movies</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Romantic Movies</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Sci-Fi Movies</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Horror Movies</Link></li>
-            </ul>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 py-10">
           <div>
             <h4 className="text-white font-bold mb-4 uppercase text-sm">Events</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="#" className="hover:text-white transition">Comedy Shows</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Music Concerts</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Workshops</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Theatre</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Sports</Link></li>
+              <li><Link href="/events?category=comedy" className="hover:text-white transition">Comedy Shows</Link></li>
+              <li><Link href="/events?category=concert" className="hover:text-white transition">Music Concerts</Link></li>
+              <li><Link href="/events?category=workshop" className="hover:text-white transition">Workshops</Link></li>
+              <li><Link href="/events?category=theatre" className="hover:text-white transition">Theatre</Link></li>
+              <li><Link href="/events?category=sports" className="hover:text-white transition">Sports</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="text-white font-bold mb-4 uppercase text-sm">Help</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="#" className="hover:text-white transition">About Us</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Contact Us</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Current Openings</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Press Release</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Terms & Conditions</Link></li>
+              <li><Link href="/about" className="hover:text-white transition">About Us</Link></li>
+              <li><Link href="/contact" className="hover:text-white transition">Contact Us</Link></li>
+              <li><Link href="/terms" className="hover:text-white transition">Terms & Conditions</Link></li>
             </ul>
           </div>
           <div>

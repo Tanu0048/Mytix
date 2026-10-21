@@ -212,3 +212,31 @@ export async function cancelEvent(req, res, next) {
   }
 }
 
+// ----------------------------------------------------
+// TERMS & CONDITIONS (Super-Admin Platform Settings)
+// ----------------------------------------------------
+
+export async function getTerms(_req, res, next) {
+  try {
+    const terms = await adminService.getTermsAndConditions();
+    res.status(200).json({
+      success: true,
+      data: terms
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateTerms(req, res, next) {
+  try {
+    const updated = await adminService.updateTermsAndConditions(req.body);
+    res.status(200).json({
+      success: true,
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

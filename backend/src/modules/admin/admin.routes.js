@@ -55,3 +55,9 @@ adminRouter.get("/orders/:id", adminController.getOrderDetails);
 // ----------------------------------------------------
 adminRouter.post("/events/:id/cancel", validate(cancelEventSchema), adminController.cancelEvent);
 
+// ----------------------------------------------------
+// PLATFORM TERMS & CONDITIONS (Super-Admin only)
+// ----------------------------------------------------
+adminRouter.get("/terms", adminController.getTerms);
+adminRouter.put("/terms", adminController.updateTerms);
+

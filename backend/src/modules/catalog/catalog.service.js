@@ -270,3 +270,8 @@ export async function getUniqueCategories() {
   await setCached(cacheKey, categories, 3600);
   return categories;
 }
+
+export async function getPlatformTerms() {
+  const { getTermsAndConditions } = await import("../admin/admin.service.js");
+  return getTermsAndConditions();
+}
