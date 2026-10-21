@@ -557,24 +557,26 @@ export default function Home() {
 
       {/* Featured events */}
       <div className="max-w-7xl mx-auto px-4 mt-16 mb-16">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6 sm:mb-8">
           <div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-              Featured events
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Featured events
+              </h2>
               {selectedCity && selectedCity !== 'All Cities' && (
-                <span className="text-xs md:text-sm font-bold text-amber-800 bg-amber-100 px-2.5 py-1 rounded-xl border border-amber-300">
+                <span className="text-xs md:text-sm font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-300 whitespace-nowrap">
                   in {selectedCity}
                 </span>
               )}
-            </h2>
+            </div>
             <p className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">
               {selectedCity && selectedCity !== 'All Cities' 
                 ? `Showing events taking place in ${selectedCity}` 
                 : "Don't miss these top events across Australia"}
             </p>
           </div>
-          <Link href={`/events${selectedCity && selectedCity !== 'All Cities' ? `?city=${encodeURIComponent(selectedCity)}` : ''}`} className="text-sm font-bold text-amber-600 hover:text-amber-700 flex items-center group">
-            See all <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
+          <Link href={`/events${selectedCity && selectedCity !== 'All Cities' ? `?city=${encodeURIComponent(selectedCity)}` : ''}`} className="text-xs sm:text-sm font-bold text-amber-600 hover:text-amber-700 inline-flex items-center group shrink-0 whitespace-nowrap self-start sm:self-auto">
+            <span>See all</span> <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
         
@@ -1106,14 +1108,14 @@ export default function Home() {
                   <div className="flex items-center gap-3.5 sm:gap-4 flex-1 min-w-0">
                     
                     {/* High-Contrast Calendar Date Tile */}
-                    <div className="flex sm:flex-col items-center justify-center shrink-0 w-15 h-15 sm:w-16 sm:h-18 rounded-xl bg-linear-to-b from-slate-950 to-slate-900 border border-slate-800 text-white p-1.5 shadow-2xs">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400 leading-none">
+                    <div className="flex flex-col items-center justify-center shrink-0 w-14 h-14 sm:w-16 sm:h-18 rounded-xl bg-linear-to-b from-slate-950 to-slate-900 border border-slate-800 text-white p-1 sm:p-1.5 shadow-2xs">
+                      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-400 leading-tight">
                         {month}
                       </span>
-                      <span className="text-xl sm:text-2xl font-bold text-white tracking-tight leading-none my-0.5 mx-1 sm:mx-0">
+                      <span className="text-lg sm:text-2xl font-bold text-white tracking-tight leading-none my-0.5">
                         {day}
                       </span>
-                      <span className="text-[10px] font-medium uppercase text-slate-400 tracking-wide">
+                      <span className="text-[9px] sm:text-[10px] font-medium uppercase text-slate-400 tracking-wide leading-tight">
                         {weekday}
                       </span>
                     </div>
