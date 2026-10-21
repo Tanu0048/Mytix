@@ -51,11 +51,11 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-slate-50/60 pb-24">
       {/* Hero Header */}
-      <div className="relative bg-[#070b13] text-white pt-20 pb-28 px-4 sm:px-6 lg:px-8 overflow-hidden border-b border-amber-500/20">
+      <div className="relative bg-[#070b13] text-white pt-16 pb-16 px-4 sm:px-6 lg:px-8 border-b border-amber-500/20">
         <div className="absolute -left-20 -top-20 w-96 h-96 bg-amber-500/20 rounded-full blur-[110px] pointer-events-none" />
         <div className="absolute right-0 bottom-0 w-96 h-96 bg-amber-400/10 rounded-full blur-[130px] pointer-events-none" />
 
-        <div className="relative max-w-4xl mx-auto text-center space-y-6">
+        <div className="relative max-w-4xl mx-auto text-center space-y-5">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/15 text-amber-400 text-xs font-bold tracking-wide uppercase backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5" /> Our Story & Mission
           </div>
@@ -71,9 +71,11 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Stats Counter Ribbon */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-14">
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xl grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      {/* Main Content Area */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-14">
+
+        {/* Stats Counter Ribbon */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {stats.map((stat, i) => (
             <div key={i} className="space-y-1">
               <p className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
@@ -88,10 +90,8 @@ export default function AboutPage() {
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Main Narrative */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 space-y-16">
+        {/* Narrative Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           <div className="space-y-4">
             <span className="text-xs font-extrabold tracking-widest uppercase text-amber-600">
