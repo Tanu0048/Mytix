@@ -1,268 +1,183 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { 
   Mail, 
   Phone, 
   MapPin, 
   Clock, 
-  Send, 
-  CheckCircle2, 
-  MessageSquare, 
+  Sparkles, 
+  Ticket, 
   HelpCircle, 
-  Sparkles,
-  Ticket,
-  ChevronRight,
-  ShieldCheck
+  Building2, 
+  ArrowRight,
+  ShieldCheck,
+  CheckCircle2
 } from "lucide-react";
-import { toast } from "sonner";
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    bookingId: "",
-    topic: "Ticketing & Entry",
-    message: ""
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
-      toast.error("Please fill in your name, email, and message.");
-      return;
+  const contactCards = [
+    {
+      icon: Mail,
+      iconColor: "text-amber-600 bg-amber-100",
+      title: "Customer Support Email",
+      subtitle: "For ticket inquiries, event entry, and refund requests",
+      actionText: "support@mytix.com.au",
+      actionHref: "mailto:support@mytix.com.au",
+      badge: "Fastest response (<2h)"
+    },
+    {
+      icon: Phone,
+      iconColor: "text-emerald-600 bg-emerald-100",
+      title: "24/7 Phone Hotline",
+      subtitle: "Toll-free assistance across all Australian states",
+      actionText: "1800 MYTIX (1800 698 490)",
+      actionHref: "tel:1800698490",
+      badge: "24/7 on event days"
+    },
+    {
+      icon: Building2,
+      iconColor: "text-indigo-600 bg-indigo-100",
+      title: "Organisers & Partnerships",
+      subtitle: "For promoters, festivals, and venue ticket management",
+      actionText: "organisers@mytix.com.au",
+      actionHref: "mailto:organisers@mytix.com.au",
+      badge: "Partnerships"
+    },
+    {
+      icon: Clock,
+      iconColor: "text-blue-600 bg-blue-100",
+      title: "Operating Hours",
+      subtitle: "Dedicated local support team ready to assist",
+      actionText: "Mon – Sun: 24/7 Event Coverage",
+      actionHref: null,
+      badge: "Always Open"
     }
-
-    setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
-      setSubmitted(true);
-      toast.success("Message received! Our Australian support team will reply within 2 hours.");
-    }, 900);
-  };
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50/60 pb-20">
-      {/* Hero Header */}
-      <div className="relative bg-[#070b13] text-white pt-16 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden border-b border-amber-500/20">
+    <div className="min-h-screen bg-slate-50/70 pb-20">
+      {/* Header Banner */}
+      <div className="relative bg-[#070b13] text-white pt-14 pb-16 px-4 sm:px-6 lg:px-8 border-b border-amber-500/20">
         <div className="absolute -left-20 -top-20 w-80 h-80 bg-amber-500/15 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute right-0 bottom-0 w-96 h-96 bg-amber-400/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute right-0 bottom-0 w-80 h-80 bg-amber-400/10 rounded-full blur-[120px] pointer-events-none" />
 
-        <div className="relative max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/15 text-amber-400 text-xs font-bold tracking-wide uppercase mb-4 backdrop-blur-md">
+        <div className="relative max-w-4xl mx-auto text-center space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/15 text-amber-400 text-xs font-bold tracking-wide uppercase backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5" /> Australian Customer Care
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white mb-4">
-            How can we help you today?
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
+            Contact Mytix Support
           </h1>
-          <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Have questions about your concert tickets, venue gate entry, or putting on your own show? We&apos;re here for you 24/7.
+          <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto leading-relaxed">
+            We&apos;re here to assist you with tickets, venue entry, bookings, and organizer partnerships.
           </p>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Left Column: Quick Contact Cards */}
-          <div className="space-y-4">
-            
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-sm hover:border-amber-400 transition-colors">
-              <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-4">
-                <Mail className="w-6 h-6" />
-              </div>
-              <h3 className="font-extrabold text-slate-900 text-base mb-1">Email Us</h3>
-              <p className="text-xs text-slate-500 mb-3">Average response time: under 2 hours</p>
-              <a 
-                href="mailto:support@mytix.com.au" 
-                className="text-sm font-bold text-amber-600 hover:text-amber-700 transition"
+      {/* Main Content (Clean spacing, zero overlap) */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+        
+        {/* Contact Methods Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {contactCards.map((card, idx) => {
+            const Icon = card.icon;
+            return (
+              <div 
+                key={idx}
+                className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200/90 shadow-xs hover:shadow-md hover:border-amber-400 transition-all flex flex-col justify-between space-y-4"
               >
-                support@mytix.com.au
-              </a>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-sm hover:border-amber-400 transition-colors">
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4">
-                <Phone className="w-6 h-6" />
-              </div>
-              <h3 className="font-extrabold text-slate-900 text-base mb-1">Call Our Hotline</h3>
-              <p className="text-xs text-slate-500 mb-3">Toll-free across Australia</p>
-              <p className="text-sm font-bold text-slate-800">
-                1800 MYTIX (1800 698 490)
-              </p>
-              <p className="text-[11px] text-slate-400 mt-1">Available 24/7 on event days</p>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-sm hover:border-amber-400 transition-colors">
-              <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center mb-4">
-                <MapPin className="w-6 h-6" />
-              </div>
-              <h3 className="font-extrabold text-slate-900 text-base mb-1">Australian HQ</h3>
-              <p className="text-xs text-slate-500 leading-relaxed mb-1">
-                Level 14, 120 Collins Street
-              </p>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Melbourne, VIC 3000, Australia
-              </p>
-            </div>
-
-            {/* Quick Ticket Help Link */}
-            <div className="bg-slate-900 text-white rounded-2xl p-6 border border-slate-800">
-              <div className="flex items-center gap-3 mb-2">
-                <Ticket className="w-5 h-5 text-amber-400" />
-                <h4 className="font-bold text-sm">Need your tickets re-sent?</h4>
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed mb-4">
-                Access your instant QR e-tickets anytime right from your profile dashboard.
-              </p>
-              <Link 
-                href="/profile" 
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 transition"
-              >
-                Go to My Tickets <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-          </div>
-
-          {/* Right Column: Contact Inquiry Form */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/90 shadow-md">
-              {submitted ? (
-                <div className="text-center py-12 space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-                    <CheckCircle2 className="w-8 h-8" />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold ${card.iconColor}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md bg-slate-100 text-slate-600">
+                      {card.badge}
+                    </span>
                   </div>
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                    Thank You! Message Sent
-                  </h3>
-                  <p className="text-slate-600 text-sm max-w-md mx-auto leading-relaxed">
-                    We have received your inquiry. A confirmation receipt has been sent to <span className="font-bold text-slate-900">{formData.email}</span>. A member of our support team will get in touch shortly.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSubmitted(false);
-                      setFormData({
-                        name: "",
-                        email: "",
-                        bookingId: "",
-                        topic: "Ticketing & Entry",
-                        message: ""
-                      });
-                    }}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer mt-4"
-                  >
-                    Send Another Message
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
+
                   <div>
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                      Send Us a Message
-                    </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                      Fill out the form below and our team will get back to you promptly.
+                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+                      {card.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                      {card.subtitle}
                     </p>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                        Full Name <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g. Sarah Jenkins"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                        Email Address <span className="text-rose-500">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="sarah@example.com"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                        Topic / Category
-                      </label>
-                      <select
-                        value={formData.topic}
-                        onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition bg-white"
-                      >
-                        <option value="Ticketing & Entry">Ticketing & Entry QR</option>
-                        <option value="Refunds & Cancellations">Refunds & Cancellations</option>
-                        <option value="Event Organiser Inquiries">Event Organiser & Sales</option>
-                        <option value="Payment & Billing">Payment & Invoices</option>
-                        <option value="Venue & Turnstiles">Venue Scanning & Turnstiles</option>
-                        <option value="Other">Other Question</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                        Order / Booking ID <span className="text-slate-400 font-normal lowercase">(optional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.bookingId}
-                        onChange={(e) => setFormData({ ...formData, bookingId: e.target.value })}
-                        placeholder="e.g. ORD-98124"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                      Your Message <span className="text-rose-500">*</span>
-                    </label>
-                    <textarea
-                      required
-                      rows={5}
-                      value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      placeholder="Please tell us how we can assist you with your tickets or booking..."
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm leading-relaxed focus:outline-hidden focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition"
-                    />
-                  </div>
-
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-sm transition-all shadow-md shadow-amber-400/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+                <div className="pt-2 border-t border-slate-100">
+                  {card.actionHref ? (
+                    <a 
+                      href={card.actionHref}
+                      className="inline-flex items-center gap-1.5 text-sm sm:text-base font-extrabold text-amber-600 hover:text-amber-700 transition"
                     >
-                      <Send className="w-4 h-4" />
-                      {submitting ? "Sending Message..." : "Submit Inquiry"}
-                    </button>
-                  </div>
-                </form>
-              )}
+                      {card.actionText} <ArrowRight className="w-4 h-4" />
+                    </a>
+                  ) : (
+                    <span className="text-sm sm:text-base font-extrabold text-slate-800">
+                      {card.actionText}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Office Locations */}
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/90 shadow-xs space-y-6">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-extrabold text-slate-900 tracking-tight">
+                Australian Office Locations
+              </h2>
+              <p className="text-xs text-slate-500">Corporate & operations headquarters</p>
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-100 space-y-1">
+              <p className="text-xs font-black uppercase tracking-wider text-amber-600">Melbourne HQ</p>
+              <p className="text-sm font-bold text-slate-900">Level 14, 120 Collins Street</p>
+              <p className="text-xs text-slate-500">Melbourne, Victoria 3000, Australia</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-100 space-y-1">
+              <p className="text-xs font-black uppercase tracking-wider text-amber-600">Sydney Hub</p>
+              <p className="text-sm font-bold text-slate-900">Level 22, 200 George Street</p>
+              <p className="text-xs text-slate-500">Sydney, New South Wales 2000, Australia</p>
+            </div>
+          </div>
         </div>
+
+        {/* Quick Ticket Access Banner */}
+        <div className="rounded-2xl bg-linear-to-r from-slate-900 to-slate-950 p-6 sm:p-8 text-white border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 text-center sm:text-left">
+            <div className="w-11 h-11 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center shrink-0">
+              <Ticket className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-base text-white">Looking for your event tickets?</h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                All purchased tickets and instant QR codes are ready in your profile.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/profile"
+            className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition shrink-0"
+          >
+            Access My Tickets
+          </Link>
+        </div>
+
       </div>
     </div>
   );
