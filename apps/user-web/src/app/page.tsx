@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, Menu, ChevronLeft, ChevronRight, MapPin, Calendar, Star, Mic, Music, Radio, Headphones, Guitar, Tag, User, ArrowRight, Laugh, Flame, Trophy, Drama, Palette, Sparkles, Clock, Ticket, HelpCircle, MessageCircle } from 'lucide-react';
+import { Search, ChevronDown, Menu, ChevronLeft, ChevronRight, MapPin, Calendar, Star, Mic, Music, Radio, Headphones, Guitar, Tag, User, ArrowRight, Laugh, Flame, Trophy, Drama, Palette, Sparkles, Clock, Ticket, HelpCircle, MessageCircle, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -241,6 +241,55 @@ const getCategoryMeta = (cat: any) => {
     glowColor: 'bg-amber-500',
     colorDot: 'bg-amber-400'
   };
+};
+
+const CITY_VISUALS: Record<string, { image: string; state: string; tag: string }> = {
+  melbourne: {
+    image: 'https://images.unsplash.com/photo-1514395462725-fb4566210144?auto=format&fit=crop&w=800&q=80',
+    state: 'Victoria',
+    tag: 'Live Hub'
+  },
+  sydney: {
+    image: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=80',
+    state: 'New South Wales',
+    tag: 'Harbour City'
+  },
+  brisbane: {
+    image: 'https://images.unsplash.com/photo-1576485290814-1c72aa4bbb8e?auto=format&fit=crop&w=800&q=80',
+    state: 'Queensland',
+    tag: 'River City'
+  },
+  perth: {
+    image: 'https://images.unsplash.com/photo-1549880338-65ddcdfd017b?auto=format&fit=crop&w=800&q=80',
+    state: 'Western Australia',
+    tag: 'West Coast'
+  },
+  adelaide: {
+    image: 'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?auto=format&fit=crop&w=800&q=80',
+    state: 'South Australia',
+    tag: 'Festival City'
+  },
+  'gold coast': {
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+    state: 'Queensland',
+    tag: 'Surfers Paradise'
+  },
+  canberra: {
+    image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=800&q=80',
+    state: 'ACT',
+    tag: 'Capital Region'
+  },
+  hobart: {
+    image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80',
+    state: 'Tasmania',
+    tag: 'Island Vibes'
+  }
+};
+
+const DEFAULT_CITY_VISUAL = {
+  image: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80',
+  state: 'Australia',
+  tag: 'Live Shows'
 };
 
 interface HomeData {
@@ -980,38 +1029,97 @@ export default function Home() {
 
       {/* Browse by city */}
       {availableCities.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 mb-16">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Browse by city</h2>
-          <p className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mb-8">Click a city to explore local concerts & festivals</p>
+        <div className="max-w-7xl mx-auto px-4 mb-20">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs font-bold tracking-wide mb-2.5">
+                <MapPin className="w-3.5 h-3.5 text-amber-600" /> Live Cities & Destinations
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+                Browse by city
+              </h2>
+              <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">
+                Click a city to discover local concerts, festivals, and live entertainment
+              </p>
+            </div>
+
+            {selectedCity && selectedCity !== 'All Cities' && (
+              <button
+                onClick={() => {
+                  setSelectedCity('All Cities');
+                  toast.success('Showing all events across Australia');
+                }}
+                className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-4 py-2 rounded-full transition-all cursor-pointer shadow-2xs self-start sm:self-auto"
+              >
+                <Globe className="w-4 h-4 text-amber-600" />
+                <span>Show All Australia</span>
+              </button>
+            )}
+          </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {availableCities.map((city, i) => {
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-5">
+            {availableCities.map((city) => {
               const isSelected = selectedCity.toLowerCase() === city.toLowerCase();
+              const key = city.toLowerCase().trim();
+              const visual = CITY_VISUALS[key] || DEFAULT_CITY_VISUAL;
 
               return (
                 <button 
-                  key={i} 
+                  key={city} 
                   onClick={() => {
                     setSelectedCity(city);
                     toast.success(`Showing events for ${city}`);
                     window.scrollTo({ top: 400, behavior: 'smooth' });
                   }} 
-                  className={`relative overflow-hidden text-left flex items-center justify-between px-5 py-6 rounded-2xl border cursor-pointer ${
+                  className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl text-left h-40 sm:h-48 flex flex-col justify-between p-4 sm:p-5 transition-all duration-300 cursor-pointer ${
                     isSelected
-                      ? 'border-amber-500 bg-amber-100/90 ring-2 ring-amber-400/40 shadow-md shadow-amber-500/10'
-                      : 'bg-white border-slate-200/90 shadow-xs'
+                      ? 'ring-3 ring-amber-400 border-2 border-amber-400 shadow-[0_10px_25px_-5px_rgba(251,191,36,0.4)] scale-[1.02]'
+                      : 'border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1'
                   }`}
                 >
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-slate-900 text-base">{city}</h3>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Active live events"></span>
-                    </div>
-                    <p className="text-xs text-slate-500 font-medium mt-1">
-                      Live events now <ChevronRight className="inline w-3 h-3" />
-                    </p>
+                  {/* City Background Photo with Zoom on Hover */}
+                  <Image
+                    src={visual.image}
+                    alt={city}
+                    fill
+                    sizes="(max-width: 640px) 50vw, 25vw"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                  />
+
+                  {/* Gradient Dark Overlay */}
+                  <div className={`absolute inset-0 transition-opacity duration-300 ${
+                    isSelected 
+                      ? 'bg-linear-to-t from-slate-950 via-slate-950/60 to-slate-950/40' 
+                      : 'bg-linear-to-t from-slate-950/90 via-slate-950/50 to-slate-950/25 group-hover:from-slate-950 group-hover:via-slate-950/60'
+                  }`} />
+
+                  {/* Top Badges */}
+                  <div className="relative z-10 flex items-center justify-between w-full">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md text-white border border-white/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live Shows
+                    </span>
+
+                    {isSelected && (
+                      <span className="bg-amber-400 text-slate-950 text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow-xs">
+                        Selected
+                      </span>
+                    )}
                   </div>
-                  <MapPin className="absolute -right-2.5 -bottom-2.5 w-24 h-24 text-slate-900/5 transform -rotate-12 pointer-events-none" />
+
+                  {/* Bottom City Name & Action */}
+                  <div className="relative z-10">
+                    <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-amber-300 mb-0.5">
+                      {visual.state}
+                    </p>
+                    <h3 className="font-black text-white text-lg sm:text-2xl tracking-tight leading-tight group-hover:text-amber-300 transition-colors">
+                      {city}
+                    </h3>
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-slate-300 mt-1 opacity-90 group-hover:text-white group-hover:translate-x-1 transition-all">
+                      <span>Explore concerts</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-amber-400" />
+                    </div>
+                  </div>
                 </button>
               );
             })}
