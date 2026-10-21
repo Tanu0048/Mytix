@@ -578,7 +578,7 @@ export default function Home() {
           </Link>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
           {loading ? (
             Array(4).fill(0).map((_, i) => <EventCardSkeleton key={i} />)
           ) : trending.length === 0 ? (
@@ -720,7 +720,7 @@ export default function Home() {
         </div>
 
         {/* Dynamic Live Ticket Booking Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mt-6">
           {loading ? (
             Array(4).fill(0).map((_, i) => <EventCardSkeleton key={`cat-skeleton-${i}`} />)
           ) : displayCategoryEvents.length === 0 ? (

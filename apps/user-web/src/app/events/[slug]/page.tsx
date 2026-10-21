@@ -157,6 +157,109 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
     }
   };
 
+  const isActionDisabled = holding || isBookingClosed || isEventSoldOut || (
+    event?.seatingType === 'RESERVED' 
+      ? selectedSeats.length === 0 
+      : Object.values(quantities).reduce((a, b) => a + b, 0) === 0
+  );
+
+  let selectedCount = 0;
+  let computedTotal = 0;
+
+  if (event?.seatingType === 'RESERVED') {
+    selectedCount = selectedSeats.length;
+    const sub = selectedSeats.reduce((sum, sKey) => {
+      const tierId = seatTierMap[sKey];
+      const tier = event.ticketTypes?.find((t: any) => t.id === tierId) || event.ticketTypes?.[0];
+      return sum + (tier ? tier.priceCents / 100 : 0);
+    }, 0);
+    computedTotal = sub + Math.floor(sub * 0.05);
+  } else {
+    const selectedId = Object.keys(quantities).find(id => quantities[id] > 0);
+    if (selectedId) {
+      const q = quantities[selectedId];
+      selectedCount = q;
+      const tt = event?.ticketTypes?.find((t: any) => t.id === selectedId);
+      const sub = ((tt?.priceCents || 0) / 100) * q;
+      computedTotal = sub + Math.floor(sub * 0.05);
+    }
+  }
+
+  const handleHoldTickets = async () => {
+    if (isBookingClosed) {
+      toast.error('Ticket booking has closed for this event.');
+      return;
+    }
+    if (isEventSoldOut) {
+      toast.error('This event is sold out.');
+      return;
+    }
+
+    if (event.seatingType === 'RESERVED') {
+      if (selectedSeats.length === 0) {
+        toast.error('Please select at least one seat.');
+        return;
+      }
+      setHolding(true);
+      try {
+        const primaryTierId = seatTierMap[selectedSeats[0]] || event.ticketTypes?.[0]?.id;
+        const res = await fetch(`${API_BASE}/holds`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify({ 
+            ticketTypeId: primaryTierId, 
+            quantity: selectedSeats.length,
+            selectedSeats 
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || data.message || 'Failed to hold seats.');
+        setHoldData(data.data);
+        toast.success('Seats held successfully! Proceeding to payment...');
+        router.push(`/checkout?holdId=${data.data.holdId}`);
+      } catch(err: any) {
+        toast.error(err.message);
+      } finally {
+        setHolding(false);
+      }
+      return;
+    }
+
+    // General Admission hold flow
+    const selectedTypeId = Object.keys(quantities).find(id => quantities[id] > 0);
+    if (!selectedTypeId) {
+      toast.error('Please select a ticket.');
+      return;
+    }
+    setHolding(true);
+    try {
+      const res = await fetch(`${API_BASE}/holds`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ ticketTypeId: selectedTypeId, quantity: quantities[selectedTypeId] })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || data.message || 'Failed to hold tickets.');
+      setHoldData(data.data);
+      if (data.data.existing) {
+        toast.success('Resuming your active ticket reservation...');
+      } else {
+        toast.success('Tickets held successfully! Proceeding to payment...');
+      }
+      router.push(`/checkout?holdId=${data.data.holdId}`);
+    } catch(err: any) {
+      toast.error(err.message);
+    } finally {
+      setHolding(false);
+    }
+  };
+
   if (loading) {
     return <EventDetailsSkeleton />;
   }
@@ -174,11 +277,11 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
         <span className="text-gray-900">{event.title}</span>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row gap-10">
+      <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row gap-6 md:gap-10 pb-24 md:pb-12">
         
         {/* Left Column (Poster & Trust badges) */}
         <div className="w-full md:w-[35%] flex flex-col gap-6">
-          <div className="relative w-full aspect-3/4 rounded-xl overflow-hidden shadow-sm border border-gray-100">
+          <div className="relative w-full aspect-3/4 max-w-sm mx-auto md:max-w-none rounded-2xl overflow-hidden shadow-sm border border-gray-100">
             {event.posterPath ? (
               <Image src={event.posterPath} alt={event.title} fill className="object-cover" />
             ) : (
@@ -186,7 +289,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
             )}
           </div>
           
-          <div className="bg-amber-50/50 rounded-xl p-6 border border-amber-200/50">
+          <div className="hidden md:block bg-amber-50/50 rounded-xl p-6 border border-amber-200/50">
             <ul className="space-y-4 text-sm text-gray-700 font-medium">
               <li className="flex items-start gap-3"><CheckCircle className="w-5 h-5 text-amber-600 shrink-0" /> Every booking confirmed by our team</li>
               <li className="flex items-start gap-3"><Ticket className="w-5 h-5 text-amber-600 shrink-0" /> No payment taken on the website</li>
@@ -480,89 +583,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
 
               {/* Action Button */}
               <button 
-                disabled={
-                  holding || 
-                  isBookingClosed ||
-                  isEventSoldOut ||
-                  (event.seatingType === 'RESERVED' 
-                    ? selectedSeats.length === 0 
-                    : Object.values(quantities).reduce((a,b)=>a+b, 0) === 0)
-                }
-                onClick={async () => {
-                  if (isBookingClosed) {
-                    toast.error('Ticket booking has closed for this event.');
-                    return;
-                  }
-                  if (isEventSoldOut) {
-                    toast.error('This event is sold out.');
-                    return;
-                  }
-
-                  if (event.seatingType === 'RESERVED') {
-                    if (selectedSeats.length === 0) {
-                      toast.error('Please select at least one seat.');
-                      return;
-                    }
-                    setHolding(true);
-                    try {
-                      const primaryTierId = seatTierMap[selectedSeats[0]] || event.ticketTypes?.[0]?.id;
-                      const res = await fetch(`${API_BASE}/holds`, {
-                        method: 'POST',
-                        headers: { 
-                          'Content-Type': 'application/json'
-                        },
-                        credentials: 'include',
-                        body: JSON.stringify({ 
-                          ticketTypeId: primaryTierId, 
-                          quantity: selectedSeats.length,
-                          selectedSeats 
-                        })
-                      });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error?.message || data.message || 'Failed to hold seats.');
-                      setHoldData(data.data);
-                      toast.success('Seats held successfully! Proceeding to payment...');
-                      router.push(`/checkout?holdId=${data.data.holdId}`);
-                    } catch(err: any) {
-                      toast.error(err.message);
-                    } finally {
-                      setHolding(false);
-                    }
-                    return;
-                  }
-
-                  // General Admission hold flow
-                  const selectedTypeId = Object.keys(quantities).find(id => quantities[id] > 0);
-                  if (!selectedTypeId) {
-                    toast.error('Please select a ticket.');
-                    return;
-                  }
-                  setHolding(true);
-                  try {
-                    const res = await fetch(`${API_BASE}/holds`, {
-                      method: 'POST',
-                      headers: { 
-                        'Content-Type': 'application/json'
-                      },
-                      credentials: 'include',
-                      body: JSON.stringify({ ticketTypeId: selectedTypeId, quantity: quantities[selectedTypeId] })
-                    });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error?.message || data.message || 'Failed to hold tickets.');
-                    setHoldData(data.data);
-                    if (data.data.existing) {
-                      toast.success('Resuming your active ticket reservation...');
-                    } else {
-                      toast.success('Tickets held successfully! Proceeding to payment...');
-                    }
-                    router.push(`/checkout?holdId=${data.data.holdId}`);
-                  } catch(err: any) {
-                    toast.error(err.message);
-                  } finally {
-                    setHolding(false);
-                  }
-                }}
-                className={`w-full font-extrabold py-4 rounded-xl transition-all text-base tracking-wide ${
+                disabled={isActionDisabled}
+                onClick={handleHoldTickets}
+                className={`w-full font-extrabold py-3.5 sm:py-4 rounded-xl transition-all text-sm sm:text-base tracking-wide ${
                   isBookingClosed || isEventSoldOut
                     ? 'bg-slate-200 text-slate-500 cursor-not-allowed opacity-80'
                     : 'bg-amber-400 hover:bg-amber-500 text-slate-950 shadow-lg shadow-amber-400/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'
@@ -579,6 +602,15 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                         : 'Get tickets'}
               </button>
             </div>
+          </div>
+
+          {/* Mobile Trust Badges Box */}
+          <div className="md:hidden mb-12 bg-amber-50/50 rounded-2xl p-5 border border-amber-200/50">
+            <ul className="space-y-3.5 text-xs text-gray-700 font-medium">
+              <li className="flex items-start gap-2.5"><CheckCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" /> Every booking confirmed by our team</li>
+              <li className="flex items-start gap-2.5"><Ticket className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" /> No payment taken on the website</li>
+              <li className="flex items-start gap-2.5"><Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" /> Questions? Email support@mytix.com.au</li>
+            </ul>
           </div>
 
           {/* Performing Artists / Lineup */}
@@ -643,6 +675,27 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
 
         </div>
       </div>
+
+      {/* Floating Sticky Mobile Booking Bar */}
+      {selectedCount > 0 && !isBookingClosed && !isEventSoldOut && (
+        <div className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-gray-200 px-4 py-3 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-40 flex items-center justify-between gap-3 animate-in slide-in-from-bottom duration-200">
+          <div>
+            <span className="text-[11px] font-bold text-gray-500 block leading-tight">
+              {selectedCount} {event.seatingType === 'RESERVED' ? (selectedCount > 1 ? 'Seats' : 'Seat') : (selectedCount > 1 ? 'Tickets' : 'Ticket')}
+            </span>
+            <span className="text-lg font-black text-gray-900 leading-tight">
+              ${computedTotal.toFixed(2)} <span className="text-xs font-semibold text-gray-500">AUD</span>
+            </span>
+          </div>
+          <button
+            disabled={holding}
+            onClick={handleHoldTickets}
+            className="px-6 py-2.5 bg-linear-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black rounded-xl text-sm shadow-md transition-all cursor-pointer disabled:opacity-50"
+          >
+            {holding ? 'Holding...' : event.seatingType === 'RESERVED' ? 'Reserve Seats' : 'Continue'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

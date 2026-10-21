@@ -80,9 +80,9 @@ export default function SeatPicker({
   };
 
   return (
-    <div className="w-full bg-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-slate-800">
+    <div className="w-full bg-slate-900 text-white rounded-2xl p-3 sm:p-6 md:p-8 shadow-xl border border-slate-800">
       {/* Stage Screen Bar */}
-      <div className="flex flex-col items-center justify-center mb-10">
+      <div className="flex flex-col items-center justify-center mb-6 sm:mb-10">
         <div className="w-3/4 max-w-md h-2 bg-linear-to-r from-transparent via-amber-400 to-transparent rounded-full mb-2 shadow-[0_0_15px_rgba(251,191,36,0.6)]" />
         <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
           Stage / Screen
@@ -90,18 +90,18 @@ export default function SeatPicker({
       </div>
 
       {/* Dynamic Tier Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-8 mt-4">
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-6 sm:mb-8 mt-2">
         {ticketTypes.map((tier, idx) => {
           const colorClass = tierColors[idx % tierColors.length];
           // Extract just the border color for the legend swatch
           const borderColor = colorClass.split(' ')[0];
           
           return (
-            <div key={tier.id || idx} className="flex items-center gap-2.5 bg-slate-800/40 px-3 py-1.5 rounded-xl border border-slate-700/50">
-              <div className={`w-4 h-4 rounded bg-slate-800 border-[1.5px] ${borderColor}`} />
+            <div key={tier.id || idx} className="flex items-center gap-2 bg-slate-800/40 px-2.5 py-1.5 rounded-xl border border-slate-700/50">
+              <div className={`w-3.5 h-3.5 rounded bg-slate-800 border-[1.5px] ${borderColor}`} />
               <div className="flex flex-col text-left">
-                <span className="text-slate-200 text-[11px] font-bold leading-tight">{tier.name}</span>
-                <span className="text-slate-400 text-[10px] font-medium leading-none">${(tier.priceCents / 100).toLocaleString('en-AU')}</span>
+                <span className="text-slate-200 text-[10px] sm:text-[11px] font-bold leading-tight">{tier.name}</span>
+                <span className="text-slate-400 text-[9px] sm:text-[10px] font-medium leading-none">${(tier.priceCents / 100).toLocaleString('en-AU')}</span>
               </div>
             </div>
           );
@@ -109,23 +109,28 @@ export default function SeatPicker({
         
         <div className="w-px h-6 bg-slate-700/50 mx-1 hidden sm:block"></div>
         
-        <div className="flex items-center gap-2.5 bg-slate-800/40 px-3 py-1.5 rounded-xl border border-slate-700/50">
-          <div className="w-4 h-4 rounded bg-amber-400 flex items-center justify-center">
-            <Check className="w-3 h-3 text-slate-950 font-black stroke-3" />
+        <div className="flex items-center gap-2 bg-slate-800/40 px-2.5 py-1.5 rounded-xl border border-slate-700/50">
+          <div className="w-3.5 h-3.5 rounded bg-amber-400 flex items-center justify-center">
+            <Check className="w-2.5 h-2.5 text-slate-950 font-black stroke-3" />
           </div>
-          <span className="text-amber-400 text-[11px] font-bold">Selected</span>
+          <span className="text-amber-400 text-[10px] sm:text-[11px] font-bold">Selected</span>
         </div>
         
-        <div className="flex items-center gap-2.5 bg-slate-800/40 px-3 py-1.5 rounded-xl border border-slate-700/50 opacity-70">
-          <div className="w-4 h-4 rounded bg-slate-800/80 border border-slate-700 flex items-center justify-center">
+        <div className="flex items-center gap-2 bg-slate-800/40 px-2.5 py-1.5 rounded-xl border border-slate-700/50 opacity-70">
+          <div className="w-3.5 h-3.5 rounded bg-slate-800/80 border border-slate-700 flex items-center justify-center">
             <span className="text-[10px] text-slate-500 font-black leading-none mb-0.5">×</span>
           </div>
-          <span className="text-slate-500 text-[11px] font-bold">Booked</span>
+          <span className="text-slate-500 text-[10px] sm:text-[11px] font-bold">Booked</span>
         </div>
       </div>
 
+      {/* Mobile Swipe Hint */}
+      <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-amber-400/90 sm:hidden mb-4 bg-slate-800/60 py-1.5 px-3 rounded-full border border-slate-700/50 w-fit mx-auto shadow-2xs">
+        <span>↔ Swipe horizontally to view all seats</span>
+      </div>
+
       {/* Seating Sections */}
-      <div className="space-y-16 overflow-x-auto pb-10 pt-10 px-4">
+      <div className="space-y-12 sm:space-y-16 overflow-x-auto pb-6 pt-4 px-2 sm:px-4 touch-pan-x">
         {config.sections.map((section, sIdx) => {
           const { tier, colorClass } = getTierInfoForSection(section);
           const priceDisplay = tier ? `$${(tier.priceCents / 100).toLocaleString('en-AU')}` : '';
