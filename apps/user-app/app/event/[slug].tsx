@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
   Dimensions,
   Platform,
   StatusBar,
@@ -17,6 +16,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Skeleton from '../../components/Skeleton';
 import SeatPicker from '../../components/SeatPicker';
@@ -34,6 +34,11 @@ function getFullImageUrl(path: string | undefined): string {
 export default function EventDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? StatusBar.currentHeight || 28 : 0
+  );
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -149,12 +154,12 @@ export default function EventDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         <Stack.Screen options={{ headerShown: false }} />
 
         {/* Floating Back Button */}
-        <View style={styles.floatingHeader}>
+        <View style={[styles.floatingHeader, { top: topInset + 10 }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={22} color="#0F172A" />
           </TouchableOpacity>
@@ -208,27 +213,27 @@ export default function EventDetailScreen() {
         </ScrollView>
 
         {/* Sticky Bottom Bar */}
-        <View style={styles.bottomBar}>
+        <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <View style={{ gap: 4 }}>
             <Skeleton width={85} height={10} borderRadius={3} />
             <Skeleton width={110} height={22} borderRadius={6} />
           </View>
           <Skeleton width={140} height={48} borderRadius={14} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!event) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <View style={styles.loadingContainer}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         <Stack.Screen options={{ headerShown: false }} />
         <Text style={styles.errorText}>Event not found.</Text>
         <TouchableOpacity style={styles.backHomeBtn} onPress={() => router.back()}>
           <Text style={styles.backHomeBtnText}>Go Back</Text>
         </TouchableOpacity>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -524,12 +529,12 @@ export default function EventDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Floating Header (Back & Share Buttons) */}
-      <View style={styles.floatingHeader}>
+      <View style={[styles.floatingHeader, { top: topInset + 10 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.8}>
           <Ionicons name="arrow-back" size={22} color="#0F172A" />
         </TouchableOpacity>
@@ -831,7 +836,7 @@ export default function EventDetailScreen() {
       </ScrollView>
 
       {/* Sticky Bottom Bar */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View>
           <Text style={styles.bottomPriceLabel}>
             {event.seatingType === 'RESERVED' && selectedSeats.length > 0
@@ -891,7 +896,7 @@ export default function EventDetailScreen() {
           )}
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
