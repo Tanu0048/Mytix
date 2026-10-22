@@ -63,7 +63,7 @@ export default function Footer() {
         </div>
 
         {/* Middle Section - Links */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 py-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-10 max-w-4xl mx-auto">
           <div>
             <h4 className="text-white font-bold mb-4 uppercase text-sm">Events</h4>
             <ul className="space-y-2 text-sm text-gray-400">
@@ -80,16 +80,6 @@ export default function Footer() {
               <li><Link href="/about" className="hover:text-white transition">About Us</Link></li>
               <li><Link href="/contact" className="hover:text-white transition">Contact Us</Link></li>
               <li><Link href="/terms" className="hover:text-white transition">Terms & Conditions</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white font-bold mb-4 uppercase text-sm">Mytix Exclusives</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="#" className="hover:text-white transition">Mytix Stream</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Superstar Program</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Gift Cards</Link></li>
-              <li><Link href="#" className="hover:text-white transition">Offers & Rewards</Link></li>
-              <li><Link href="#" className="hover:text-white transition">List your Show</Link></li>
             </ul>
           </div>
         </div>
