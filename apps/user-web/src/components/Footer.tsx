@@ -1,8 +1,49 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { CircleHelp, Ticket, Globe, MessageCircle, Camera, Play } from 'lucide-react';
+import { CircleHelp, Ticket } from 'lucide-react';
+import { API_BASE } from '@/config/api';
+
+interface SocialLink {
+  id?: string;
+  name: string;
+  url: string;
+  letter?: string;
+  isActive?: boolean;
+}
+
+const DEFAULT_SOCIAL_LINKS: SocialLink[] = [
+  { id: 'facebook', name: 'facebook', url: 'https://facebook.com', letter: 'F', isActive: true },
+  { id: 'twitter', name: 'twitter', url: 'https://x.com', letter: 'X', isActive: true },
+  { id: 'youtube', name: 'youtube', url: 'https://youtube.com', letter: 'Y', isActive: true },
+  { id: 'instagram', name: 'instagram', url: 'https://instagram.com', letter: 'I', isActive: true }
+];
 
 export default function Footer() {
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(DEFAULT_SOCIAL_LINKS);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadSocialLinks() {
+      try {
+        const res = await fetch(`${API_BASE}/social-links`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && Array.isArray(data) && data.length > 0) {
+            setSocialLinks(data);
+          }
+        }
+      } catch (err) {
+        // Fallback to DEFAULT_SOCIAL_LINKS gracefully
+      }
+    }
+    loadSocialLinks();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <footer className="bg-[#333338] text-gray-300 pt-12 pb-6 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -53,25 +94,37 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Logo and Socials */}
+        {/* Logo and Dynamic Socials */}
         <div className="flex flex-col items-center pt-8 border-t border-gray-600">
           <div className="text-3xl font-black tracking-tighter text-white mb-6">
             Mytix<span className="text-red-500">.</span>
           </div>
-          <div className="flex space-x-6 mb-8">
-            <Link href="#" className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center hover:bg-white hover:text-[#333338] transition">
-              <MessageCircle className="w-5 h-5" />
-            </Link>
-            <Link href="#" className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center hover:bg-white hover:text-[#333338] transition">
-              <Globe className="w-5 h-5" />
-            </Link>
-            <Link href="#" className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center hover:bg-white hover:text-[#333338] transition">
-              <Camera className="w-5 h-5" />
-            </Link>
-            <Link href="#" className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center hover:bg-white hover:text-[#333338] transition">
-              <Play className="w-5 h-5" />
-            </Link>
-          </div>
+
+          {/* Social Icons row matching wireframe: circle with first letter + label below */}
+          {socialLinks && socialLinks.length > 0 && (
+            <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 mb-8">
+              {socialLinks.map((item) => {
+                const initial = (item.letter || item.name?.charAt(0) || '?').toUpperCase();
+                return (
+                  <a
+                    key={item.id || item.name}
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex flex-col items-center gap-2 transition-transform duration-200 hover:-translate-y-1"
+                    title={`Visit ${item.name}`}
+                  >
+                    <div className="w-11 h-11 rounded-full border border-gray-500 bg-[#28282c] flex items-center justify-center font-black text-white text-base shadow-sm group-hover:bg-white group-hover:text-[#333338] group-hover:border-white transition-all">
+                      {initial}
+                    </div>
+                    <span className="text-xs text-gray-400 group-hover:text-white transition-colors lowercase font-medium tracking-wide">
+                      {item.name}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          )}
           
           <div className="text-xs text-gray-500 text-center">
             <p>Copyright 2026 © Mytix Entertainment Pvt. Ltd. All Rights Reserved.</p>
@@ -86,3 +139,4 @@ export default function Footer() {
     </footer>
   );
 }
+

@@ -793,3 +793,40 @@ export async function updateTermsAndConditions(termsData) {
   return setting.value;
 }
 
+// ----------------------------------------------------
+// SOCIAL LINKS (Dynamic Footer & Brand Links)
+// ----------------------------------------------------
+export const DEFAULT_SOCIAL_LINKS = [
+  { id: "facebook", name: "facebook", url: "https://facebook.com", letter: "F", isActive: true },
+  { id: "twitter", name: "twitter", url: "https://x.com", letter: "X", isActive: true },
+  { id: "youtube", name: "youtube", url: "https://youtube.com", letter: "Y", isActive: true },
+  { id: "instagram", name: "instagram", url: "https://instagram.com", letter: "I", isActive: true }
+];
+
+export async function getSocialLinks() {
+  const setting = await prisma.platformSettings.findUnique({
+    where: { key: "social_links" }
+  });
+  if (!setting || !setting.value || !Array.isArray(setting.value)) {
+    return DEFAULT_SOCIAL_LINKS;
+  }
+  return setting.value;
+}
+
+export async function updateSocialLinks(linksData) {
+  if (!Array.isArray(linksData)) {
+    throw new Error("Invalid social links data format. Expected an array.");
+  }
+  const setting = await prisma.platformSettings.upsert({
+    where: { key: "social_links" },
+    update: {
+      value: linksData
+    },
+    create: {
+      key: "social_links",
+      value: linksData
+    }
+  });
+  return setting.value;
+}
+

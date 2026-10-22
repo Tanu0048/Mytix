@@ -22,5 +22,6 @@ router.get("/venues", cacheHeaders(30), catalogController.getVenues);
 router.get("/venues/:slug", validate(slugParamSchema), cacheHeaders(30), catalogController.getVenueBySlug);
 router.get("/organisers/:slug", validate(slugParamSchema), cacheHeaders(30), catalogController.getOrganiserBySlug);
 router.get("/terms", cacheHeaders(30), catalogController.getTerms);
+router.get("/social-links", cacheHeaders(30), catalogController.getSocialLinks);
 
 export default router;
