@@ -61,3 +61,9 @@ adminRouter.post("/events/:id/cancel", validate(cancelEventSchema), adminControl
 adminRouter.get("/terms", adminController.getTerms);
 adminRouter.put("/terms", adminController.updateTerms);
 
+// ----------------------------------------------------
+// SOCIAL MEDIA LINKS (Super-Admin only)
+// ----------------------------------------------------
+adminRouter.get("/social-links", adminController.getSocialLinks);
+adminRouter.put("/social-links", adminController.updateSocialLinks);
+

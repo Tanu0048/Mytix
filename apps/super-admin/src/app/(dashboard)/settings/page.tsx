@@ -17,8 +17,11 @@ import {
   Camera,
   AlertCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  Share2,
+  ExternalLink
 } from "lucide-react";
+import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/api";
 
@@ -26,7 +29,7 @@ export default function SettingsPage() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
 
-  const [activeTab, setActiveTab] = useState<"profile" | "business" | "security" | "notifications">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "business" | "security" | "notifications" | "social">("profile");
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -164,6 +167,7 @@ export default function SettingsPage() {
           { id: "business", label: "Business & Payouts", icon: Building },
           { id: "security", label: "Security & Login", icon: Lock },
           { id: "notifications", label: "Alerts & Preferences", icon: Bell },
+          ...(user?.role === "ADMIN" ? [{ id: "social", label: "Social Links", icon: Share2 }] : []),
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -644,6 +648,39 @@ export default function SettingsPage() {
 
           </div>
 
+        </div>
+      )}
+
+      {/* ===== TAB CONTENT 5: SOCIAL LINKS (ADMIN ONLY) ===== */}
+      {activeTab === "social" && (
+        <div className="bg-white rounded-3xl p-7 sm:p-9 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] space-y-6">
+          <div className="flex items-start gap-3.5 pb-5 border-b border-slate-100">
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
+              <Share2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-slate-900">User Footer Social Links</h3>
+              <p className="text-sm font-semibold text-slate-400 mt-0.5">
+                Manage dynamic social media circular icons and direct homepages rendered on user-side web & mobile footers.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <h4 className="text-sm font-black text-slate-900">Full Footer Social Media Manager</h4>
+              <p className="text-xs font-semibold text-slate-500 mt-1">
+                Customize platform names, circle letter badges (F, X, Y, I, etc.), URLs, active toggles, and view live previews.
+              </p>
+            </div>
+            <Link
+              href="/social-links"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs shadow-md shadow-amber-500/25 transition-all shrink-0 cursor-pointer"
+            >
+              <span>Open Social Links Studio</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       )}
 

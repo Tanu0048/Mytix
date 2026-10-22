@@ -19,7 +19,8 @@ import {
   PanelLeftOpen,
   LayoutGrid,
   MapPin,
-  FileText
+  FileText,
+  Share2
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -44,6 +45,7 @@ export default function Sidebar() {
     { name: "Orders", href: "/orders", icon: ShoppingBag },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Terms & Legal", href: "/terms", icon: FileText },
+    { name: "Social Links", href: "/social-links", icon: Share2 },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
