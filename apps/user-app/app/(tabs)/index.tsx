@@ -96,7 +96,7 @@ export default function HomeScreen() {
     loadCachedHomeData();
   }, []);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isRetry = false) => {
     try {
       const [bannersRes, homeRes, catRes, eventsRes, venuesRes] = await Promise.all([
         fetch(`${API_BASE}/banners`).catch(() => null),
@@ -218,11 +218,23 @@ export default function HomeScreen() {
           })
         ).catch(() => {});
       } else if (banners.length === 0 && featuredEvents.length === 0 && allEvents.length === 0) {
+        if (!isRetry) {
+          setTimeout(() => {
+            loadData(true);
+          }, 2500);
+          return;
+        }
         setHasFetchError(true);
       }
     } catch (err) {
       console.error('Error loading home data:', err);
       if (banners.length === 0 && featuredEvents.length === 0) {
+        if (!isRetry) {
+          setTimeout(() => {
+            loadData(true);
+          }, 2500);
+          return;
+        }
         setHasFetchError(true);
       }
     } finally {
@@ -1107,8 +1119,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   brandLogo: {
-    width: 130,
-    height: 46,
+    width: 145,
+    height: 50,
   },
   locationSelector: {
     flexDirection: 'row',

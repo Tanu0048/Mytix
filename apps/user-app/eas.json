@@ -20,7 +20,14 @@
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://mytix.onrender.com",
+        "EXPO_PUBLIC_API_URL": "https://mytix.onrender.com/api/v1"
+      }
     }
   },
   "submit": {

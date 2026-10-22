@@ -10,7 +10,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { CustomAlertModal } from '@/components/CustomAlert';
 
-const SPLASH_LOGO = require('../assets/images/mytix-logo-trimmed.png');
+const SPLASH_IMAGE = require('../assets/images/Mytix Events_ Your Next Unforgettable Moment.png');
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export {
@@ -33,22 +33,11 @@ export default function RootLayout() {
 
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const splashFadeAnim = useRef(new Animated.Value(1)).current;
-  const logoScaleAnim = useRef(new Animated.Value(0.92)).current;
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
-
-  useEffect(() => {
-    // Gentle pulse/scale animation for splash logo
-    Animated.spring(logoScaleAnim, {
-      toValue: 1,
-      friction: 6,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
-  }, []);
 
   useEffect(() => {
     if (loaded) {
@@ -110,22 +99,11 @@ export default function RootLayout() {
             pointerEvents={isSplashVisible ? 'auto' : 'none'}
           >
             <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-            <View style={styles.splashContent}>
-              <Animated.View style={{ transform: [{ scale: logoScaleAnim }] }}>
-                <Image
-                  source={SPLASH_LOGO}
-                  style={styles.splashLogo}
-                  resizeMode="contain"
-                />
-              </Animated.View>
-              <Text style={styles.splashTagline}>Australia's Live Event Hub</Text>
-            </View>
-
-            {/* Subtle bottom indicator */}
-            <View style={styles.splashBottom}>
-              <ActivityIndicator size="small" color="#F6C636" />
-              <Text style={styles.splashBottomText}>Loading experiences...</Text>
-            </View>
+            <Image
+              source={SPLASH_IMAGE}
+              style={styles.splashImage}
+              resizeMode="cover"
+            />
           </Animated.View>
         )}
       </View>
@@ -160,34 +138,10 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
     zIndex: 99999,
   },
-  splashContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  splashLogo: {
-    width: Math.min(SCREEN_WIDTH * 0.65, 260),
-    height: Math.round(Math.min(SCREEN_WIDTH * 0.65, 260) * (142 / 374)),
-  },
-  splashTagline: {
-    marginTop: 14,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748B',
-    letterSpacing: 0.8,
-  },
-  splashBottom: {
-    position: 'absolute',
-    bottom: 48,
-    alignItems: 'center',
-    gap: 8,
-  },
-  splashBottomText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#94A3B8',
+  splashImage: {
+    width: '100%',
+    height: '100%',
   },
 });
