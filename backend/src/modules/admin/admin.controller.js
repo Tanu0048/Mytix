@@ -240,3 +240,31 @@ export async function updateTerms(req, res, next) {
   }
 }
 
+// ----------------------------------------------------
+// SOCIAL LINKS (Super-Admin Platform Settings)
+// ----------------------------------------------------
+
+export async function getSocialLinks(_req, res, next) {
+  try {
+    const links = await adminService.getSocialLinks();
+    res.status(200).json({
+      success: true,
+      data: links
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateSocialLinks(req, res, next) {
+  try {
+    const updated = await adminService.updateSocialLinks(req.body);
+    res.status(200).json({
+      success: true,
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

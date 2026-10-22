@@ -67,3 +67,8 @@ export const getTerms = asyncHandler(async (_req, res) => {
   const terms = await catalogService.getPlatformTerms();
   res.status(200).json(terms);
 });
+
+export const getSocialLinks = asyncHandler(async (_req, res) => {
+  const links = await catalogService.getPublicSocialLinks();
+  res.status(200).json(links);
+});

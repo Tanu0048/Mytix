@@ -275,3 +275,9 @@ export async function getPlatformTerms() {
   const { getTermsAndConditions } = await import("../admin/admin.service.js");
   return getTermsAndConditions();
 }
+
+export async function getPublicSocialLinks() {
+  const { getSocialLinks } = await import("../admin/admin.service.js");
+  const allLinks = await getSocialLinks();
+  return (allLinks || []).filter(item => item.isActive !== false);
+}
