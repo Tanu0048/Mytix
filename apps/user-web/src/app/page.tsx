@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, Menu, ChevronLeft, ChevronRight, MapPin, Calendar, Star, Mic, Music, Radio, Headphones, Guitar, Tag, User, ArrowRight, Laugh, Flame, Trophy, Drama, Palette, Sparkles, Clock, Ticket, HelpCircle, MessageCircle, Globe } from 'lucide-react';
+import { Search, ChevronDown, Menu, ChevronLeft, ChevronRight, MapPin, Calendar, Star, Mic, Music, Radio, Headphones, Guitar, Tag, User, ArrowRight, Laugh, Flame, Trophy, Drama, Palette, Sparkles, Clock, Ticket, HelpCircle, MessageCircle, Globe, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -264,6 +264,7 @@ interface HomeData {
   trendingEvents: any[];
   upcomingArtists: any[];
   cities: string[];
+  cityImages?: Record<string, string>;
 }
 
 export default function Home() {
@@ -918,23 +919,33 @@ export default function Home() {
                   </div>
                 ))
               ) : (() => {
-                const liveCards = trending && trending.length > 0 
-                  ? trending.slice(0, 3).map((item: any, i: number) => {
-                      const minPrice = item.ticketTypes?.length 
-                        ? Math.min(...item.ticketTypes.map((t: any) => t.priceCents || 0)) / 100 
-                        : 0;
-                      return {
-                        id: item.id || `live-${i}`,
-                        title: item.title,
-                        subtitle: `${item.venue?.city || 'Melbourne'}${item.venue?.name ? ` • ${item.venue.name}` : ''}`,
-                        category: item.category || 'Event',
-                        date: item.startsAt ? new Date(item.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Upcoming',
-                        price: minPrice > 0 ? `$${minPrice}+` : '',
-                        image: item.posterPath || '/banner/placeholder.avif',
-                        link: `/events/${item.slug}`
-                      };
-                    })
-                  : [];
+                // Task 1: Show top 3 events with the lowest ticket prices
+                const eventsWithPrice = (trending || []).map((item: any, i: number) => {
+                  const prices = (item.ticketTypes || [])
+                    .map((t: any) => t.priceCents || 0)
+                    .filter((p: number) => p > 0);
+                  const minPrice = prices.length > 0 ? Math.min(...prices) / 100 : 0;
+                  return { item, minPrice, index: i };
+                });
+
+                // Sort by lowest price first (items with prices > 0 first, then lowest price)
+                const sortedByLowestPrice = [...eventsWithPrice].sort((a, b) => {
+                  if (a.minPrice > 0 && b.minPrice > 0) return a.minPrice - b.minPrice;
+                  if (a.minPrice > 0) return -1;
+                  if (b.minPrice > 0) return 1;
+                  return 0;
+                }).slice(0, 3);
+
+                const liveCards = sortedByLowestPrice.map(({ item, minPrice, index }) => ({
+                  id: item.id || `live-${index}`,
+                  title: item.title,
+                  subtitle: `${item.venue?.city || 'Melbourne'}${item.venue?.name ? ` • ${item.venue.name}` : ''}`,
+                  category: item.category || 'Event',
+                  date: item.startsAt ? new Date(item.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Upcoming',
+                  price: minPrice > 0 ? `$${minPrice}+` : '',
+                  image: item.posterPath || '/banner/placeholder.avif',
+                  link: `/events/${item.slug}`
+                }));
 
                 if (liveCards.length === 0) {
                   return (
@@ -1045,7 +1056,7 @@ export default function Home() {
                 >
                   {/* City Background Photo with Zoom on Hover */}
                   <Image
-                    src={DEFAULT_CITY_IMAGE}
+                    src={homeData?.cityImages?.[city.toLowerCase().trim()] || DEFAULT_CITY_IMAGE}
                     alt={city}
                     fill
                     sizes="(max-width: 640px) 50vw, 25vw"
@@ -1438,19 +1449,14 @@ export default function Home() {
              </p>
           </div>
 
-          <div className="relative z-10 flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto shrink-0">
-             <Link 
-               href="#" 
-               className="w-full sm:w-auto inline-flex items-center justify-center bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-8 py-3.5 rounded-full transition-all text-sm shadow-xl shadow-amber-400/20 hover:scale-105 active:scale-95"
+          <div className="relative z-10 flex items-center w-full md:w-auto shrink-0">
+             <a 
+               href="mailto:organisers@mytix.com.au" 
+               className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-8 py-4 rounded-full transition-all text-sm sm:text-base shadow-xl shadow-amber-400/20 hover:scale-105 active:scale-95 group"
              >
-               Start selling
-             </Link>
-             <Link 
-               href="#" 
-               className="w-full sm:w-auto inline-flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/15 hover:border-amber-400/50 text-white font-bold px-7 py-3.5 rounded-full text-sm transition-all backdrop-blur-xs"
-             >
-               Contact sales
-             </Link>
+               <Mail className="w-5 h-5 text-slate-950" />
+               <span>organisers@mytix.com.au</span>
+             </a>
           </div>
         </div>
       </div>

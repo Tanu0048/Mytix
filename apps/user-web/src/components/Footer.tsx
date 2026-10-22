@@ -62,25 +62,27 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Middle Section - Links */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-10 max-w-4xl mx-auto">
-          <div>
-            <h4 className="text-white font-bold mb-4 uppercase text-sm">Events</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="/events?category=comedy" className="hover:text-white transition">Comedy Shows</Link></li>
-              <li><Link href="/events?category=concert" className="hover:text-white transition">Music Concerts</Link></li>
-              <li><Link href="/events?category=workshop" className="hover:text-white transition">Workshops</Link></li>
-              <li><Link href="/events?category=theatre" className="hover:text-white transition">Theatre</Link></li>
-              <li><Link href="/events?category=sports" className="hover:text-white transition">Sports</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white font-bold mb-4 uppercase text-sm">Help</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="/about" className="hover:text-white transition">About Us</Link></li>
-              <li><Link href="/contact" className="hover:text-white transition">Contact Us</Link></li>
-              <li><Link href="/terms" className="hover:text-white transition">Terms & Conditions</Link></li>
-            </ul>
+        {/* Middle Section - Links (Centered & Aligned) */}
+        <div className="py-10 max-w-xl mx-auto">
+          <div className="grid grid-cols-2 gap-10 sm:gap-20 text-left">
+            <div>
+              <h4 className="text-white font-bold mb-4 uppercase text-sm tracking-wider">Events</h4>
+              <ul className="space-y-2.5 text-sm text-gray-400">
+                <li><Link href="/events?category=comedy" className="hover:text-white transition-colors">Comedy Shows</Link></li>
+                <li><Link href="/events?category=concert" className="hover:text-white transition-colors">Music Concerts</Link></li>
+                <li><Link href="/events?category=workshop" className="hover:text-white transition-colors">Workshops</Link></li>
+                <li><Link href="/events?category=theatre" className="hover:text-white transition-colors">Theatre</Link></li>
+                <li><Link href="/events?category=sports" className="hover:text-white transition-colors">Sports</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-bold mb-4 uppercase text-sm tracking-wider">Help</h4>
+              <ul className="space-y-2.5 text-sm text-gray-400">
+                <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
+                <li><Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link href="/terms" className="hover:text-white transition-colors">Terms & Conditions</Link></li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -116,11 +118,38 @@ export default function Footer() {
             </div>
           )}
           
-          <div className="text-xs text-gray-500 text-center">
+          <div className="text-xs text-gray-500 text-center max-w-3xl mx-auto">
             <p>Copyright 2026 © Mytix Entertainment Pvt. Ltd. All Rights Reserved.</p>
             <p className="mt-2">
               The content and images used on this site are copyright protected and copyrights vests with the respective owners. 
               The usage of the content and images on this website is intended to promote the works and no endorsement of the artist shall be implied.
+            </p>
+          </div>
+
+          {/* SEO Keywords Footer Bar (Screenshot 5 Reference) */}
+          <div className="mt-8 pt-6 border-t border-gray-600/50 text-center max-w-5xl mx-auto">
+            <p className="text-[11px] leading-relaxed text-gray-400 uppercase tracking-wide">
+              <strong className="text-gray-200 font-extrabold mr-1">POPULAR ENTERTAINMENT SEARCHES:</strong>
+              <span>CONCERTS IN MELBOURNE</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>SYDNEY LIVE MUSIC GIGS</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>STAND-UP COMEDY TICKETS</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>BRISBANE ARENA FESTIVALS</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>PERTH THEATRE & MUSICALS</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>ADELAIDE FRINGE SHOWS</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>GOLD COAST LIVE EVENTS</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>INDIE ROCK & METAL BANDS</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>ELECTRONIC DANCE MUSIC (EDM)</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>HIP-HOP CONCERTS AUSTRALIA</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>JAZZ & BLUES NIGHTCLUBS</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>CREATIVE ARTS WORKSHOPS</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>AFL & STADIUM SPORTS TICKETS</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>LIVE ORCHESTRA & OPERA</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>DIGITAL QR TURNSTILE PASSES</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>PAPERLESS E-TICKETS</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>BUY EVENT TICKETS ONLINE</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>ZERO SURPRISE FEES TICKETING</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>MYTIX OFFICIAL ENTERTAINMENT</span> <span className="text-gray-500 mx-1.5">|</span>
+              <span>LAST MINUTE TICKETS AUSTRALIA</span>
             </p>
           </div>
         </div>

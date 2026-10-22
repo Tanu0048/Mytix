@@ -11,7 +11,7 @@ export async function getHomePageData() {
 
   const now = new Date();
 
-  const [featuredEvents, trendingEvents, upcomingArtists, venues] = await Promise.all([
+  const [featuredEvents, trendingEvents, upcomingArtists, venues, cityImagesSetting] = await Promise.all([
     // Featured events for carousel
     prisma.event.findMany({
       where: {
@@ -70,6 +70,11 @@ export async function getHomePageData() {
       select: { city: true },
       distinct: ["city"],
       orderBy: { city: "asc" }
+    }),
+
+    // Configured custom city photos
+    prisma.platformSettings.findUnique({
+      where: { key: "city_images" }
     })
   ]);
 
@@ -81,13 +86,19 @@ export async function getHomePageData() {
     )
   );
 
+  const cityImages = (cityImagesSetting && typeof cityImagesSetting.value === "object") 
+    ? cityImagesSetting.value 
+    : {};
+
   const response = {
     featuredEvents,
     trendingEvents,
     upcomingArtists,
-    cities: uniqueCities
+    cities: uniqueCities,
+    cityImages
   };
 
   setCached(cacheKey, response, CACHE_TTL.STATIC_PAGES_SECONDS * 1000);
   return response;
 }
+
