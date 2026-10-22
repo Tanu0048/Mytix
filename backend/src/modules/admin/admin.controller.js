@@ -268,3 +268,31 @@ export async function updateSocialLinks(req, res, next) {
   }
 }
 
+// ----------------------------------------------------
+// CITY IMAGES (Super-Admin Platform Settings)
+// ----------------------------------------------------
+
+export async function getCityImages(_req, res, next) {
+  try {
+    const cityImages = await adminService.getCityImages();
+    res.status(200).json({
+      success: true,
+      data: cityImages
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateCityImages(req, res, next) {
+  try {
+    const updated = await adminService.updateCityImages(req.body);
+    res.status(200).json({
+      success: true,
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

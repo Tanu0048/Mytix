@@ -13,7 +13,8 @@ import {
   X, 
   Check, 
   AlertCircle,
-  Users
+  Users,
+  Image as ImageIcon
 } from "lucide-react";
 
 interface Venue {
@@ -42,6 +43,8 @@ const AUSTRALIAN_STATES = [
   { code: "NT", name: "Northern Territory" },
 ];
 
+const DEFAULT_CITY_IMAGE = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80';
+
 export default function VenuesAndCitiesPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,6 +52,14 @@ export default function VenuesAndCitiesPage() {
   const [selectedCityFilter, setSelectedCityFilter] = useState("ALL");
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  // City Images State
+  const [cityImages, setCityImages] = useState<Record<string, string>>({});
+  const [cityImageUrl, setCityImageUrl] = useState("");
+  const [isCityModalOpen, setIsCityModalOpen] = useState(false);
+  const [selectedCityForImage, setSelectedCityForImage] = useState<string>("Melbourne");
+  const [cityImageEditVal, setCityImageEditVal] = useState("");
+  const [isSavingCityImg, setIsSavingCityImg] = useState(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,8 +79,14 @@ export default function VenuesAndCitiesPage() {
   const loadVenues = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get("/venues");
-      setVenues(Array.isArray(res.data) ? res.data : []);
+      const [venuesRes, cityImagesRes] = await Promise.all([
+        api.get("/venues"),
+        api.get("/admin/city-images").catch(() => ({ data: { data: {} } }))
+      ]);
+      setVenues(Array.isArray(venuesRes.data) ? venuesRes.data : []);
+      if (cityImagesRes.data?.data && typeof cityImagesRes.data.data === "object") {
+        setCityImages(cityImagesRes.data.data);
+      }
     } catch (err: any) {
       console.error(err);
       setError("Failed to load venues.");
@@ -84,6 +101,7 @@ export default function VenuesAndCitiesPage() {
 
   const openCreateModal = () => {
     setEditingVenue(null);
+    setCityImageUrl("");
     setFormData({
       name: "",
       city: "",
@@ -97,6 +115,8 @@ export default function VenuesAndCitiesPage() {
 
   const openEditModal = (venue: Venue) => {
     setEditingVenue(venue);
+    const cityKey = (venue.city || "").toLowerCase().trim();
+    setCityImageUrl(cityImages[cityKey] || "");
     setFormData({
       name: venue.name,
       city: venue.city,
@@ -128,6 +148,19 @@ export default function VenuesAndCitiesPage() {
         await api.post("/organiser/venues", formData);
         setSuccessMsg(`City & Venue '${formData.name} (${formData.city})' created successfully!`);
       }
+
+      // Update city image if specified
+      if (formData.city.trim()) {
+        const cityKey = formData.city.toLowerCase().trim();
+        const updatedCityImages = { ...cityImages, [cityKey]: cityImageUrl.trim() };
+        try {
+          await api.put("/admin/city-images", updatedCityImages);
+          setCityImages(updatedCityImages);
+        } catch (imgErr) {
+          console.warn("Could not save city image:", imgErr);
+        }
+      }
+
       closeModal();
       await loadVenues();
       setTimeout(() => setSuccessMsg(""), 4000);
@@ -138,6 +171,28 @@ export default function VenuesAndCitiesPage() {
       setIsSubmitting(false);
     }
   };
+
+  const handleSaveCityImageModal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCityForImage) return;
+
+    setIsSavingCityImg(true);
+    try {
+      const cityKey = selectedCityForImage.toLowerCase().trim();
+      const updated = { ...cityImages, [cityKey]: cityImageEditVal.trim() };
+      await api.put("/admin/city-images", updated);
+      setCityImages(updated);
+      setSuccessMsg(`Cover photo for city '${selectedCityForImage}' updated!`);
+      setIsCityModalOpen(false);
+      setTimeout(() => setSuccessMsg(""), 3500);
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to save city cover photo.");
+    } finally {
+      setIsSavingCityImg(false);
+    }
+  };
+
 
   const handleDelete = async (venue: Venue) => {
     const eventsCount = venue._count?.events || 0;
@@ -198,12 +253,28 @@ export default function VenuesAndCitiesPage() {
           </p>
         </div>
 
-        <button
-          onClick={openCreateModal}
-          className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-black text-slate-950 transition-all shadow-sm hover:scale-[1.01] cursor-pointer"
-        >
-          <Plus className="w-4 h-4 stroke-3" /> Add City & Venue
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              const initialCity = uniqueCities[0] || "Melbourne";
+              setSelectedCityForImage(initialCity);
+              setCityImageEditVal(cityImages[initialCity.toLowerCase().trim()] || "");
+              setIsCityModalOpen(true);
+            }}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 px-5 py-3 text-sm font-bold text-slate-800 transition-all shadow-2xs cursor-pointer"
+          >
+            <ImageIcon className="w-4 h-4 text-amber-500" />
+            <span>City Cover Photos</span>
+          </button>
+
+          <button
+            onClick={openCreateModal}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-black text-slate-950 transition-all shadow-sm hover:scale-[1.01] cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-3" /> Add City & Venue
+          </button>
+        </div>
       </div>
 
       {/* Alert Banners */}
@@ -554,6 +625,36 @@ export default function VenuesAndCitiesPage() {
                 </div>
               </div>
 
+              {/* City Cover Photo Input */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                  <span>City Cover Photo (Browse by City)</span>
+                  <span className="text-[11px] font-semibold text-slate-400">Optional</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    placeholder="https://images.unsplash.com/... (leave blank for default image)"
+                    value={cityImageUrl}
+                    onChange={(e) => setCityImageUrl(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  />
+                  {cityImageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setCityImageUrl("")}
+                      className="px-3 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 cursor-pointer"
+                      title="Clear image"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Shown on user website under &quot;Browse by city&quot;. If left empty, Mytix default image is used.
+                </p>
+              </div>
+
               {/* Submit Buttons */}
               <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
                 <button
@@ -569,6 +670,135 @@ export default function VenuesAndCitiesPage() {
                   className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 text-xs font-black transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? "Saving..." : editingVenue ? "Update Venue" : "Save City & Venue"}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MODAL: MANAGE CITY COVER PHOTOS ===== */}
+      {isCityModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-100 shadow-2xl overflow-hidden animate-in zoom-in-95">
+            
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-amber-500" />
+                  City Cover Photos
+                </h3>
+                <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                  Customize the photo for each destination in &quot;Browse by city&quot;.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsCityModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveCityImageModal} className="p-6 space-y-5">
+              
+              {/* Select City */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Select Australian City
+                </label>
+                <select
+                  value={selectedCityForImage}
+                  onChange={(e) => {
+                    const c = e.target.value;
+                    setSelectedCityForImage(c);
+                    setCityImageEditVal(cityImages[c.toLowerCase().trim()] || "");
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white cursor-pointer"
+                >
+                  {uniqueCities.map((c) => (
+                    <option key={c} value={c}>
+                      {c} {cityImages[c.toLowerCase().trim()] ? "✓ (Custom Photo)" : "(Default Photo)"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Image URL Input */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                  <span>Cover Photo URL</span>
+                  {cityImageEditVal && (
+                    <button
+                      type="button"
+                      onClick={() => setCityImageEditVal("")}
+                      className="text-[11px] font-bold text-amber-600 hover:underline cursor-pointer"
+                    >
+                      Revert to Default
+                    </button>
+                  )}
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/... (or leave blank for default image)"
+                  value={cityImageEditVal}
+                  onChange={(e) => setCityImageEditVal(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                />
+              </div>
+
+              {/* Live Preview Card (Dark Theme matching user site) */}
+              <div>
+                <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Live Card Preview (User Website)
+                </span>
+                <div className="relative overflow-hidden rounded-2xl h-36 flex flex-col justify-between p-4 border border-slate-700 shadow-md">
+                  {/* Background Image */}
+                  <img
+                    src={cityImageEditVal.trim() || DEFAULT_CITY_IMAGE}
+                    alt={selectedCityForImage}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-linear-to-t from-slate-950/90 via-slate-950/50 to-slate-950/20" />
+
+                  {/* Top Badge */}
+                  <div className="relative z-10">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md text-white border border-white/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live Shows
+                    </span>
+                  </div>
+
+                  {/* Bottom Text */}
+                  <div className="relative z-10">
+                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-300">
+                      Australia
+                    </p>
+                    <h4 className="font-black text-white text-xl tracking-tight leading-tight">
+                      {selectedCityForImage}
+                    </h4>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsCityModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingCityImg}
+                  className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 text-xs font-black transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingCityImg ? "Saving..." : "Save City Photo"}
                 </button>
               </div>
 

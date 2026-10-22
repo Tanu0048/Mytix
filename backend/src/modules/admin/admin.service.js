@@ -830,3 +830,33 @@ export async function updateSocialLinks(linksData) {
   return setting.value;
 }
 
+// ----------------------------------------------------
+// CITY IMAGES (Browse by City customization)
+// ----------------------------------------------------
+export async function getCityImages() {
+  const setting = await prisma.platformSettings.findUnique({
+    where: { key: "city_images" }
+  });
+  if (!setting || !setting.value || typeof setting.value !== "object") {
+    return {};
+  }
+  return setting.value;
+}
+
+export async function updateCityImages(cityImagesMap) {
+  if (typeof cityImagesMap !== "object" || cityImagesMap === null) {
+    throw new Error("Invalid city images format. Expected an object.");
+  }
+  const setting = await prisma.platformSettings.upsert({
+    where: { key: "city_images" },
+    update: {
+      value: cityImagesMap
+    },
+    create: {
+      key: "city_images",
+      value: cityImagesMap
+    }
+  });
+  return setting.value;
+}
+

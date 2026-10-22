@@ -67,3 +67,9 @@ adminRouter.put("/terms", adminController.updateTerms);
 adminRouter.get("/social-links", adminController.getSocialLinks);
 adminRouter.put("/social-links", adminController.updateSocialLinks);
 
+// ----------------------------------------------------
+// CITY IMAGES (Super-Admin only)
+// ----------------------------------------------------
+adminRouter.get("/city-images", adminController.getCityImages);
+adminRouter.put("/city-images", adminController.updateCityImages);
+
