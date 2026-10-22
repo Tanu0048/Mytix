@@ -14,7 +14,9 @@ import {
   Check, 
   AlertCircle,
   Users,
-  Image as ImageIcon
+  Image as ImageIcon,
+  UploadCloud,
+  Loader2
 } from "lucide-react";
 
 interface Venue {
@@ -60,6 +62,37 @@ export default function VenuesAndCitiesPage() {
   const [selectedCityForImage, setSelectedCityForImage] = useState<string>("Melbourne");
   const [cityImageEditVal, setCityImageEditVal] = useState("");
   const [isSavingCityImg, setIsSavingCityImg] = useState(false);
+  const [isUploadingCityImg, setIsUploadingCityImg] = useState(false);
+  const [isUploadingModalImg, setIsUploadingModalImg] = useState(false);
+
+  const handleUploadImageFile = async (file: File, target: "venue" | "cityModal") => {
+    if (!file) return;
+    const isVenue = target === "venue";
+    if (isVenue) setIsUploadingCityImg(true);
+    else setIsUploadingModalImg(true);
+
+    try {
+      const formDataPayload = new FormData();
+      formDataPayload.append("file", file);
+      const res = await api.post("/uploads/image", formDataPayload, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      const uploadedUrl = res.data?.data?.url;
+      if (uploadedUrl) {
+        if (isVenue) {
+          setCityImageUrl(uploadedUrl);
+        } else {
+          setCityImageEditVal(uploadedUrl);
+        }
+      }
+    } catch (err: any) {
+      console.error("Failed to upload image", err);
+      alert("Failed to upload image. Please try again or paste a direct image URL.");
+    } finally {
+      if (isVenue) setIsUploadingCityImg(false);
+      else setIsUploadingModalImg(false);
+    }
+  };
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -625,33 +658,65 @@ export default function VenuesAndCitiesPage() {
                 </div>
               </div>
 
-              {/* City Cover Photo Input */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+              {/* City Cover Photo Input & Direct Upload */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
                   <span>City Cover Photo (Browse by City)</span>
                   <span className="text-[11px] font-semibold text-slate-400">Optional</span>
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    placeholder="https://images.unsplash.com/... (leave blank for default image)"
-                    value={cityImageUrl}
-                    onChange={(e) => setCityImageUrl(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
-                  />
-                  {cityImageUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setCityImageUrl("")}
-                      className="px-3 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 cursor-pointer"
-                      title="Clear image"
-                    >
-                      Reset
-                    </button>
-                  )}
+
+                {/* Direct Upload Box */}
+                <div className="flex flex-col sm:flex-row items-center gap-2 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                  <label className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 transition cursor-pointer shadow-2xs shrink-0 w-full sm:w-auto">
+                    {isUploadingCityImg ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                        <span>Uploading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Upload File</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploadingCityImg}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadImageFile(file, "venue");
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <span className="text-xs text-slate-400 font-bold hidden sm:inline">OR</span>
+
+                  {/* URL Input */}
+                  <div className="flex-1 flex gap-1.5 w-full">
+                    <input
+                      type="url"
+                      placeholder="Paste image URL (or upload from computer)..."
+                      value={cityImageUrl}
+                      onChange={(e) => setCityImageUrl(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400"
+                    />
+                    {cityImageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setCityImageUrl("")}
+                        className="px-2.5 rounded-xl bg-slate-200/80 text-slate-600 text-xs font-bold hover:bg-slate-300 cursor-pointer shrink-0"
+                        title="Clear photo"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Shown on user website under &quot;Browse by city&quot;. If left empty, Mytix default image is used.
+
+                <p className="text-[11px] text-slate-400">
+                  Shown on user website under &quot;Browse by city&quot;. If left blank, default image is used.
                 </p>
               </div>
 
@@ -727,10 +792,10 @@ export default function VenuesAndCitiesPage() {
                 </select>
               </div>
 
-              {/* Image URL Input */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                  <span>Cover Photo URL</span>
+              {/* Image Input & Direct Upload for City Studio Modal */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span>City Cover Photo</span>
                   {cityImageEditVal && (
                     <button
                       type="button"
@@ -741,13 +806,56 @@ export default function VenuesAndCitiesPage() {
                     </button>
                   )}
                 </label>
-                <input
-                  type="url"
-                  placeholder="https://images.unsplash.com/... (or leave blank for default image)"
-                  value={cityImageEditVal}
-                  onChange={(e) => setCityImageEditVal(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
-                />
+
+                {/* Direct Upload Box */}
+                <div className="flex flex-col sm:flex-row items-center gap-2 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                  <label className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 transition cursor-pointer shadow-2xs shrink-0 w-full sm:w-auto">
+                    {isUploadingModalImg ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                        <span>Uploading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Upload File</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploadingModalImg}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadImageFile(file, "cityModal");
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <span className="text-xs text-slate-400 font-bold hidden sm:inline">OR</span>
+
+                  {/* URL Input */}
+                  <div className="flex-1 flex gap-1.5 w-full">
+                    <input
+                      type="url"
+                      placeholder="Paste image URL (or upload from computer)..."
+                      value={cityImageEditVal}
+                      onChange={(e) => setCityImageEditVal(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400"
+                    />
+                    {cityImageEditVal && (
+                      <button
+                        type="button"
+                        onClick={() => setCityImageEditVal("")}
+                        className="px-2.5 rounded-xl bg-slate-200/80 text-slate-600 text-xs font-bold hover:bg-slate-300 cursor-pointer shrink-0"
+                        title="Clear photo"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Live Preview Card (Dark Theme matching user site) */}
