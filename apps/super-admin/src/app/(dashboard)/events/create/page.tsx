@@ -161,7 +161,10 @@ export default function CreateEventPage() {
         state: formData.venueCity.trim() || "Custom",
         address: `${formData.venueName.trim()}, ${formData.venueCity.trim()}`
       });
-      const finalVenueId = venueRes.data.data.id;
+      const finalVenueId = venueRes.data?.data?.id || venueRes.data?.id;
+      if (!finalVenueId) {
+        throw new Error("Failed to register venue. Please try again.");
+      }
 
       const payload = {
         title: formData.title.trim(),
@@ -309,7 +312,8 @@ export default function CreateEventPage() {
                             const res = await api.post("/uploads/image", formDataPayload, {
                               headers: { "Content-Type": "multipart/form-data" }
                             });
-                            setFormData(prev => ({ ...prev, posterPath: res.data.data.url }));
+                            const url = res.data?.data?.url || res.data?.url;
+                            setFormData(prev => ({ ...prev, posterPath: url }));
                           } catch (err) {
                             console.error("Failed to upload image", err);
                             alert("Failed to upload image.");
