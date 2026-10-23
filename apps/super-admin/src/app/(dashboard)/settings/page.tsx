@@ -51,8 +51,11 @@ export default function SettingsPage() {
         email: user.email || "aman@mytix.com",
         phone: user.phone || "+91 98112 69898",
       }));
+      if (user.role !== "ADMIN" && activeTab !== "profile") {
+        setActiveTab("profile");
+      }
     }
-  }, [user]);
+  }, [user, activeTab]);
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +169,7 @@ export default function SettingsPage() {
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none mb-7">
         {[
           { id: "profile", label: "Profile & Personal", icon: User },
-          { id: "security", label: "Security & Login", icon: Lock },
+          ...(user?.role === "ADMIN" ? [{ id: "security", label: "Security & Login", icon: Lock }] : []),
           ...(user?.role === "ADMIN" ? [{ id: "social", label: "Social Links", icon: Share2 }] : []),
         ].map((tab) => {
           const Icon = tab.icon;
@@ -303,7 +306,7 @@ export default function SettingsPage() {
       )}
 
       {/* ===== TAB CONTENT 2: SECURITY ===== */}
-      {activeTab === "security" && (
+      {activeTab === "security" && user?.role === "ADMIN" && (
         <div className="space-y-6">
           
           <div className="bg-white rounded-3xl p-7 sm:p-9 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] space-y-6">

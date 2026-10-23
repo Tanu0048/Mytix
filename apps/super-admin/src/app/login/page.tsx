@@ -252,16 +252,18 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              {/* Forgot password link */}
-              <div className="flex justify-end mt-1.5">
-                <button
-                  type="button"
-                  onClick={() => alert("Password reset link will be sent to your email.")}
-                  className="text-[11px] font-bold text-slate-500 hover:text-slate-900 hover:underline transition-colors cursor-pointer"
-                >
-                  Forgot password?
-                </button>
-              </div>
+              {/* Forgot password link (Admin only) */}
+              {loginType === "ADMIN" && (
+                <div className="flex justify-end mt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => alert("Password reset link will be sent to your email.")}
+                    className="text-[11px] font-bold text-slate-500 hover:text-slate-900 hover:underline transition-colors cursor-pointer"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Golden Action Button */}
