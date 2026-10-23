@@ -6,7 +6,6 @@ import {
   Lock, 
   Save, 
   Check, 
-  ShieldCheck, 
   Mail, 
   Phone, 
   Sparkles,
@@ -35,7 +34,6 @@ export default function SettingsPage() {
     name: "",
     email: "",
     phone: "",
-    bio: "Passionate event organizer creating memorable concert and live festival experiences.",
   });
 
   // Security State
@@ -45,7 +43,6 @@ export default function SettingsPage() {
     confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -84,14 +81,43 @@ export default function SettingsPage() {
     }
   };
 
-  const handleGenericSave = (section: string) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwords.currentPassword) {
+      setErrorMsg("Please enter your current password.");
+      return;
+    }
+    if (passwords.newPassword.length < 8) {
+      setErrorMsg("New password must be at least 8 characters long.");
+      return;
+    }
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      setErrorMsg("New passwords do not match.");
+      return;
+    }
+
     setIsSaving(true);
     setSuccessMsg("");
-    setTimeout(() => {
+    setErrorMsg("");
+
+    try {
+      await api.post("/users/change-password", {
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword
+      });
+      setPasswords({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+      setSuccessMsg("Password successfully updated in your account!");
+      setTimeout(() => setSuccessMsg(""), 4000);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.response?.data?.error?.message || err.response?.data?.message || "Failed to update password. Please check your current password.");
+    } finally {
       setIsSaving(false);
-      setSuccessMsg(`${section} preferences saved successfully!`);
-      setTimeout(() => setSuccessMsg(""), 3500);
-    }, 600);
+    }
   };
 
   const initials = (formData.name || "Aman Mirza")
@@ -198,13 +224,6 @@ export default function SettingsPage() {
                   </p>
                 </div>
               </div>
-
-              <div className="text-left sm:text-right">
-                <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Account ID</span>
-                <span className="font-mono text-sm font-bold text-slate-700 block mt-0.5">
-                  {user?.id?.substring(0, 14) || "ORG-892410"}...
-                </span>
-              </div>
             </div>
           </div>
 
@@ -278,16 +297,6 @@ export default function SettingsPage() {
 
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-slate-800 mb-2">Organiser / Business Bio</label>
-              <textarea
-                rows={3}
-                value={formData.bio}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white resize-none"
-              />
-            </div>
-
             <div className="pt-2 flex justify-end">
               <button
                 type="submit"
@@ -322,12 +331,13 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="max-w-md space-y-4">
+            <form onSubmit={handlePasswordSubmit} className="max-w-md space-y-4">
               
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">Current Password</label>
                 <div className="relative">
                   <input
+                    required
                     type={showPassword ? "text" : "password"}
                     value={passwords.currentPassword}
                     onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
@@ -347,6 +357,7 @@ export default function SettingsPage() {
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">New Password</label>
                 <input
+                  required
                   type={showPassword ? "text" : "password"}
                   value={passwords.newPassword}
                   onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
@@ -358,6 +369,7 @@ export default function SettingsPage() {
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">Confirm New Password</label>
                 <input
+                  required
                   type={showPassword ? "text" : "password"}
                   value={passwords.confirmPassword}
                   onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
@@ -368,44 +380,16 @@ export default function SettingsPage() {
 
               <div className="pt-2">
                 <button
-                  type="button"
-                  onClick={() => handleGenericSave("Password")}
+                  type="submit"
                   disabled={isSaving}
-                  className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-7 py-3 text-sm font-black text-slate-950 transition-all shadow-sm cursor-pointer"
+                  className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-7 py-3 text-sm font-black text-slate-950 transition-all shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-4 h-4 stroke-[2.5]" />
-                  <span>Update Password</span>
+                  <span>{isSaving ? "Updating..." : "Update Password"}</span>
                 </button>
               </div>
 
-            </div>
-
-            {/* 2FA Card */}
-            <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-black text-slate-900">Two-Factor Authentication (2FA)</h4>
-                  <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
-                    Secure organizer login with verification code confirmation.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                  twoFactorEnabled ? "bg-amber-500" : "bg-slate-200"
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                    twoFactorEnabled ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
+            </form>
 
           </div>
 
