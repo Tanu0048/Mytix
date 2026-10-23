@@ -2,7 +2,7 @@
 
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
-import { Search, Bell, ChevronDown, PanelLeft } from "lucide-react";
+import { Search, ChevronDown, PanelLeft } from "lucide-react";
 
 export default function Header() {
   const user = useAuthStore((state) => state.user);
@@ -35,14 +35,8 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Right Controls: Notification + Profile */}
+      {/* Right Controls: User Profile Pill */}
       <div className="flex items-center gap-4">
-        {/* Notification Bell */}
-        <button className="relative w-10 h-10 rounded-xl border border-slate-200/60 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors shadow-xs">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white"></span>
-        </button>
-
         {/* User Profile Pill */}
         <div className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer group">
           <div className="w-9 h-9 rounded-full bg-linear-to-tr from-amber-400 to-amber-200 text-slate-900 font-extrabold text-sm flex items-center justify-center shadow-xs border border-amber-300">
