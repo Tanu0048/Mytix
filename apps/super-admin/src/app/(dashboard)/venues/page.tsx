@@ -34,17 +34,6 @@ interface Venue {
   };
 }
 
-const AUSTRALIAN_STATES = [
-  { code: "NSW", name: "New South Wales" },
-  { code: "VIC", name: "Victoria" },
-  { code: "QLD", name: "Queensland" },
-  { code: "WA", name: "Western Australia" },
-  { code: "SA", name: "South Australia" },
-  { code: "TAS", name: "Tasmania" },
-  { code: "ACT", name: "Australian Capital Territory" },
-  { code: "NT", name: "Northern Territory" },
-];
-
 const DEFAULT_CITY_IMAGE = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80';
 
 export default function VenuesAndCitiesPage() {
@@ -103,7 +92,7 @@ export default function VenuesAndCitiesPage() {
   const [formData, setFormData] = useState({
     name: "",
     city: "",
-    state: "NSW",
+    state: "",
     address: "",
     capacity: 1000,
     timezone: "Australia/Sydney"
@@ -138,7 +127,7 @@ export default function VenuesAndCitiesPage() {
     setFormData({
       name: "",
       city: "",
-      state: "NSW",
+      state: "",
       address: "",
       capacity: 1000,
       timezone: "Australia/Sydney"
@@ -579,19 +568,16 @@ export default function VenuesAndCitiesPage() {
                 {/* State */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Australian State <span className="text-red-500">*</span>
+                    State / Region <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <input
+                    required
+                    type="text"
+                    placeholder="e.g. NSW, VIC, QLD, or custom state"
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white cursor-pointer"
-                  >
-                    {AUSTRALIAN_STATES.map((st) => (
-                      <option key={st.code} value={st.code}>
-                        {st.code} - {st.name}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  />
                 </div>
               </div>
 
