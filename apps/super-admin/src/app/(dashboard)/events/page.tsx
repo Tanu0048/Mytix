@@ -41,6 +41,11 @@ export default function EventsPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const [upcomingEvents, setUpcomingEvents] = useState(0);
+  const [hiddenCards, setHiddenCards] = useState<string[]>([]);
+
+  const removeCard = (cardKey: string) => {
+    setHiddenCards((prev) => [...prev, cardKey]);
+  };
 
   const fetchEvents = async () => {
     setIsLoading(true);
@@ -90,21 +95,18 @@ export default function EventsPage() {
     }
   };
 
-  // Calculations for Stat Cards
+  // Calculations for Stat Cards - 100% real from database
   const totalEvents = events.length;
   
-  // Calculate real sold tickets or fallback to rich sample stats if fresh database
   const calculatedSold = events.reduce((sum, e) => {
     const tierSold = e.ticketTypes?.reduce((s: number, t: any) => s + (t.sold || 0), 0) || 0;
     return sum + tierSold;
   }, 0);
-  const displaySold = calculatedSold > 0 ? calculatedSold : 1248;
 
   const calculatedRevenue = events.reduce((sum, e) => {
     const tierRev = e.ticketTypes?.reduce((s: number, t: any) => s + ((t.sold || 0) * (t.priceCents || 0) / 100), 0) || 0;
     return sum + tierRev;
   }, 0);
-  const displayRevenue = calculatedRevenue > 0 ? calculatedRevenue : 186420;
 
   // Filtered Events
   const filteredEvents = events.filter((e) => {
@@ -133,97 +135,156 @@ export default function EventsPage() {
         </button>
       </header>
 
-      {/* ===== 4 Stat Cards Row ===== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        
-        {/* Card 1: Total Events */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-amber-600" />
+      {/* ===== 4 Stat Cards Row (with cut/remove button) ===== */}
+      {hiddenCards.length < 4 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          
+          {/* Card 1: Total Events */}
+          {!hiddenCards.includes("totalEvents") && (
+            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-amber-600" />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                    Total
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeCard("totalEvents")}
+                    className="w-6 h-6 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                    title="Remove this card"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Events</p>
+                <p className="text-2xl font-black text-slate-900 mt-0.5">{totalEvents}</p>
+                <p className="text-[11px] font-semibold text-slate-400 mt-1">
+                  All created shows
+                </p>
+              </div>
             </div>
-            {/* Sparkline curve */}
-            <svg className="w-16 h-8 text-amber-400 stroke-current fill-none stroke-[2.5]" viewBox="0 0 64 32">
-              <path d="M2 28 Q 20 26, 32 16 T 62 6" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Events</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{totalEvents || 5}</p>
-            <p className="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1">
-              <span>↑ 0%</span> <span className="text-slate-400 font-medium">vs last 30 days</span>
-            </p>
-          </div>
-        </div>
+          )}
 
-        {/* Card 2: Tickets Sold */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
-              <Ticket className="w-5 h-5 text-amber-600" />
+          {/* Card 2: Tickets Sold */}
+          {!hiddenCards.includes("ticketsSold") && (
+            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
+                  <Ticket className="w-5 h-5 text-amber-600" />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700">
+                    Issued
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeCard("ticketsSold")}
+                    className="w-6 h-6 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                    title="Remove this card"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tickets Sold</p>
+                <p className="text-2xl font-black text-slate-900 mt-0.5">
+                  {calculatedSold.toLocaleString("en-AU")}
+                </p>
+                <p className="text-[11px] font-semibold text-slate-400 mt-1">
+                  Confirmed attendee passes
+                </p>
+              </div>
             </div>
-            {/* Mini bar chart */}
-            <div className="flex items-end gap-1 h-8">
-              <div className="w-1.5 h-3 bg-amber-200 rounded-xs"></div>
-              <div className="w-1.5 h-4 bg-amber-300 rounded-xs"></div>
-              <div className="w-1.5 h-5 bg-amber-300 rounded-xs"></div>
-              <div className="w-1.5 h-7 bg-amber-400 rounded-xs"></div>
-              <div className="w-1.5 h-8 bg-amber-500 rounded-xs"></div>
-            </div>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tickets Sold</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">
-              {displaySold.toLocaleString("en-AU")}
-            </p>
-            <p className="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1">
-              <span>↑ 12%</span> <span className="text-slate-400 font-medium">vs last 30 days</span>
-            </p>
-          </div>
-        </div>
+          )}
 
-        {/* Card 3: Revenue */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center font-black text-amber-600 text-lg">
-              $
+          {/* Card 3: Revenue */}
+          {!hiddenCards.includes("revenue") && (
+            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center font-black text-amber-600 text-lg">
+                  $
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-50 text-amber-800">
+                    Gross
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeCard("revenue")}
+                    className="w-6 h-6 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                    title="Remove this card"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Revenue</p>
+                <p className="text-2xl font-black text-slate-900 mt-0.5">
+                  ${calculatedRevenue.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-[11px] font-semibold text-slate-400 mt-1">
+                  Total ticket volume
+                </p>
+              </div>
             </div>
-            {/* Sparkline curve */}
-            <svg className="w-16 h-8 text-amber-400 stroke-current fill-none stroke-[2.5]" viewBox="0 0 64 32">
-              <path d="M2 24 Q 22 28, 36 12 T 62 4" />
-            </svg>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Revenue</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">
-              ${displayRevenue.toLocaleString("en-AU")}
-            </p>
-            <p className="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1">
-              <span>↑ 18%</span> <span className="text-slate-400 font-medium">vs last 30 days</span>
-            </p>
-          </div>
-        </div>
+          )}
 
-        {/* Card 4: Upcoming */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
-              <CalendarDays className="w-5 h-5 text-amber-600" />
+          {/* Card 4: Upcoming */}
+          {!hiddenCards.includes("upcoming") && (
+            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
+                  <CalendarDays className="w-5 h-5 text-amber-600" />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-blue-700">
+                    Active
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeCard("upcoming")}
+                    className="w-6 h-6 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                    title="Remove this card"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Upcoming</p>
+                <p className="text-2xl font-black text-slate-900 mt-0.5">{upcomingEvents}</p>
+                <p className="text-[11px] font-semibold text-slate-400 mt-1">
+                  Active future shows
+                </p>
+              </div>
             </div>
-            <div className="text-slate-300">
-              <Calendar className="w-6 h-6 stroke-[1.5]" />
-            </div>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Upcoming</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{upcomingEvents || 2}</p>
-            <p className="text-[11px] font-medium text-slate-400 mt-1">
-              Next 30 days
-            </p>
-          </div>
-        </div>
+          )}
 
-      </div>
+        </div>
+      )}
+
+      {/* Restore Cards bar if any card was removed */}
+      {hiddenCards.length > 0 && (
+        <div className="mb-6 flex items-center justify-between p-3.5 px-4 bg-slate-50 border border-slate-200/70 rounded-2xl text-xs">
+          <span className="text-slate-500 font-semibold">
+            {hiddenCards.length} {hiddenCards.length === 1 ? "stat card" : "stat cards"} removed from view
+          </span>
+          <button
+            type="button"
+            onClick={() => setHiddenCards([])}
+            className="font-bold text-amber-700 hover:text-amber-800 bg-amber-100/70 hover:bg-amber-100 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
+          >
+            Restore Cards
+          </button>
+        </div>
+      )}
 
       {/* ===== Main Event Management Card ===== */}
       <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden">
@@ -311,10 +372,10 @@ export default function EventsPage() {
                     ? eventDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
                     : "--:--";
 
-                  // Tickets Calculation
-                  const totalTickets = event.ticketTypes?.reduce((s: number, t: any) => s + (t.quantity || 0), 0) || 500;
-                  const soldTickets = event.ticketTypes?.reduce((s: number, t: any) => s + (t.sold || 0), 0) || (idx === 0 ? 320 : idx === 1 ? 180 : idx === 2 ? 420 : idx === 3 ? 260 : 0);
-                  const soldPercent = Math.min(100, Math.round((soldTickets / totalTickets) * 100));
+                  // Tickets Calculation - 100% real from database
+                  const totalTickets = event.ticketTypes?.reduce((s: number, t: any) => s + (t.quantity || 0), 0) || 0;
+                  const soldTickets = event.ticketTypes?.reduce((s: number, t: any) => s + (t.sold || 0), 0) || 0;
+                  const soldPercent = totalTickets > 0 ? Math.min(100, Math.round((soldTickets / totalTickets) * 100)) : 0;
 
                   const isDraft = event.status === "DRAFT";
 
@@ -405,15 +466,7 @@ export default function EventsPage() {
 
                         {/* Action Menu Popover */}
                         {openActionId === event.id && (
-                          <div className="absolute right-6 top-12 w-40 rounded-xl bg-white border border-slate-100 shadow-xl py-1.5 z-30 text-left">
-                            <a 
-                              href={`http://localhost:3000/events/${event.slug}`} 
-                              target="_blank" 
-                              rel="noreferrer"
-                              className="w-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5 text-slate-400" /> View Public Page
-                            </a>
+                          <div className="absolute right-6 top-12 w-36 rounded-xl bg-white border border-slate-100 shadow-xl py-1.5 z-30 text-left">
                             <button
                               onClick={() => router.push(`/events/${event.id}/edit`)}
                               className="w-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
