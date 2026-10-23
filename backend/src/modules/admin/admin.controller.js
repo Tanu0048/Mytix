@@ -296,3 +296,87 @@ export async function updateCityImages(req, res, next) {
   }
 }
 
+// ----------------------------------------------------
+// ABOUT US PAGE (Super-Admin CMS)
+// ----------------------------------------------------
+
+export async function getAboutUs(_req, res, next) {
+  try {
+    const aboutUs = await adminService.getAboutUs();
+    res.status(200).json({
+      success: true,
+      data: aboutUs
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateAboutUs(req, res, next) {
+  try {
+    const updated = await adminService.updateAboutUs(req.body);
+    res.status(200).json({
+      success: true,
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ----------------------------------------------------
+// CONTACT US PAGE (Super-Admin CMS)
+// ----------------------------------------------------
+
+export async function getContactUs(_req, res, next) {
+  try {
+    const contactUs = await adminService.getContactUs();
+    res.status(200).json({
+      success: true,
+      data: contactUs
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateContactUs(req, res, next) {
+  try {
+    const updated = await adminService.updateContactUs(req.body);
+    res.status(200).json({
+      success: true,
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ----------------------------------------------------
+// FAQ (Super-Admin CMS)
+// ----------------------------------------------------
+
+export async function getFaq(_req, res, next) {
+  try {
+    const faq = await adminService.getFaq();
+    res.status(200).json({
+      success: true,
+      data: faq
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateFaq(req, res, next) {
+  try {
+    const updated = await adminService.updateFaq(req.body);
+    res.status(200).json({
+      success: true,
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

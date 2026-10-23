@@ -281,3 +281,18 @@ export async function getPublicSocialLinks() {
   const allLinks = await getSocialLinks();
   return (allLinks || []).filter(item => item.isActive !== false);
 }
+
+export async function getPublicAboutUs() {
+  const { getAboutUs } = await import("../admin/admin.service.js");
+  return getAboutUs();
+}
+
+export async function getPublicContactUs() {
+  const { getContactUs } = await import("../admin/admin.service.js");
+  return getContactUs();
+}
+
+export async function getPublicFaq() {
+  const { getFaq } = await import("../admin/admin.service.js");
+  return getFaq();
+}

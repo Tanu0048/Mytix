@@ -279,8 +279,34 @@ export default function Home() {
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('All');
   const [comingUpFilter, setComingUpFilter] = useState<'All' | 'Weekend' | 'Month'>('All');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [faqData, setFaqData] = useState<{ heading: string; subheading: string; items: { question: string; answer: string }[] }>({
+    heading: "Frequently Asked Questions",
+    subheading: "Everything you need to know about booking, instant digital QR tickets, venue gate entry, and refunds.",
+    items: FAQS
+  });
   
   const { selectedCity, setSelectedCity, setAvailableCities, availableCities } = useLocationStore();
+
+  useEffect(() => {
+    async function loadFaq() {
+      try {
+        const res = await fetch(`${API_BASE}/faq`, { cache: "no-store" });
+        if (res.ok) {
+          const json = await res.json();
+          if (json && Array.isArray(json.items) && json.items.length > 0) {
+            setFaqData({
+              heading: json.heading || "Frequently Asked Questions",
+              subheading: json.subheading || "Everything you need to know about booking, instant digital QR tickets, venue gate entry, and refunds.",
+              items: json.items
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load dynamic faq, using fallback:", err);
+      }
+    }
+    loadFaq();
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1320,15 +1346,15 @@ export default function Home() {
             <HelpCircle className="w-3.5 h-3.5 text-amber-600" /> Got Questions? We&apos;ve Got Answers
           </div>
           <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Frequently Asked Questions
+            {faqData.heading || "Frequently Asked Questions"}
           </h2>
           <p className="text-sm sm:text-base font-normal text-slate-500 mt-2 max-w-xl mx-auto">
-            Everything you need to know about booking, instant digital QR tickets, venue gate entry, and refunds.
+            {faqData.subheading || "Everything you need to know about booking, instant digital QR tickets, venue gate entry, and refunds."}
           </p>
         </div>
 
         <div className="space-y-3.5">
-          {FAQS.map((faq, index) => {
+          {faqData.items.map((faq, index) => {
             const isOpen = openFaq === index;
             return (
               <div 

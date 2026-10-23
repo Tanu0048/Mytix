@@ -73,3 +73,21 @@ adminRouter.put("/social-links", adminController.updateSocialLinks);
 adminRouter.get("/city-images", adminController.getCityImages);
 adminRouter.put("/city-images", adminController.updateCityImages);
 
+// ----------------------------------------------------
+// ABOUT US PAGE (Super-Admin CMS)
+// ----------------------------------------------------
+adminRouter.get("/about-us", adminController.getAboutUs);
+adminRouter.put("/about-us", adminController.updateAboutUs);
+
+// ----------------------------------------------------
+// CONTACT US PAGE (Super-Admin CMS)
+// ----------------------------------------------------
+adminRouter.get("/contact-us", adminController.getContactUs);
+adminRouter.put("/contact-us", adminController.updateContactUs);
+
+// ----------------------------------------------------
+// FAQ (Super-Admin CMS)
+// ----------------------------------------------------
+adminRouter.get("/faq", adminController.getFaq);
+adminRouter.put("/faq", adminController.updateFaq);
+
