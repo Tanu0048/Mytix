@@ -9,7 +9,6 @@ import {
   Mail, 
   Phone, 
   Sparkles,
-  Camera,
   AlertCircle,
   Eye,
   EyeOff,
@@ -202,13 +201,6 @@ export default function SettingsPage() {
                   <div className="w-20 h-20 rounded-3xl bg-linear-to-tr from-amber-400 to-amber-200 border-2 border-amber-300 text-amber-950 font-black text-2xl flex items-center justify-center shadow-md">
                     {initials}
                   </div>
-                  <button
-                    type="button"
-                    className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center shadow-sm cursor-pointer"
-                    title="Change Avatar"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                  </button>
                 </div>
 
                 <div>
@@ -219,9 +211,6 @@ export default function SettingsPage() {
                     </span>
                   </div>
                   <p className="text-sm font-semibold text-slate-400 mt-0.5">{formData.email}</p>
-                  <p className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Verified Account
-                  </p>
                 </div>
               </div>
             </div>

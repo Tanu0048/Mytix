@@ -2,7 +2,7 @@
 
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
-import { Search, ChevronDown, PanelLeft } from "lucide-react";
+import { ChevronDown, PanelLeft } from "lucide-react";
 
 export default function Header() {
   const user = useAuthStore((state) => state.user);
@@ -15,7 +15,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100/80 px-8 py-4 flex items-center justify-between">
       
-      {/* Left side: Toggle button + Search Input */}
+      {/* Left side: Toggle button */}
       <div className="flex items-center gap-3">
         <button
           onClick={toggleSidebar}
@@ -24,15 +24,6 @@ export default function Header() {
         >
           <PanelLeft className="w-4 h-4" />
         </button>
-
-        <div className="relative w-64 sm:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Search anything..." 
-            className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200/80 bg-slate-50/60 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all"
-          />
-        </div>
       </div>
 
       {/* Right Controls: User Profile Pill */}
