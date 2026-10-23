@@ -119,9 +119,6 @@ export default function Home() {
                 <p className="text-3xl font-black text-slate-900 mt-1">
                   ${totalSales.toLocaleString("en-AU")}
                 </p>
-                <p className="text-[11px] font-bold text-emerald-600 mt-1.5 flex items-center gap-1">
-                  <span>↑ 0%</span> <span className="text-slate-400 font-medium">vs last 30 days</span>
-                </p>
               </div>
 
               {/* Sparkline Curve Yellow */}
@@ -147,9 +144,6 @@ export default function Home() {
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tickets Sold</p>
                 <p className="text-3xl font-black text-slate-900 mt-1">
                   {ticketsSold}
-                </p>
-                <p className="text-[11px] font-bold text-emerald-600 mt-1.5 flex items-center gap-1">
-                  <span>↑ 0%</span> <span className="text-slate-400 font-medium">vs last 30 days</span>
                 </p>
               </div>
 
@@ -179,9 +173,6 @@ export default function Home() {
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Live Events</p>
                 <p className="text-3xl font-black text-slate-900 mt-1">
                   {liveEvents}
-                </p>
-                <p className="text-[11px] font-bold text-emerald-600 mt-1.5 flex items-center gap-1">
-                  <span>↑ 0%</span> <span className="text-slate-400 font-medium">vs last 30 days</span>
                 </p>
               </div>
 
