@@ -24,29 +24,36 @@ export default function Home() {
   const user = useAuthStore((state) => state.user);
   const [events, setEvents] = useState<any[]>([]);
   const [adminOrganisers, setAdminOrganisers] = useState<any[]>([]);
+  const [adminOrders, setAdminOrders] = useState<any[]>([]);
+  const [orgSearch, setOrgSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function loadOrganiserStats() {
+    async function loadData() {
+      setIsLoading(true);
       try {
-        const res = await api.get("/organiser/events");
-        setEvents(res.data.data || []);
+        if (user?.role === "ORGANISER" || !user?.role) {
+          const res = await api.get("/organiser/events");
+          setEvents(res.data.data || []);
+        } else if (user?.role === "ADMIN") {
+          const [orgsRes, ordersRes] = await Promise.allSettled([
+            api.get("/admin/organisers"),
+            api.get("/admin/orders").catch(() => api.get("/organiser/orders"))
+          ]);
+          if (orgsRes.status === "fulfilled") {
+            setAdminOrganisers(orgsRes.value.data.data || []);
+          }
+          if (ordersRes.status === "fulfilled") {
+            setAdminOrders(ordersRes.value.data.data || []);
+          }
+        }
       } catch (err) {
-        console.error("Failed to load organiser stats", err);
+        console.error("Failed to load dashboard stats", err);
       } finally {
         setIsLoading(false);
       }
     }
-    if (user?.role === "ORGANISER" || !user?.role) {
-      loadOrganiserStats();
-    } else if (user?.role === "ADMIN") {
-      api.get("/admin/organisers")
-        .then(res => setAdminOrganisers(res.data.data || []))
-        .catch(err => console.error("Failed to load admin organisers", err))
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
+    loadData();
   }, [user]);
 
   // If ORGANISER or Default View
@@ -250,11 +257,48 @@ export default function Home() {
   }
 
   // ===== ADMIN DASHBOARD =====
+  const adminTotalRevenue = adminOrders
+    .filter((o) => o.status === "PAID")
+    .reduce((sum, o) => sum + (o.totalCents || 0) / 100, 0);
+
+  const adminTicketsSold = adminOrders
+    .filter((o) => o.status === "PAID")
+    .reduce((sum, o) => sum + (o._count?.tickets || o.tickets?.length || 1), 0);
+
   const stats = [
-    { name: "Total Revenue", value: "$1,24,563", icon: Activity, color: "text-amber-600", bg: "bg-amber-50" },
-    { name: "Tickets Sold", value: "8,432", icon: ShoppingBag, color: "text-blue-600", bg: "bg-blue-50" },
-    { name: "Active Organisers", value: "142", icon: Users, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { 
+      name: "Total Gross Revenue", 
+      value: `$${adminTotalRevenue.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+      icon: Activity, 
+      color: "text-amber-600", 
+      bg: "bg-amber-50" 
+    },
+    { 
+      name: "Tickets Sold", 
+      value: adminTicketsSold.toLocaleString("en-AU"), 
+      icon: ShoppingBag, 
+      color: "text-blue-600", 
+      bg: "bg-blue-50" 
+    },
+    { 
+      name: "Active Organisers", 
+      value: adminOrganisers.length.toString(), 
+      icon: Users, 
+      color: "text-emerald-600", 
+      bg: "bg-emerald-50" 
+    },
   ];
+
+  const filteredAdminOrganisers = adminOrganisers.filter(org => {
+    if (!orgSearch) return true;
+    const q = orgSearch.toLowerCase();
+    return (
+      (org.businessName && org.businessName.toLowerCase().includes(q)) ||
+      (org.user?.name && org.user.name.toLowerCase().includes(q)) ||
+      (org.user?.email && org.user.email.toLowerCase().includes(q)) ||
+      (org.status && org.status.toLowerCase().includes(q))
+    );
+  });
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-7xl pb-20">
@@ -294,13 +338,17 @@ export default function Home() {
             <Filter className="h-4 w-4" />
             <span>Filter Organisers</span>
           </div>
-          <span className="text-sm font-semibold text-slate-400">Showing 5 of 142 organisers</span>
+          <span className="text-sm font-semibold text-slate-400">
+            Showing {filteredAdminOrganisers.slice(0, 10).length} of {adminOrganisers.length} organisers
+          </span>
         </div>
         
         <div className="relative mb-4">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
+            value={orgSearch}
+            onChange={(e) => setOrgSearch(e.target.value)}
             placeholder="Search by business name, email, or status..." 
             className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
           />
@@ -318,17 +366,17 @@ export default function Home() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {adminOrganisers.length === 0 ? (
+              {filteredAdminOrganisers.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-6 py-12 text-center text-slate-500 font-medium">
-                    No organisers found.
+                    {orgSearch ? "No organisers match your search." : "No organisers found."}
                   </td>
                 </tr>
               ) : (
-                adminOrganisers.slice(0, 10).map((org) => (
+                filteredAdminOrganisers.slice(0, 10).map((org) => (
                   <tr key={org.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900">{org.user?.name || "Unknown"}</div>
+                      <div className="font-bold text-slate-900">{org.user?.name || org.businessName || "Unknown"}</div>
                       <div className="text-xs text-slate-400">Joined {new Date(org.createdAt).toLocaleDateString()}</div>
                     </td>
                     <td className="px-6 py-4">
@@ -337,7 +385,7 @@ export default function Home() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                        org.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700" :
+                        org.status === "ACTIVE" || org.status === "APPROVED" ? "bg-emerald-100 text-emerald-700" :
                         org.status === "SUSPENDED" ? "bg-rose-100 text-rose-700" :
                         "bg-slate-100 text-slate-700"
                       }`}>
@@ -359,7 +407,7 @@ export default function Home() {
           </table>
         </div>
         
-        {adminOrganisers.length > 0 && (
+        {adminOrganisers.length > 10 && (
           <div className="mt-4 flex justify-center">
             <button 
               onClick={() => router.push("/organisers")}

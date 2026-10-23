@@ -3,16 +3,12 @@
 import { useState, useEffect } from "react";
 import { 
   User, 
-  Building, 
   Lock, 
-  Bell, 
   Save, 
   Check, 
-  CreditCard, 
   ShieldCheck, 
   Mail, 
   Phone, 
-  MapPin, 
   Sparkles,
   Camera,
   AlertCircle,
@@ -29,7 +25,7 @@ export default function SettingsPage() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
 
-  const [activeTab, setActiveTab] = useState<"profile" | "business" | "security" | "notifications" | "social">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "security" | "social">("profile");
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -42,17 +38,6 @@ export default function SettingsPage() {
     bio: "Passionate event organizer creating memorable concert and live festival experiences.",
   });
 
-  // Business / Payout State
-  const [businessData, setBusinessData] = useState({
-    businessName: "Mytix Live Productions",
-    taxId: "GSTIN-27AABCM9124K1Z0",
-    bankName: "HDFC Bank Ltd.",
-    accountHolder: "Aman Mirza",
-    accountNumber: "50100492819321",
-    ifscCode: "HDFC0001234",
-    payoutSchedule: "Weekly (Every Wednesday)"
-  });
-
   // Security State
   const [passwords, setPasswords] = useState({
     currentPassword: "",
@@ -61,14 +46,6 @@ export default function SettingsPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
-
-  // Notification Preferences
-  const [notifications, setNotifications] = useState({
-    ticketSales: true,
-    eventMilestones: true,
-    payoutAlerts: true,
-    marketingUpdates: false,
-  });
 
   useEffect(() => {
     if (user) {
@@ -141,7 +118,7 @@ export default function SettingsPage() {
             Account & <span className="text-amber-500">Settings</span>
           </h1>
           <p className="mt-1 text-sm font-semibold text-slate-400">
-            Manage your personal profile, payout accounts, security, and alerts.
+            Manage your personal profile, security credentials, and platform integration.
           </p>
         </div>
 
@@ -164,9 +141,7 @@ export default function SettingsPage() {
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none mb-7">
         {[
           { id: "profile", label: "Profile & Personal", icon: User },
-          { id: "business", label: "Business & Payouts", icon: Building },
           { id: "security", label: "Security & Login", icon: Lock },
-          { id: "notifications", label: "Alerts & Preferences", icon: Bell },
           ...(user?.role === "ADMIN" ? [{ id: "social", label: "Social Links", icon: Share2 }] : []),
         ].map((tab) => {
           const Icon = tab.icon;
@@ -249,88 +224,70 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               
-              {/* Name */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
-                  />
-                </div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Display Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Full Name"
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  required
+                />
               </div>
 
-              {/* Email */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
-                  Email Address <span className="text-slate-400 font-normal">(Read Only)</span>
-                </label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   <input
                     type="email"
-                    disabled
                     value={formData.email}
-                    className="w-full rounded-2xl border border-slate-200/60 bg-slate-100/70 py-3 pl-10 pr-4 text-sm font-semibold text-slate-500 cursor-not-allowed outline-none"
+                    disabled
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-100/70 py-3 px-4 text-sm font-semibold text-slate-500 cursor-not-allowed outline-none"
                   />
+                  <Mail className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2" />
                 </div>
+                <span className="text-[11px] font-semibold text-slate-400 mt-1 block">
+                  Email change requires administrator verification.
+                </span>
               </div>
 
-              {/* Phone */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
-                  Contact Phone <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Phone Number</label>
                 <div className="relative">
-                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   <input
-                    type="text"
-                    required
+                    type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+91 98765 43210"
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+                    placeholder="+91 98112 69898"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                   />
+                  <Phone className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2" />
                 </div>
               </div>
 
-              {/* Location */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
-                  Operating City
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    defaultValue="Melbourne / Mumbai"
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
-                  />
-                </div>
+                <label className="block text-sm font-bold text-slate-800 mb-2">Portal Access Role</label>
+                <input
+                  type="text"
+                  value={user?.role === "ADMIN" ? "Super Administrator (Full Root Access)" : "Authorized Event Organiser"}
+                  disabled
+                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-100/70 py-3 px-4 text-sm font-semibold text-slate-500 cursor-not-allowed outline-none"
+                />
               </div>
 
             </div>
 
-            {/* Bio */}
             <div>
-              <label className="block text-sm font-bold text-slate-800 mb-2">
-                Organizer Bio
-              </label>
+              <label className="block text-sm font-bold text-slate-800 mb-2">Organiser / Business Bio</label>
               <textarea
                 rows={3}
                 value={formData.bio}
                 onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all resize-none"
+                className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white resize-none"
               />
             </div>
 
-            {/* Submit */}
             <div className="pt-2 flex justify-end">
               <button
                 type="submit"
@@ -347,117 +304,7 @@ export default function SettingsPage() {
         </form>
       )}
 
-      {/* ===== TAB CONTENT 2: BUSINESS & PAYOUTS ===== */}
-      {activeTab === "business" && (
-        <div className="space-y-6">
-          
-          {/* Ambient Notice */}
-          <div className="p-5 rounded-3xl bg-[#FFF9EB] border border-amber-200/80 flex items-start gap-3.5">
-            <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <h4 className="text-sm font-black text-amber-950">Automated Direct Payouts Active</h4>
-              <p className="text-[11px] font-semibold text-amber-900/80 mt-0.5 leading-relaxed">
-                Net event ticket revenue is automatically transferred to your verified bank account every Wednesday, minus standard payment gateway fees.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl p-7 sm:p-9 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] space-y-6">
-            
-            <div className="flex items-start gap-3.5 pb-5 border-b border-slate-100">
-              <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
-                <CreditCard className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-black text-slate-900">Banking & Settlement Credentials</h3>
-                <p className="text-sm font-semibold text-slate-400 mt-0.5">
-                  Verified bank account where ticket sales revenue will be deposited.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              
-              <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Business / Brand Entity</label>
-                <input
-                  type="text"
-                  value={businessData.businessName}
-                  onChange={(e) => setBusinessData({ ...businessData, businessName: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Tax ID / GST Number</label>
-                <input
-                  type="text"
-                  value={businessData.taxId}
-                  onChange={(e) => setBusinessData({ ...businessData, taxId: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Account Beneficiary Name</label>
-                <input
-                  type="text"
-                  value={businessData.accountHolder}
-                  onChange={(e) => setBusinessData({ ...businessData, accountHolder: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Bank Name</label>
-                <input
-                  type="text"
-                  value={businessData.bankName}
-                  onChange={(e) => setBusinessData({ ...businessData, bankName: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Account Number / IBAN</label>
-                <input
-                  type="text"
-                  value={businessData.accountNumber}
-                  onChange={(e) => setBusinessData({ ...businessData, accountNumber: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">IFSC / Routing Code</label>
-                <input
-                  type="text"
-                  value={businessData.ifscCode}
-                  onChange={(e) => setBusinessData({ ...businessData, ifscCode: e.target.value })}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white font-mono uppercase"
-                />
-              </div>
-
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => handleGenericSave("Payout Banking")}
-                disabled={isSaving}
-                className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
-              >
-                <Save className="w-4 h-4 stroke-[2.5]" />
-                <span>Save Banking Details</span>
-              </button>
-            </div>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* ===== TAB CONTENT 3: SECURITY ===== */}
+      {/* ===== TAB CONTENT 2: SECURITY ===== */}
       {activeTab === "security" && (
         <div className="space-y-6">
           
@@ -470,7 +317,7 @@ export default function SettingsPage() {
               <div>
                 <h3 className="text-base font-black text-slate-900">Password & Authentication</h3>
                 <p className="text-sm font-semibold text-slate-400 mt-0.5">
-                  Ensure your portal account is guarded with a strong credentials.
+                  Ensure your portal account is guarded with strong credentials.
                 </p>
               </div>
             </div>
@@ -565,93 +412,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ===== TAB CONTENT 4: NOTIFICATIONS ===== */}
-      {activeTab === "notifications" && (
-        <div className="space-y-6">
-          
-          <div className="bg-white rounded-3xl p-7 sm:p-9 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] space-y-6">
-            
-            <div className="flex items-start gap-3.5 pb-5 border-b border-slate-100">
-              <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
-                <Bell className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-black text-slate-900">Notification Alerts & Channels</h3>
-                <p className="text-sm font-semibold text-slate-400 mt-0.5">
-                  Choose how and when Mytix sends updates to your phone and inbox.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              
-              {[
-                {
-                  key: "ticketSales",
-                  title: "Ticket Purchase Notifications",
-                  desc: "Get an instant notification whenever an attendee buys tickets to your event.",
-                },
-                {
-                  key: "payoutAlerts",
-                  title: "Settlement & Payout Deposits",
-                  desc: "Receive confirmation receipts when weekly revenue is wired to your bank.",
-                },
-                {
-                  key: "eventMilestones",
-                  title: "Milestone & Capacity Warnings",
-                  desc: "Get alerted when ticket tiers reach 80% or 100% sold-out capacity.",
-                },
-                {
-                  key: "marketingUpdates",
-                  title: "Organizer Growth Digest",
-                  desc: "Weekly emails with promotional tips and ticketing trend insights.",
-                },
-              ].map((item) => {
-                const isChecked = (notifications as any)[item.key];
-                return (
-                  <div key={item.key} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/50 border border-slate-100">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">{item.title}</p>
-                      <p className="text-[11px] font-semibold text-slate-400 mt-0.5">{item.desc}</p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setNotifications({ ...notifications, [item.key]: !isChecked })}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                        isChecked ? "bg-amber-500" : "bg-slate-200"
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                          isChecked ? "translate-x-5" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                );
-              })}
-
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => handleGenericSave("Notification preferences")}
-                disabled={isSaving}
-                className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
-              >
-                <Save className="w-4 h-4 stroke-[2.5]" />
-                <span>Save Notification Settings</span>
-              </button>
-            </div>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* ===== TAB CONTENT 5: SOCIAL LINKS (ADMIN ONLY) ===== */}
+      {/* ===== TAB CONTENT 3: SOCIAL LINKS (ADMIN ONLY) ===== */}
       {activeTab === "social" && (
         <div className="bg-white rounded-3xl p-7 sm:p-9 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] space-y-6">
           <div className="flex items-start gap-3.5 pb-5 border-b border-slate-100">
