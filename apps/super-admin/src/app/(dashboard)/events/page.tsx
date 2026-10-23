@@ -41,11 +41,6 @@ export default function EventsPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const [upcomingEvents, setUpcomingEvents] = useState(0);
-  const [hiddenCards, setHiddenCards] = useState<string[]>([]);
-
-  const removeCard = (cardKey: string) => {
-    setHiddenCards((prev) => [...prev, cardKey]);
-  };
 
   const fetchEvents = async () => {
     setIsLoading(true);
@@ -135,156 +130,90 @@ export default function EventsPage() {
         </button>
       </header>
 
-      {/* ===== 4 Stat Cards Row (with cut/remove button) ===== */}
-      {hiddenCards.length < 4 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-          
-          {/* Card 1: Total Events */}
-          {!hiddenCards.includes("totalEvents") && (
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-amber-600" />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
-                    Total
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeCard("totalEvents")}
-                    className="w-6 h-6 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
-                    title="Remove this card"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Events</p>
-                <p className="text-2xl font-black text-slate-900 mt-0.5">{totalEvents}</p>
-                <p className="text-[11px] font-semibold text-slate-400 mt-1">
-                  All created shows
-                </p>
-              </div>
+      {/* ===== 4 Stat Cards Row ===== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        
+        {/* Card 1: Total Events */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-amber-600" />
             </div>
-          )}
-
-          {/* Card 2: Tickets Sold */}
-          {!hiddenCards.includes("ticketsSold") && (
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
-                  <Ticket className="w-5 h-5 text-amber-600" />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700">
-                    Issued
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeCard("ticketsSold")}
-                    className="w-6 h-6 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
-                    title="Remove this card"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tickets Sold</p>
-                <p className="text-2xl font-black text-slate-900 mt-0.5">
-                  {calculatedSold.toLocaleString("en-AU")}
-                </p>
-                <p className="text-[11px] font-semibold text-slate-400 mt-1">
-                  Confirmed attendee passes
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Card 3: Revenue */}
-          {!hiddenCards.includes("revenue") && (
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center font-black text-amber-600 text-lg">
-                  $
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-50 text-amber-800">
-                    Gross
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeCard("revenue")}
-                    className="w-6 h-6 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
-                    title="Remove this card"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Revenue</p>
-                <p className="text-2xl font-black text-slate-900 mt-0.5">
-                  ${calculatedRevenue.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <p className="text-[11px] font-semibold text-slate-400 mt-1">
-                  Total ticket volume
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Card 4: Upcoming */}
-          {!hiddenCards.includes("upcoming") && (
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
-                  <CalendarDays className="w-5 h-5 text-amber-600" />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-blue-700">
-                    Active
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeCard("upcoming")}
-                    className="w-6 h-6 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
-                    title="Remove this card"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Upcoming</p>
-                <p className="text-2xl font-black text-slate-900 mt-0.5">{upcomingEvents}</p>
-                <p className="text-[11px] font-semibold text-slate-400 mt-1">
-                  Active future shows
-                </p>
-              </div>
-            </div>
-          )}
-
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+              Total
+            </span>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Events</p>
+            <p className="text-2xl font-black text-slate-900 mt-0.5">{totalEvents}</p>
+            <p className="text-[11px] font-semibold text-slate-400 mt-1">
+              All created shows
+            </p>
+          </div>
         </div>
-      )}
 
-      {/* Restore Cards bar if any card was removed */}
-      {hiddenCards.length > 0 && (
-        <div className="mb-6 flex items-center justify-between p-3.5 px-4 bg-slate-50 border border-slate-200/70 rounded-2xl text-xs">
-          <span className="text-slate-500 font-semibold">
-            {hiddenCards.length} {hiddenCards.length === 1 ? "stat card" : "stat cards"} removed from view
-          </span>
-          <button
-            type="button"
-            onClick={() => setHiddenCards([])}
-            className="font-bold text-amber-700 hover:text-amber-800 bg-amber-100/70 hover:bg-amber-100 px-3 py-1.5 rounded-xl transition-all cursor-pointer"
-          >
-            Restore Cards
-          </button>
+        {/* Card 2: Tickets Sold */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
+              <Ticket className="w-5 h-5 text-amber-600" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700">
+              Issued
+            </span>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tickets Sold</p>
+            <p className="text-2xl font-black text-slate-900 mt-0.5">
+              {calculatedSold.toLocaleString("en-AU")}
+            </p>
+            <p className="text-[11px] font-semibold text-slate-400 mt-1">
+              Confirmed attendee passes
+            </p>
+          </div>
         </div>
-      )}
+
+        {/* Card 3: Revenue */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center font-black text-amber-600 text-lg">
+              $
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-50 text-amber-800">
+              Gross
+            </span>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Revenue</p>
+            <p className="text-2xl font-black text-slate-900 mt-0.5">
+              ${calculatedRevenue.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <p className="text-[11px] font-semibold text-slate-400 mt-1">
+              Total ticket volume
+            </p>
+          </div>
+        </div>
+
+        {/* Card 4: Upcoming */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-11 h-11 rounded-2xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center">
+              <CalendarDays className="w-5 h-5 text-amber-600" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-blue-700">
+              Active
+            </span>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Upcoming</p>
+            <p className="text-2xl font-black text-slate-900 mt-0.5">{upcomingEvents}</p>
+            <p className="text-[11px] font-semibold text-slate-400 mt-1">
+              Active future shows
+            </p>
+          </div>
+        </div>
+
+      </div>
 
       {/* ===== Main Event Management Card ===== */}
       <div className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_4px_24px_rgba(0,0,0,0.03)] overflow-hidden">
@@ -466,10 +395,24 @@ export default function EventsPage() {
 
                         {/* Action Menu Popover */}
                         {openActionId === event.id && (
-                          <div className="absolute right-6 top-12 w-36 rounded-xl bg-white border border-slate-100 shadow-xl py-1.5 z-30 text-left">
+                          <div className="absolute right-6 top-12 w-44 rounded-2xl bg-white border border-slate-200/90 shadow-xl p-2 z-30 text-left animate-in fade-in zoom-in-95 duration-150">
+                            <div className="flex items-center justify-between pb-1.5 mb-1 border-b border-slate-100 px-2">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Actions</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenActionId(null);
+                                }}
+                                className="w-5 h-5 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                                title="Close"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                             <button
                               onClick={() => router.push(`/events/${event.id}/edit`)}
-                              className="w-full px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                              className="w-full px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
                             >
                               <Edit2 className="w-3.5 h-3.5 text-slate-400" /> Edit Event
                             </button>
@@ -478,7 +421,7 @@ export default function EventsPage() {
                                 setEventToDelete(event);
                                 setOpenActionId(null);
                               }}
-                              className="w-full px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
+                              className="w-full px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5 text-red-500" /> Delete
                             </button>
