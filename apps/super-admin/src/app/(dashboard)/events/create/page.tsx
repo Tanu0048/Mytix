@@ -8,6 +8,7 @@ import {
   Plus, 
   Trash2, 
   Calendar, 
+  Clock,
   Music, 
   MapPin, 
   User, 
@@ -34,14 +35,6 @@ export default function CreateEventPage() {
   const [previewUrl, setPreviewUrl] = useState("");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const [venues, setVenues] = useState<any[]>([]);
-  const [artists, setArtists] = useState<any[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  
-  const [newVenueName, setNewVenueName] = useState("");
-  const [newVenueCity, setNewVenueCity] = useState("");
-  const [newCategoryName, setNewCategoryName] = useState("");
-
   const [seatingType, setSeatingType] = useState<"GENERAL" | "RESERVED">("GENERAL");
   const [seatingSections, setSeatingSections] = useState([
     {
@@ -57,52 +50,13 @@ export default function CreateEventPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "Concert",
+    category: "",
+    venueName: "",
+    venueCity: "",
     posterPath: "",
     startsAt: "",
     doorsOpenAt: "",
-    venueId: "",
-    artistId: "",
   });
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [vRes, aRes, cRes] = await Promise.all([
-          fetch("http://localhost:5000/api/v1/venues"),
-          fetch("http://localhost:5000/api/v1/artists"),
-          fetch("http://localhost:5000/api/v1/categories")
-        ]);
-        
-        if (vRes.ok) {
-          const vData = await vRes.json();
-          setVenues(vData);
-          if (vData.length > 0) {
-            setFormData(prev => ({ ...prev, venueId: vData[0].id }));
-          }
-        }
-        
-        if (aRes.ok) {
-          const aData = await aRes.json();
-          setArtists(aData);
-          if (aData.length > 0) {
-            setFormData(prev => ({ ...prev, artistId: aData[0].id }));
-          }
-        }
-
-        if (cRes.ok) {
-          const cData = await cRes.json();
-          setCategories(cData);
-          if (cData.length > 0) {
-            setFormData(prev => ({ ...prev, category: cData[0] }));
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load venues/artists", err);
-      }
-    }
-    loadData();
-  }, []);
 
   const [ticketTypes, setTicketTypes] = useState([
     {
@@ -193,40 +147,33 @@ export default function CreateEventPage() {
     setError("");
 
     try {
-      let finalVenueId = formData.venueId;
-
-      if (formData.venueId === "NEW") {
-        if (!newVenueName || !newVenueCity) {
-          throw new Error("Please specify the custom venue name and city.");
-        }
-        const venueRes = await api.post("/organiser/venues", {
-          name: newVenueName,
-          city: newVenueCity,
-          state: "Custom",
-          address: `${newVenueName}, ${newVenueCity}`
-        });
-        finalVenueId = venueRes.data.data.id;
+      if (!formData.category.trim()) {
+        throw new Error("Please enter a category.");
+      }
+      if (!formData.venueName.trim() || !formData.venueCity.trim()) {
+        throw new Error("Please specify the venue name and city.");
       }
 
-      let finalCategory = formData.category;
-      if (formData.category === "NEW") {
-        if (!newCategoryName) {
-          throw new Error("Please specify the custom category name.");
-        }
-        finalCategory = newCategoryName;
-      }
+      // Automatically create and register the custom venue
+      const venueRes = await api.post("/organiser/venues", {
+        name: formData.venueName.trim(),
+        city: formData.venueCity.trim(),
+        state: formData.venueCity.trim() || "Custom",
+        address: `${formData.venueName.trim()}, ${formData.venueCity.trim()}`
+      });
+      const finalVenueId = venueRes.data.data.id;
 
       const payload = {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
         venueId: finalVenueId,
-        category: finalCategory,
+        category: formData.category.trim(),
         posterPath: formData.posterPath,
         seatingType,
         seatingConfig: seatingType === "RESERVED" ? { sections: seatingSections } : null,
         startsAt: new Date(formData.startsAt).toISOString(),
         doorsOpenAt: formData.doorsOpenAt ? new Date(formData.doorsOpenAt).toISOString() : undefined,
-        artists: formData.artistId ? [{ artistId: formData.artistId, isHeadline: true }] : [],
+        artists: [],
         ticketTypes: ticketTypes.map(t => ({
           name: t.name,
           description: t.description || undefined,
@@ -458,25 +405,16 @@ export default function CreateEventPage() {
                 </label>
                 <div className="relative">
                   <Music className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  <select 
+                  <input 
+                    required
+                    type="text" 
                     name="category" 
                     value={formData.category} 
                     onChange={handleChange} 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-9 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all appearance-none cursor-pointer"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                    <option value="NEW">+ Create Custom Category</option>
-                  </select>
-                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    placeholder="e.g. Concert, Comedy, Tech Fest, Workshop"
+                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+                  />
                 </div>
-                {formData.category === "NEW" && (
-                  <div className="mt-3.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Custom Category Name</label>
-                    <input type="text" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} placeholder="e.g. Art & Exhibitions" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-400" required />
-                  </div>
-                )}
               </div>
 
               {/* Venue */}
@@ -484,61 +422,37 @@ export default function CreateEventPage() {
                 <label className="block text-sm font-bold text-slate-800 mb-2">
                   Venue <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  <select 
-                    name="venueId" 
-                    value={formData.venueId} 
-                    onChange={handleChange} 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-9 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all appearance-none cursor-pointer"
-                  >
-                    {venues.map(v => (
-                      <option key={v.id} value={v.id}>{v.name} ({v.city})</option>
-                    ))}
-                    <option value="NEW">+ Create Custom Venue</option>
-                  </select>
-                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-
-                {formData.venueId === "NEW" && (
-                  <div className="mt-3.5 grid grid-cols-2 gap-3.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">City</label>
-                      <input type="text" value={newVenueCity} onChange={e => setNewVenueCity(e.target.value)} placeholder="e.g. Mumbai" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-400" required />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Venue Name</label>
-                      <input type="text" value={newVenueName} onChange={e => setNewVenueName(e.target.value)} placeholder="e.g. Jio World Centre" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-400" required />
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="relative">
+                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <input 
+                      required
+                      type="text" 
+                      name="venueName" 
+                      value={formData.venueName} 
+                      onChange={handleChange} 
+                      placeholder="Venue Name (e.g. Arena)"
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+                    />
                   </div>
-                )}
+                  <div className="relative">
+                    <input 
+                      required
+                      type="text" 
+                      name="venueCity" 
+                      value={formData.venueCity} 
+                      onChange={handleChange} 
+                      placeholder="City (e.g. Sydney)"
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Row 4: Artist & Starts At */}
+            {/* Row 4: Dates & Times (Starts At & Doors Open At) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               
-              {/* Artist */}
-              <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
-                  Artist (Headline) <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  <select 
-                    name="artistId" 
-                    value={formData.artistId} 
-                    onChange={handleChange} 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-9 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all appearance-none cursor-pointer"
-                  >
-                    {artists.map(a => (
-                      <option key={a.id} value={a.id}>{a.name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-
               {/* Starts At */}
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">
@@ -556,10 +470,8 @@ export default function CreateEventPage() {
                   <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
               </div>
-            </div>
 
-            {/* Row 5: Doors Open At */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Doors Open At */}
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-2">
                   Doors Open At <span className="text-slate-400 font-medium">(Optional)</span>
@@ -572,7 +484,7 @@ export default function CreateEventPage() {
                     onChange={handleChange} 
                     className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
                   />
-                  <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <Clock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
               </div>
             </div>
