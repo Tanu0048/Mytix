@@ -72,3 +72,18 @@ export const getSocialLinks = asyncHandler(async (_req, res) => {
   const links = await catalogService.getPublicSocialLinks();
   res.status(200).json(links);
 });
+
+export const getAboutUs = asyncHandler(async (_req, res) => {
+  const data = await catalogService.getPublicAboutUs();
+  res.status(200).json(data);
+});
+
+export const getContactUs = asyncHandler(async (_req, res) => {
+  const data = await catalogService.getPublicContactUs();
+  res.status(200).json(data);
+});
+
+export const getFaq = asyncHandler(async (_req, res) => {
+  const data = await catalogService.getPublicFaq();
+  res.status(200).json(data);
+});

@@ -23,5 +23,8 @@ router.get("/venues/:slug", validate(slugParamSchema), cacheHeaders(30), catalog
 router.get("/organisers/:slug", validate(slugParamSchema), cacheHeaders(30), catalogController.getOrganiserBySlug);
 router.get("/terms", cacheHeaders(30), catalogController.getTerms);
 router.get("/social-links", cacheHeaders(30), catalogController.getSocialLinks);
+router.get("/about-us", cacheHeaders(60), catalogController.getAboutUs);
+router.get("/contact-us", cacheHeaders(60), catalogController.getContactUs);
+router.get("/faq", cacheHeaders(60), catalogController.getFaq);
 
 export default router;

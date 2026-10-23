@@ -860,3 +860,196 @@ export async function updateCityImages(cityImagesMap) {
   return setting.value;
 }
 
+// ----------------------------------------------------
+// ABOUT US PAGE (Dynamic Super-Admin CMS)
+// ----------------------------------------------------
+export const DEFAULT_ABOUT_US = {
+  heroTagline: "Our Story & Mission",
+  heroTitle: "Built for live moments.",
+  heroHighlight: "Honest ticketing for Australia.",
+  heroDescription: "Mytix was founded with a singular purpose: to replace frustrating ticket queues, hidden fees, and ticket scalping with a seamless, mobile-first live entertainment experience.",
+  stats: [
+    { label: "Tickets Delivered", value: "500K+", sub: "100% digital & paperless" },
+    { label: "Partner Venues", value: "180+", sub: "Across all Australian states" },
+    { label: "Gate Entry Speed", value: "<1 sec", sub: "Instant cryptographic QR scan" },
+    { label: "Fan Satisfaction", value: "99.4%", sub: "Verified attendee rating" }
+  ],
+  narrativeTagline: "Why Mytix Exists",
+  narrativeTitle: "A modern platform made for fans, artists, and venues.",
+  narrativeParagraphs: [
+    "For decades, buying concert tickets has felt stressful. Fans endured broken waiting rooms, predatory price hikes, and secondary scalpers who marked up tickets by 300%.",
+    "Mytix changes that. From stadium arena tours in Melbourne and Sydney to intimate comedy clubs in Brisbane and Perth, we bring transparency, reliability, and security to every booking."
+  ],
+  featureBoxTitle: "Every city. Every beat. Every Aussie stage.",
+  featureBoxDescription: "We partner directly with leading promoters, local venues, and Australian festivals to guarantee that every ticket purchased on Mytix is genuine, authorized, and turnstile-ready.",
+  featureBoxBadge: "100% Genuine Admission Guarantee",
+  values: [
+    {
+      title: "Zero Hidden Fees",
+      desc: "We believe in honest ticketing. The price you see on an event is what you pay at checkout. No surprise service charges, processing markups, or print-at-home extortion."
+    },
+    {
+      title: "Instant Digital Gate Entry",
+      desc: "Our proprietary QR turnstile technology validates tickets in less than one second, eliminating long queues and counterfeit passes so you spend more time enjoying the show."
+    },
+    {
+      title: "Creator-First Ecosystem",
+      desc: "We empower independent artists, comedy clubs, and stadium promoters with high-speed reserved seating maps, transparent analytics, and reliable revenue settlements."
+    },
+    {
+      title: "Australian Fan Protection",
+      desc: "Fully compliant with Australian Consumer Law (ACL) and state anti-scalping legislation. If an event is cancelled or postponed, refunds are handled fairly and promptly."
+    }
+  ],
+  valuesHeading: "What sets Mytix apart",
+  valuesSubheading: "Our core values guide every line of code and customer interaction.",
+  ctaTitle: "Ready to discover upcoming shows?",
+  ctaDescription: "Explore live gigs, comedy specials, and festival passes in your city today."
+};
+
+export async function getAboutUs() {
+  const setting = await prisma.platformSettings.findUnique({
+    where: { key: "about_us" }
+  });
+  if (!setting || !setting.value) {
+    return DEFAULT_ABOUT_US;
+  }
+  return setting.value;
+}
+
+export async function updateAboutUs(aboutData) {
+  const setting = await prisma.platformSettings.upsert({
+    where: { key: "about_us" },
+    update: { value: aboutData },
+    create: { key: "about_us", value: aboutData }
+  });
+  return setting.value;
+}
+
+// ----------------------------------------------------
+// CONTACT US PAGE (Dynamic Super-Admin CMS)
+// ----------------------------------------------------
+export const DEFAULT_CONTACT_US = {
+  heroTagline: "Australian Customer Care",
+  heroTitle: "Contact Mytix Support",
+  heroDescription: "We're here to assist you with tickets, venue entry, bookings, and organizer partnerships.",
+  contactCards: [
+    {
+      title: "Customer Support Email",
+      subtitle: "For ticket inquiries, event entry, and refund requests",
+      actionText: "support@mytix.com.au",
+      actionHref: "mailto:support@mytix.com.au",
+      badge: "Fastest response (<2h)",
+      iconType: "mail"
+    },
+    {
+      title: "24/7 Phone Hotline",
+      subtitle: "Toll-free assistance across all Australian states",
+      actionText: "1800 MYTIX (1800 698 490)",
+      actionHref: "tel:1800698490",
+      badge: "24/7 on event days",
+      iconType: "phone"
+    },
+    {
+      title: "Organisers & Partnerships",
+      subtitle: "For promoters, festivals, and venue ticket management",
+      actionText: "organisers@mytix.com.au",
+      actionHref: "mailto:organisers@mytix.com.au",
+      badge: "Partnerships",
+      iconType: "building"
+    },
+    {
+      title: "Operating Hours",
+      subtitle: "Dedicated local support team ready to assist",
+      actionText: "Mon – Sun: 24/7 Event Coverage",
+      actionHref: "",
+      badge: "Always Open",
+      iconType: "clock"
+    }
+  ],
+  offices: [
+    {
+      label: "Melbourne HQ",
+      address: "Level 14, 120 Collins Street",
+      city: "Melbourne, Victoria 3000, Australia"
+    },
+    {
+      label: "Sydney Hub",
+      address: "Level 22, 200 George Street",
+      city: "Sydney, New South Wales 2000, Australia"
+    }
+  ]
+};
+
+export async function getContactUs() {
+  const setting = await prisma.platformSettings.findUnique({
+    where: { key: "contact_us" }
+  });
+  if (!setting || !setting.value) {
+    return DEFAULT_CONTACT_US;
+  }
+  return setting.value;
+}
+
+export async function updateContactUs(contactData) {
+  const setting = await prisma.platformSettings.upsert({
+    where: { key: "contact_us" },
+    update: { value: contactData },
+    create: { key: "contact_us", value: contactData }
+  });
+  return setting.value;
+}
+
+// ----------------------------------------------------
+// FAQ (Dynamic Super-Admin CMS)
+// ----------------------------------------------------
+export const DEFAULT_FAQ = {
+  heading: "Frequently Asked Questions",
+  subheading: "Everything you need to know about booking, instant digital QR tickets, venue gate entry, and refunds.",
+  items: [
+    {
+      question: "How do I receive and access my tickets after booking?",
+      answer: "All tickets on Mytix are 100% digital and paperless. Once your payment is confirmed, your verified QR e-tickets are instantly generated and available in your 'My Tickets' dashboard. You will also receive an email with your booking confirmation and PDF e-ticket with a live scannable QR code."
+    },
+    {
+      question: "How does entry verification work at the venue gates?",
+      answer: "Simply open your e-ticket on your mobile phone via Mytix or your confirmation email at the turnstile gate. The event turnstile scanners verify the cryptographic digital signature of your QR code in under a second for fast, fraud-proof admission. No printouts needed!"
+    },
+    {
+      question: "Can I transfer or cancel my tickets if my plans change?",
+      answer: "Yes! Depending on the organizer's refund and transfer policy for the show, you can transfer your tickets to a friend's email or request a cancellation directly from your profile dashboard up to 24 hours before the event starts."
+    },
+    {
+      question: "What happens if an event is postponed or cancelled?",
+      answer: "If an event is rescheduled, your original tickets remain 100% valid for the new date automatically. If a show is cancelled or you cannot make the rescheduled date, a full refund is automatically issued to your original payment method within 5–7 business days."
+    },
+    {
+      question: "What payment methods are supported on Mytix?",
+      answer: "We support all major payment options: UPI (Google Pay, PhonePe, Paytm), Credit & Debit cards (Visa, Mastercard, RuPay, American Express), and Net Banking via safe, bank-grade 256-bit SSL encrypted gateways with instant payment confirmation."
+    },
+    {
+      question: "Are there any hidden charges or unexpected fees at checkout?",
+      answer: "Never! Mytix guarantees zero surprise fees. The ticket price shown on the event page clearly itemizes any applicable taxes or booking charges upfront before you proceed to payment."
+    }
+  ]
+};
+
+export async function getFaq() {
+  const setting = await prisma.platformSettings.findUnique({
+    where: { key: "faq" }
+  });
+  if (!setting || !setting.value) {
+    return DEFAULT_FAQ;
+  }
+  return setting.value;
+}
+
+export async function updateFaq(faqData) {
+  const setting = await prisma.platformSettings.upsert({
+    where: { key: "faq" },
+    update: { value: faqData },
+    create: { key: "faq", value: faqData }
+  });
+  return setting.value;
+}
+
