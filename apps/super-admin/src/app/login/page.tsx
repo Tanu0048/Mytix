@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { 
@@ -68,12 +69,14 @@ export default function LoginPage() {
 
         {/* Top Brand Logo */}
         <div className="relative z-10 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-tr from-amber-500 via-amber-400 to-amber-300 text-slate-950 shadow-lg shadow-amber-500/30">
-            <Ticket className="w-5 h-5 stroke-[2.5]" />
-          </div>
-          <span className="text-2xl font-black tracking-tight text-white lowercase">
-            mytix
-          </span>
+          <Image 
+            src="/mytix-logo-white.png" 
+            alt="Mytix" 
+            width={140} 
+            height={46} 
+            priority
+            className="h-9 w-auto object-contain"
+          />
         </div>
 
         {/* Center Headline & Content */}
@@ -150,11 +153,16 @@ export default function LoginPage() {
         
         <div className="w-full max-w-105 bg-white rounded-3xl sm:rounded-4xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.06)] border border-slate-100 p-6 sm:p-8 lg:p-9 animate-in fade-in slide-in-from-bottom-3 duration-500 relative">
           
-          {/* Top Ticket Icon Circle */}
-          <div className="flex justify-center mb-4">
-            <div className="w-14 h-14 rounded-full bg-[#FFF5DA] border border-amber-200/60 flex items-center justify-center text-amber-600 shadow-2xs">
-              <Ticket className="w-6 h-6 stroke-[2.2]" />
-            </div>
+          {/* Top Brand Logo */}
+          <div className="flex justify-center mb-5">
+            <Image 
+              src="/mytix-logo.png" 
+              alt="Mytix" 
+              width={140} 
+              height={46} 
+              priority
+              className="h-9 w-auto object-contain"
+            />
           </div>
 
           {/* Heading */}
