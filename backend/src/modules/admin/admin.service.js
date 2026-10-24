@@ -1053,3 +1053,107 @@ export async function updateFaq(faqData) {
   return setting.value;
 }
 
+// ----------------------------------------------------
+// ORGANISER REQUIREMENTS (Dynamic Super-Admin CMS)
+// ----------------------------------------------------
+export const DEFAULT_ORGANISER_REQUIREMENTS = {
+  heroTagline: "Creator & Promoter Partnership",
+  heroTitle: "Become a Verified Mytix Organiser",
+  heroDescription: "Everything you need to know to partner with Mytix, publish events, sell tickets across Australia, and manage venue gate entry with zero hassle.",
+  requirements: [
+    {
+      title: "Australian Business Registration (ABN / ACN)",
+      description: "Organisers must hold an active Australian Business Number (ABN) or registered Australian entity.",
+      badge: "Mandatory"
+    },
+    {
+      title: "Verified Commercial Bank Account",
+      description: "A nominated Australian bank account (BSB & Account Number) matching your legal entity for direct scheduled revenue payouts.",
+      badge: "Mandatory"
+    },
+    {
+      title: "Identity & Key Contact Verification",
+      description: "Primary account holder must provide a valid Australian Driver's Licence or Passport to complete KYC security standards.",
+      badge: "KYC Security"
+    },
+    {
+      title: "Venue Hire Agreement or Ownership Proof",
+      description: "An authorized contract, booking confirmation, or council permit granting permission to host the event at the nominated venue.",
+      badge: "Venue Compliance"
+    },
+    {
+      title: "Public Liability Insurance & Safety Plan",
+      description: "Current Public Liability Insurance certificate (minimum $10M–$20M depending on venue capacity) and emergency safety plan.",
+      badge: "Event Safety"
+    },
+    {
+      title: "Fair Ticketing & ACL Compliance",
+      description: "Commitment to Australian Consumer Law (ACL), state anti-scalping legislation, and transparent all-inclusive ticket pricing.",
+      badge: "Consumer Law"
+    }
+  ],
+  benefits: [
+    {
+      title: "Fast Turnstile QR Scanner",
+      desc: "Turn your gate security's smartphones into 0.2-second high-speed turnstiles with real-time sync and duplicate-ticket fraud prevention."
+    },
+    {
+      title: "Fast Transparent Settlements",
+      desc: "Receive clear, reliable automated payouts and detailed financial reporting with zero surprise processing markups."
+    },
+    {
+      title: "Gate Staff Role Isolation",
+      desc: "Create restricted credentials for gate staff with individual staff IDs. Staff only see their scanner, with no access to financials."
+    },
+    {
+      title: "Dedicated Promoter Support",
+      desc: "Direct access to our Australian event operations team before, during, and after show day."
+    }
+  ],
+  onboardingSteps: [
+    {
+      step: "01",
+      title: "Submit Contact & Business Details",
+      desc: "Reach out via our partnership channels with your ABN, event concept, and expected venue."
+    },
+    {
+      step: "02",
+      title: "Verification & Fast Approval",
+      desc: "Our platform team verifies compliance, issues your Organiser Portal credentials, and configures your account."
+    },
+    {
+      step: "03",
+      title: "Create Staff Accounts & Launch",
+      desc: "Publish your event, manage ticket tiers, generate gate staff IDs, and start selling tickets across Australia."
+    }
+  ],
+  contactDetails: {
+    heading: "Get in Touch with our Partnerships Team",
+    subheading: "Ready to put on a show or have questions about requirements? Contact our Australian team directly.",
+    email: "organisers@mytix.com.au",
+    phone: "1800 698 490 (Toll-Free AU)",
+    hours: "Monday – Sunday: 24/7 Event Day Support",
+    address: "Level 14, 120 Collins Street, Melbourne VIC 3000"
+  }
+};
+
+export async function getOrganiserRequirements() {
+  const setting = await prisma.platformSettings.findUnique({
+    where: { key: "organiser_requirements" }
+  });
+  if (!setting || !setting.value) {
+    return DEFAULT_ORGANISER_REQUIREMENTS;
+  }
+  return setting.value;
+}
+
+export async function updateOrganiserRequirements(reqData) {
+  const setting = await prisma.platformSettings.upsert({
+    where: { key: "organiser_requirements" },
+    update: { value: reqData },
+    create: { key: "organiser_requirements", value: reqData }
+  });
+  return setting.value;
+}
+
+

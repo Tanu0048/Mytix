@@ -87,3 +87,9 @@ export const getFaq = asyncHandler(async (_req, res) => {
   const data = await catalogService.getPublicFaq();
   res.status(200).json(data);
 });
+
+export const getOrganiserRequirements = asyncHandler(async (_req, res) => {
+  const data = await catalogService.getPublicOrganiserRequirements();
+  res.status(200).json(data);
+});
+

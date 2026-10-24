@@ -91,3 +91,9 @@ adminRouter.put("/contact-us", adminController.updateContactUs);
 adminRouter.get("/faq", adminController.getFaq);
 adminRouter.put("/faq", adminController.updateFaq);
 
+// ----------------------------------------------------
+// ORGANISER REQUIREMENTS (Super-Admin CMS)
+// ----------------------------------------------------
+adminRouter.get("/organiser-requirements", adminController.getOrganiserRequirements);
+adminRouter.put("/organiser-requirements", adminController.updateOrganiserRequirements);
+

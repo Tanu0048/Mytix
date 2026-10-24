@@ -296,3 +296,9 @@ export async function getPublicFaq() {
   const { getFaq } = await import("../admin/admin.service.js");
   return getFaq();
 }
+
+export async function getPublicOrganiserRequirements() {
+  const { getOrganiserRequirements } = await import("../admin/admin.service.js");
+  return getOrganiserRequirements();
+}
+

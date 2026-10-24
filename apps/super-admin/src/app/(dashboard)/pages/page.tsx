@@ -90,7 +90,43 @@ interface FaqData {
   items: FaqItem[];
 }
 
-type TabKey = "about" | "contact" | "faq";
+export interface OrganiserRequirementItem {
+  title: string;
+  description: string;
+  badge: string;
+}
+
+export interface OrganiserBenefitItem {
+  title: string;
+  desc: string;
+}
+
+export interface OrganiserStepItem {
+  step: string;
+  title: string;
+  desc: string;
+}
+
+export interface OrganiserContactDetails {
+  heading: string;
+  subheading: string;
+  email: string;
+  phone: string;
+  hours: string;
+  address: string;
+}
+
+export interface OrganiserRequirementsData {
+  heroTagline: string;
+  heroTitle: string;
+  heroDescription: string;
+  requirements: OrganiserRequirementItem[];
+  benefits: OrganiserBenefitItem[];
+  onboardingSteps: OrganiserStepItem[];
+  contactDetails: OrganiserContactDetails;
+}
+
+type TabKey = "about" | "contact" | "faq" | "requirements";
 
 // ─── COMPONENT ─────────────────────────────────────────────
 
@@ -108,6 +144,7 @@ export default function PagesCMSPage() {
   const [aboutUs, setAboutUs] = useState<AboutUsData | null>(null);
   const [contactUs, setContactUs] = useState<ContactUsData | null>(null);
   const [faq, setFaq] = useState<FaqData | null>(null);
+  const [organiserReq, setOrganiserReq] = useState<OrganiserRequirementsData | null>(null);
 
   useEffect(() => {
     fetchAll();
@@ -116,14 +153,16 @@ export default function PagesCMSPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [aboutRes, contactRes, faqRes] = await Promise.all([
+      const [aboutRes, contactRes, faqRes, reqRes] = await Promise.all([
         api.get("/admin/about-us"),
         api.get("/admin/contact-us"),
         api.get("/admin/faq"),
+        api.get("/admin/organiser-requirements"),
       ]);
       if (aboutRes.data?.data) setAboutUs(aboutRes.data.data);
       if (contactRes.data?.data) setContactUs(contactRes.data.data);
       if (faqRes.data?.data) setFaq(faqRes.data.data);
+      if (reqRes.data?.data) setOrganiserReq(reqRes.data.data);
     } catch (err: any) {
       console.warn("Could not load page data:", err);
     } finally {
@@ -145,9 +184,17 @@ export default function PagesCMSPage() {
       } else if (activeTab === "faq" && faq) {
         const res = await api.put("/admin/faq", faq);
         if (res.data?.data) setFaq(res.data.data);
+      } else if (activeTab === "requirements" && organiserReq) {
+        const res = await api.put("/admin/organiser-requirements", organiserReq);
+        if (res.data?.data) setOrganiserReq(res.data.data);
       }
-      const labels = { about: "About Us", contact: "Contact Us", faq: "FAQ" };
-      setSuccessMsg(`${labels[activeTab]} page published successfully! Changes are now live on the user website.`);
+      const labels: Record<TabKey, string> = { 
+        about: "About Us", 
+        contact: "Contact Us", 
+        faq: "FAQ",
+        requirements: "Organiser Requirements"
+      };
+      setSuccessMsg(`${labels[activeTab]} published successfully! Changes are now live on the website.`);
       setTimeout(() => setSuccessMsg(""), 4500);
     } catch (err: any) {
       console.error(err);
@@ -187,6 +234,7 @@ export default function PagesCMSPage() {
     { key: "about", label: "About Us" },
     { key: "contact", label: "Contact Us" },
     { key: "faq", label: "FAQ" },
+    { key: "requirements", label: "Organiser Requirements" },
   ];
 
   return (
@@ -202,7 +250,7 @@ export default function PagesCMSPage() {
               Pages CMS
             </h1>
             <p className="text-xs sm:text-sm text-slate-500">
-              Edit About Us, Contact Us, and FAQ pages displayed on the user website.
+              Edit About Us, Contact Us, FAQ, and Organiser Requirements displayed on the user website.
             </p>
           </div>
         </div>
@@ -233,12 +281,12 @@ export default function PagesCMSPage() {
       )}
 
       {/* Tab Switcher */}
-      <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-100 shadow-2xs">
+      <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-100 shadow-2xs overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer ${
+            className={`flex-1 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer whitespace-nowrap ${
               activeTab === tab.key
                 ? "bg-amber-500 text-slate-950 shadow-sm"
                 : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
@@ -253,6 +301,9 @@ export default function PagesCMSPage() {
       {activeTab === "about" && aboutUs && <AboutUsEditor data={aboutUs} onChange={setAboutUs} />}
       {activeTab === "contact" && contactUs && <ContactUsEditor data={contactUs} onChange={setContactUs} />}
       {activeTab === "faq" && faq && <FaqEditor data={faq} onChange={setFaq} />}
+      {activeTab === "requirements" && organiserReq && (
+        <OrganiserRequirementsEditor data={organiserReq} onChange={setOrganiserReq} />
+      )}
     </div>
   );
 }
@@ -607,6 +658,327 @@ function FaqEditor({ data, onChange }: { data: FaqData; onChange: (d: FaqData) =
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── ORGANISER REQUIREMENTS EDITOR ─────────────────────────
+
+function OrganiserRequirementsEditor({
+  data,
+  onChange,
+}: {
+  data: OrganiserRequirementsData;
+  onChange: (d: OrganiserRequirementsData) => void;
+}) {
+  const update = (key: keyof OrganiserRequirementsData, val: any) =>
+    onChange({ ...data, [key]: val });
+
+  return (
+    <div className="space-y-6">
+      {/* Hero Section */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+        <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+          <Sparkles className="w-4 h-4 text-amber-500" />
+          <h2 className="text-base font-black text-slate-900 tracking-tight">Hero Header</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <InputField
+            label="Hero Tagline (Pill Badge)"
+            value={data.heroTagline}
+            onChange={(v) => update("heroTagline", v)}
+            placeholder="Creator & Promoter Partnership"
+          />
+          <InputField
+            label="Hero Title"
+            value={data.heroTitle}
+            onChange={(v) => update("heroTitle", v)}
+            placeholder="Become a Verified Mytix Organiser"
+          />
+        </div>
+        <TextareaField
+          label="Hero Description"
+          value={data.heroDescription}
+          onChange={(v) => update("heroDescription", v)}
+          rows={3}
+        />
+      </div>
+
+      {/* Requirements List */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h2 className="text-base font-black text-slate-900 tracking-tight">
+              Organiser Eligibility & Requirements
+            </h2>
+            <p className="text-xs text-slate-400">
+              Checklist of criteria, documents, and compliance needed to become an organiser.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              update("requirements", [
+                ...data.requirements,
+                {
+                  title: "New Requirement",
+                  description: "Enter requirement details and guidance.",
+                  badge: "Mandatory"
+                }
+              ])
+            }
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Requirement
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {data.requirements.map((req, index) => (
+            <div
+              key={index}
+              className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-amber-600 uppercase tracking-wider">
+                  Requirement #{index + 1}
+                </span>
+                {data.requirements.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = data.requirements.filter((_, i) => i !== index);
+                      update("requirements", next);
+                    }}
+                    className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <InputField
+                    label="Requirement Title"
+                    value={req.title}
+                    onChange={(v) => {
+                      const next = [...data.requirements];
+                      next[index] = { ...next[index], title: v };
+                      update("requirements", next);
+                    }}
+                    placeholder="e.g. Australian Business Registration (ABN)"
+                  />
+                </div>
+                <div>
+                  <InputField
+                    label="Badge / Tag"
+                    value={req.badge}
+                    onChange={(v) => {
+                      const next = [...data.requirements];
+                      next[index] = { ...next[index], badge: v };
+                      update("requirements", next);
+                    }}
+                    placeholder="e.g. Mandatory or KYC"
+                  />
+                </div>
+              </div>
+
+              <TextareaField
+                label="Description & Guidance"
+                value={req.description}
+                onChange={(v) => {
+                  const next = [...data.requirements];
+                  next[index] = { ...next[index], description: v };
+                  update("requirements", next);
+                }}
+                rows={2}
+                placeholder="Details of what must be submitted or verified..."
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Platform Benefits */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h2 className="text-base font-black text-slate-900 tracking-tight">
+              Organiser Benefits & Features
+            </h2>
+            <p className="text-xs text-slate-400">
+              Why creators and promoters choose Mytix (e.g. mobile turnstile, gate staff isolation, fast payouts).
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              update("benefits", [
+                ...data.benefits,
+                { title: "New Benefit", desc: "Description of benefit..." }
+              ])
+            }
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Benefit
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {data.benefits.map((benefit, index) => (
+            <div
+              key={index}
+              className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2.5"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black uppercase text-slate-400">
+                  Benefit #{index + 1}
+                </span>
+                {data.benefits.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = data.benefits.filter((_, i) => i !== index);
+                      update("benefits", next);
+                    }}
+                    className="p-1 rounded-lg text-slate-400 hover:text-rose-600 transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <InputField
+                label="Benefit Title"
+                value={benefit.title}
+                onChange={(v) => {
+                  const next = [...data.benefits];
+                  next[index] = { ...next[index], title: v };
+                  update("benefits", next);
+                }}
+              />
+              <TextareaField
+                label="Benefit Details"
+                value={benefit.desc}
+                onChange={(v) => {
+                  const next = [...data.benefits];
+                  next[index] = { ...next[index], desc: v };
+                  update("benefits", next);
+                }}
+                rows={2}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Onboarding Steps */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+        <div className="pb-3 border-b border-slate-100">
+          <h2 className="text-base font-black text-slate-900 tracking-tight">
+            How It Works (3 Steps)
+          </h2>
+          <p className="text-xs text-slate-400">
+            Step-by-step onboarding walkthrough for new organizers.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {data.onboardingSteps.map((step, index) => (
+            <div
+              key={index}
+              className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2"
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center">
+                  {step.step || index + 1}
+                </span>
+                <span className="text-xs font-bold text-slate-600">Step {index + 1}</span>
+              </div>
+              <InputField
+                label="Title"
+                value={step.title}
+                onChange={(v) => {
+                  const next = [...data.onboardingSteps];
+                  next[index] = { ...next[index], title: v };
+                  update("onboardingSteps", next);
+                }}
+              />
+              <TextareaField
+                label="Description"
+                value={step.desc}
+                onChange={(v) => {
+                  const next = [...data.onboardingSteps];
+                  next[index] = { ...next[index], desc: v };
+                  update("onboardingSteps", next);
+                }}
+                rows={2}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Direct Contact Details */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+        <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+          <Building2 className="w-4 h-4 text-amber-500" />
+          <h2 className="text-base font-black text-slate-900 tracking-tight">
+            Partnership Contact Details
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <InputField
+            label="Section Heading"
+            value={data.contactDetails.heading}
+            onChange={(v) =>
+              update("contactDetails", { ...data.contactDetails, heading: v })
+            }
+          />
+          <InputField
+            label="Subheading"
+            value={data.contactDetails.subheading}
+            onChange={(v) =>
+              update("contactDetails", { ...data.contactDetails, subheading: v })
+            }
+          />
+          <InputField
+            label="Partnership Email"
+            value={data.contactDetails.email}
+            onChange={(v) =>
+              update("contactDetails", { ...data.contactDetails, email: v })
+            }
+            placeholder="organisers@mytix.com.au"
+          />
+          <InputField
+            label="Hotline Phone"
+            value={data.contactDetails.phone}
+            onChange={(v) =>
+              update("contactDetails", { ...data.contactDetails, phone: v })
+            }
+            placeholder="1800 698 490"
+          />
+          <InputField
+            label="Operating Hours"
+            value={data.contactDetails.hours}
+            onChange={(v) =>
+              update("contactDetails", { ...data.contactDetails, hours: v })
+            }
+            placeholder="Monday – Sunday: 24/7 Event Coverage"
+          />
+          <InputField
+            label="Headquarters Address"
+            value={data.contactDetails.address}
+            onChange={(v) =>
+              update("contactDetails", { ...data.contactDetails, address: v })
+            }
+            placeholder="Level 14, 120 Collins Street, Melbourne VIC"
+          />
+        </div>
       </div>
     </div>
   );

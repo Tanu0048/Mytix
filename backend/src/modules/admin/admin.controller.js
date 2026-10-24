@@ -380,3 +380,32 @@ export async function updateFaq(req, res, next) {
   }
 }
 
+// ----------------------------------------------------
+// ORGANISER REQUIREMENTS (Super-Admin CMS)
+// ----------------------------------------------------
+
+export async function getOrganiserRequirements(_req, res, next) {
+  try {
+    const requirements = await adminService.getOrganiserRequirements();
+    res.status(200).json({
+      success: true,
+      data: requirements
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateOrganiserRequirements(req, res, next) {
+  try {
+    const updated = await adminService.updateOrganiserRequirements(req.body);
+    res.status(200).json({
+      success: true,
+      data: updated
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
