@@ -13,7 +13,8 @@ import {
   Eye,
   EyeOff,
   Share2,
-  ExternalLink
+  ExternalLink,
+  ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -35,13 +36,23 @@ export default function SettingsPage() {
     phone: "",
   });
 
-  // Security State
+  // Password Security State
   const [passwords, setPasswords] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+
+  // Email Change State
+  const [emailForm, setEmailForm] = useState({
+    newEmail: "",
+    passwordConfirmation: "",
+  });
+  const [showEmailPassword, setShowEmailPassword] = useState(false);
+  const [isEmailSaving, setIsEmailSaving] = useState(false);
+  const [emailSuccessMsg, setEmailSuccessMsg] = useState("");
+  const [emailErrorMsg, setEmailErrorMsg] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -119,6 +130,53 @@ export default function SettingsPage() {
       setErrorMsg(err.response?.data?.error?.message || err.response?.data?.message || "Failed to update password. Please check your current password.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailForm.newEmail || !emailForm.newEmail.includes("@") || !emailForm.newEmail.includes(".")) {
+      setEmailErrorMsg("Please enter a valid new email address.");
+      return;
+    }
+    if (!emailForm.passwordConfirmation) {
+      setEmailErrorMsg("Please enter your current password to authorize this email change.");
+      return;
+    }
+    if (emailForm.newEmail.trim().toLowerCase() === user?.email?.toLowerCase()) {
+      setEmailErrorMsg("New email must be different from your current email.");
+      return;
+    }
+
+    setIsEmailSaving(true);
+    setEmailSuccessMsg("");
+    setEmailErrorMsg("");
+
+    try {
+      const res = await api.post("/users/change-email", {
+        newEmail: emailForm.newEmail.trim().toLowerCase(),
+        currentPassword: emailForm.passwordConfirmation,
+      });
+
+      if (res.data?.user) {
+        setUser({ ...user, ...res.data.user });
+      }
+      if (res.data?.accessToken) {
+        useAuthStore.getState().setToken(res.data.accessToken);
+      }
+
+      setEmailForm({ newEmail: "", passwordConfirmation: "" });
+      setEmailSuccessMsg("Login email successfully updated! Use this new email for future sign-ins.");
+      setTimeout(() => setEmailSuccessMsg(""), 5000);
+    } catch (err: any) {
+      console.error(err);
+      setEmailErrorMsg(
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        "Failed to change email. Please verify your current password."
+      );
+    } finally {
+      setIsEmailSaving(false);
     }
   };
 
@@ -309,79 +367,177 @@ export default function SettingsPage() {
       {activeTab === "security" && user?.role === "ADMIN" && (
         <div className="space-y-6">
           
-          <div className="bg-white rounded-3xl p-7 sm:p-9 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] space-y-6">
+          <div className="bg-white rounded-3xl p-7 sm:p-9 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] space-y-8">
             
-            <div className="flex items-start gap-3.5 pb-5 border-b border-slate-100">
+            <div className="flex items-start gap-3.5 pb-6 border-b border-slate-100">
               <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
-                <Lock className="w-5 h-5" />
+                <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900">Password & Authentication</h3>
+                <h3 className="text-base font-black text-slate-900">Account Access & Authentication</h3>
                 <p className="text-sm font-semibold text-slate-400 mt-0.5">
-                  Ensure your portal account is guarded with strong credentials.
+                  Update your platform login email and secure your administrator account with a strong password.
                 </p>
               </div>
             </div>
 
-            <form onSubmit={handlePasswordSubmit} className="max-w-md space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 lg:divide-x lg:divide-slate-100">
               
-              <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Current Password</label>
-                <div className="relative">
-                  <input
-                    required
-                    type={showPassword ? "text" : "password"}
-                    value={passwords.currentPassword}
-                    onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
-                    placeholder="••••••••••••"
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+              {/* Column 1: Change Login Email */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-2.5 pb-1">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-200/60 flex items-center justify-center text-blue-600">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900">Change Login Email</h4>
+                    <p className="text-xs font-semibold text-slate-400">Update the primary email used to access this dashboard</p>
+                  </div>
                 </div>
+
+                {emailSuccessMsg && (
+                  <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-bold animate-in fade-in">
+                    <Check className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+                    <span>{emailSuccessMsg}</span>
+                  </div>
+                )}
+
+                {emailErrorMsg && (
+                  <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-800 text-xs font-bold animate-in fade-in">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
+                    <span>{emailErrorMsg}</span>
+                  </div>
+                )}
+
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Current Active Email</span>
+                    <span className="text-sm font-bold text-slate-800 truncate block mt-0.5">{user?.email || "admin@mytix.example.com"}</span>
+                  </div>
+                  <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
+                    Active
+                  </span>
+                </div>
+
+                <form onSubmit={handleEmailSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">New Email Address</label>
+                    <input
+                      required
+                      type="email"
+                      value={emailForm.newEmail}
+                      onChange={(e) => setEmailForm({ ...emailForm, newEmail: e.target.value })}
+                      placeholder="admin@yourcompany.com"
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Current Password (to authorize change)</label>
+                    <div className="relative">
+                      <input
+                        required
+                        type={showEmailPassword ? "text" : "password"}
+                        value={emailForm.passwordConfirmation}
+                        onChange={(e) => setEmailForm({ ...emailForm, passwordConfirmation: e.target.value })}
+                        placeholder="Enter current password"
+                        className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 pr-11 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEmailPassword(!showEmailPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showEmailPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={isEmailSaving}
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 px-6 py-3 text-sm font-black text-white transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                    >
+                      <Mail className="w-4 h-4 stroke-[2.5]" />
+                      <span>{isEmailSaving ? "Updating Email..." : "Update Email Address"}</span>
+                    </button>
+                  </div>
+                </form>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">New Password</label>
-                <input
-                  required
-                  type={showPassword ? "text" : "password"}
-                  value={passwords.newPassword}
-                  onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                  placeholder="Min 8 characters"
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
-                />
+              {/* Column 2: Change Password */}
+              <div className="lg:pl-8 space-y-5">
+                <div className="flex items-center gap-2.5 pb-1">
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-900">Change Password</h4>
+                    <p className="text-xs font-semibold text-slate-400">Choose a new, secure password for your account</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Current Password</label>
+                    <div className="relative">
+                      <input
+                        required
+                        type={showPassword ? "text" : "password"}
+                        value={passwords.currentPassword}
+                        onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+                        placeholder="••••••••••••"
+                        className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 pr-11 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">New Password</label>
+                    <input
+                      required
+                      type={showPassword ? "text" : "password"}
+                      value={passwords.newPassword}
+                      onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                      placeholder="Min 8 characters"
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Confirm New Password</label>
+                    <input
+                      required
+                      type={showPassword ? "text" : "password"}
+                      value={passwords.confirmPassword}
+                      onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                      placeholder="Re-enter password"
+                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-7 py-3 text-sm font-black text-slate-950 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4 stroke-[2.5]" />
+                      <span>{isSaving ? "Updating..." : "Update Password"}</span>
+                    </button>
+                  </div>
+                </form>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">Confirm New Password</label>
-                <input
-                  required
-                  type={showPassword ? "text" : "password"}
-                  value={passwords.confirmPassword}
-                  onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                  placeholder="Re-enter password"
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
-                />
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-7 py-3 text-sm font-black text-slate-950 transition-all shadow-sm cursor-pointer disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4 stroke-[2.5]" />
-                  <span>{isSaving ? "Updating..." : "Update Password"}</span>
-                </button>
-              </div>
-
-            </form>
+            </div>
 
           </div>
 

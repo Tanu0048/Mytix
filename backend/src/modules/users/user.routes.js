@@ -4,6 +4,7 @@ import { authenticate } from "../../middleware/authenticate.js";
 import { validate } from "../../middleware/validate.js";
 import {
   changePasswordSchema,
+  changeEmailSchema,
   updateProfileSchema,
   followArtistSchema,
   paginationQuerySchema
@@ -14,6 +15,7 @@ const router = Router();
 router.get("/", authenticate, userController.getProfile);
 router.patch("/", authenticate, validate(updateProfileSchema), userController.updateProfile);
 router.post("/change-password", authenticate, validate(changePasswordSchema), userController.changePassword);
+router.post("/change-email", authenticate, validate(changeEmailSchema), userController.changeEmail);
 router.get("/orders", authenticate, validate(paginationQuerySchema), userController.getOrders);
 router.get("/tickets", authenticate, validate(paginationQuerySchema), userController.getTickets);
 router.get("/follows", authenticate, userController.getFollows);

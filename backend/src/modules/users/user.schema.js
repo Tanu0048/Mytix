@@ -8,6 +8,13 @@ export const changePasswordSchema = {
   })
 };
 
+export const changeEmailSchema = {
+  body: z.object({
+    newEmail: z.string().email("A valid email address is required.").toLowerCase(),
+    currentPassword: z.string().min(1, "Current password is required to change email.")
+  })
+};
+
 export const updateProfileSchema = {
   body: z.object({
     name: z.string().min(2).max(100).optional(),

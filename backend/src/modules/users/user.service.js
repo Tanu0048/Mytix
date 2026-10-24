@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { pgboss } from "../../lib/pgboss.js";
 import { hashPassword, verifyPassword } from "../auth/password.service.js";
-import { createRefreshToken } from "../auth/token.service.js";
+import { createRefreshToken, generateAccessToken } from "../auth/token.service.js";
 import { AppError } from "../../utils/errors.js";
 import { parseCursorPagination, formatPaginatedResponse } from "../../utils/pagination.js";
 
@@ -103,6 +103,67 @@ export async function changeUserPassword(userId, currentPassword, newPassword) {
   }).catch(() => {});
 
   return { message: "Password updated successfully.", newRefreshToken };
+}
+
+export async function changeUserEmail(userId, currentPassword, newEmail) {
+  const normalizedEmail = newEmail.trim().toLowerCase();
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId }
+  });
+
+  if (!user) {
+    throw new AppError("NOT_FOUND", 404, "User not found.");
+  }
+
+  if (user.role === "ORGANISER") {
+    throw new AppError(
+      "FORBIDDEN",
+      403,
+      "Organisers cannot change their own email. Please contact platform administration."
+    );
+  }
+
+  if (user.email === normalizedEmail) {
+    throw new AppError("BAD_REQUEST", 400, "New email cannot be the same as current email.");
+  }
+
+  if (!user.passwordHash) {
+    throw new AppError("INVALID_CREDENTIALS", 400, "Cannot change email without an active password.");
+  }
+
+  const isValid = await verifyPassword(user.passwordHash, currentPassword);
+  if (!isValid) {
+    throw new AppError("INVALID_CREDENTIALS", 401, "Current password is incorrect.");
+  }
+
+  // Check if new email is already registered
+  const existing = await prisma.user.findUnique({
+    where: { email: normalizedEmail }
+  });
+  if (existing && existing.id !== userId) {
+    throw new AppError("CONFLICT", 409, "This email address is already registered to another account.");
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: { email: normalizedEmail },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      createdAt: true
+    }
+  });
+
+  const accessToken = generateAccessToken(updatedUser);
+
+  return {
+    message: "Email address successfully updated.",
+    user: updatedUser,
+    accessToken
+  };
 }
 
 export async function getUserOrders(userId, query) {
