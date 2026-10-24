@@ -86,6 +86,11 @@ export default function OrganisersPage() {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetError, setResetError] = useState("");
   const [isResetSubmitting, setIsResetSubmitting] = useState(false);
+  const [savedResetCredentials, setSavedResetCredentials] = useState<{
+    businessName: string;
+    password: string;
+  } | null>(null);
+  const [copiedResetPassword, setCopiedResetPassword] = useState(false);
 
   // Delete Organiser Modal State
   const [deleteModalTarget, setDeleteModalTarget] = useState<Organiser | null>(null);
@@ -232,7 +237,10 @@ export default function OrganisersPage() {
     setIsResetSubmitting(true);
     try {
       await api.patch(`/admin/organisers/${resetModalTarget.id}/reset-password`, { newPassword });
-      showToast(`Password successfully reset for ${resetModalTarget.businessName}!`);
+      setSavedResetCredentials({
+        businessName: resetModalTarget.businessName,
+        password: newPassword,
+      });
       setResetModalTarget(null);
       setNewPassword("");
       setOpenDropdown(null);
@@ -1015,10 +1023,80 @@ export default function OrganisersPage() {
                   disabled={isResetSubmitting}
                   className="px-6 py-2.5 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-black text-slate-950 transition-all shadow-xs disabled:opacity-60 cursor-pointer"
                 >
-                  {isResetSubmitting ? "Resetting..." : "Save New Password"}
+                  {isResetSubmitting ? "Changing..." : "Confirm & Change Password"}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* ===== MODAL: PREVIEW & COPY RESET PASSWORD ===== */}
+      {/* ========================================================================= */}
+      {savedResetCredentials && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center mx-auto">
+              <CheckCircle className="w-6 h-6" />
+            </div>
+
+            <div>
+              <h3 className="text-xl font-black text-slate-900">Password Changed</h3>
+              <p className="text-xs text-slate-400 font-bold mt-0.5">
+                {savedResetCredentials.businessName}
+              </p>
+            </div>
+
+            <div className="text-left space-y-1.5 pt-1">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
+                New Password
+              </label>
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 font-mono text-sm font-bold text-slate-900">
+                <span className="select-all tracking-wider">{savedResetCredentials.password}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(savedResetCredentials.password);
+                    setCopiedResetPassword(true);
+                    setTimeout(() => setCopiedResetPassword(false), 2000);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition shadow-2xs active:scale-95 cursor-pointer"
+                >
+                  {copiedResetPassword ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700 font-extrabold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Warning Message */}
+            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-bold leading-relaxed text-left flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p>
+                Store the password safely. After closing this window, this password will not be shown again.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSavedResetCredentials(null);
+                setCopiedResetPassword(false);
+                showToast("Password saved and stored safely.");
+              }}
+              className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition cursor-pointer active:scale-98"
+            >
+              Done / I Have Stored The Password
+            </button>
           </div>
         </div>
       )}

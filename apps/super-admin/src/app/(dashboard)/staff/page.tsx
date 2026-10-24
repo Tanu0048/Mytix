@@ -19,7 +19,10 @@ import {
   Sparkles,
   ToggleLeft,
   ToggleRight,
-  Search
+  Search,
+  Copy,
+  Check,
+  AlertCircle
 } from "lucide-react";
 import api from "@/lib/api";
 
@@ -63,6 +66,16 @@ export default function StaffManagementPage() {
   const [newPassword, setNewPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+
+  // Saved Staff Credentials Preview Modal (2-step confirmation)
+  const [savedStaffCredentials, setSavedStaffCredentials] = useState<{
+    staffId: string;
+    staffName: string;
+    password: string;
+    gate?: string;
+    isNew?: boolean;
+  } | null>(null);
+  const [copiedStaffPassword, setCopiedStaffPassword] = useState(false);
 
   useEffect(() => {
     fetchStaffAndEvents();
@@ -117,9 +130,14 @@ export default function StaffManagementPage() {
       if (res.data?.data) {
         setStaffList(prev => [res.data.data, ...prev]);
       }
+      setSavedStaffCredentials({
+        staffId: addForm.staffId,
+        staffName: addForm.name,
+        password: addForm.password,
+        gate: addForm.assignedGate,
+        isNew: true
+      });
       setShowAddModal(false);
-      setSuccessMsg(`Staff member ${addForm.staffId} created successfully! Give them their Staff ID & Password.`);
-      setTimeout(() => setSuccessMsg(""), 5000);
     } catch (err: any) {
       setErrorMsg(err.response?.data?.message || err.response?.data?.error?.message || "Failed to create staff member.");
     } finally {
@@ -147,11 +165,16 @@ export default function StaffManagementPage() {
 
     try {
       await api.patch(`/organiser/staff/${selectedStaff.id}/password`, { password: newPassword });
+      setSavedStaffCredentials({
+        staffId: selectedStaff.staffId,
+        staffName: selectedStaff.name,
+        password: newPassword,
+        gate: selectedStaff.assignedGate || undefined,
+        isNew: false
+      });
       setShowPasswordModal(false);
       setSelectedStaff(null);
       setNewPassword("");
-      setSuccessMsg(`Password for ${selectedStaff.staffId} successfully updated!`);
-      setTimeout(() => setSuccessMsg(""), 4000);
     } catch (err: any) {
       setErrorMsg(err.response?.data?.message || "Failed to update staff password.");
     } finally {
@@ -621,10 +644,96 @@ export default function StaffManagementPage() {
                   disabled={savingPassword}
                   className="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition disabled:opacity-60 cursor-pointer"
                 >
-                  {savingPassword ? "Updating..." : "Update Password"}
+                  {savingPassword ? "Changing..." : "Confirm & Change Password"}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: PREVIEW & COPY SAVED STAFF CREDENTIALS ================= */}
+      {savedStaffCredentials && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-2xl text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+
+            <div>
+              <h3 className="text-xl font-black text-slate-900">
+                {savedStaffCredentials.isNew ? "Staff Account Created" : "Password Changed"}
+              </h3>
+              <p className="text-xs text-slate-400 font-bold mt-0.5">
+                {savedStaffCredentials.staffName} ({savedStaffCredentials.staffId})
+              </p>
+            </div>
+
+            {/* Credentials Card */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-left space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 text-xs">
+                <span className="font-bold text-slate-500">Staff Login ID:</span>
+                <span className="font-extrabold text-slate-900 font-mono text-sm tracking-wider">{savedStaffCredentials.staffId}</span>
+              </div>
+
+              {savedStaffCredentials.gate && (
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 text-xs">
+                  <span className="font-bold text-slate-500">Assigned Gate:</span>
+                  <span className="font-bold text-slate-800">{savedStaffCredentials.gate}</span>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                  Password
+                </span>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-sm font-bold text-slate-900">
+                  <span className="select-all tracking-wider">{savedStaffCredentials.password}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(savedStaffCredentials.password);
+                      setCopiedStaffPassword(true);
+                      setTimeout(() => setCopiedStaffPassword(false), 2000);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition active:scale-95 cursor-pointer"
+                  >
+                    {copiedStaffPassword ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-emerald-700 font-extrabold">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Warning Message */}
+            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-bold leading-relaxed text-left flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p>
+                Store the password safely. After closing this window, this password will not be shown again.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSavedStaffCredentials(null);
+                setCopiedStaffPassword(false);
+                setSuccessMsg(savedStaffCredentials.isNew ? "Staff credentials recorded." : "Staff password saved.");
+                setTimeout(() => setSuccessMsg(""), 3500);
+              }}
+              className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition cursor-pointer active:scale-98"
+            >
+              Done / I Have Stored The Password
+            </button>
           </div>
         </div>
       )}
