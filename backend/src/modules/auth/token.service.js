@@ -10,8 +10,13 @@ export function generateAccessToken(user, options = {}) {
   return signAccessToken(
     {
       sub: user.id,
-      email: user.email,
-      role: user.role
+      email: user.email || user.staffId,
+      role: user.role,
+      staffId: user.staffId,
+      name: user.name,
+      organiserId: user.organiserId,
+      eventId: user.eventId,
+      assignedGate: user.assignedGate
     },
     { expiresIn }
   );

@@ -71,3 +71,43 @@ export const deleteVenue = asyncHandler(async (req, res) => {
   res.status(200).json(result);
 });
 
+// Staff Management Handlers
+export const listStaff = asyncHandler(async (req, res) => {
+  const staff = await organiserService.listOrganiserStaff(req.user.id, req.user.role);
+  res.status(200).json({ success: true, data: staff });
+});
+
+export const createStaff = asyncHandler(async (req, res) => {
+  const staff = await organiserService.createOrganiserStaff(req.user.id, req.user.role, req.body);
+  res.status(201).json({ success: true, data: staff });
+});
+
+export const updateStaffPassword = asyncHandler(async (req, res) => {
+  const result = await organiserService.updateStaffPassword(
+    req.user.id,
+    req.user.role,
+    req.params.id,
+    req.body.password
+  );
+  res.status(200).json(result);
+});
+
+export const toggleStaffStatus = asyncHandler(async (req, res) => {
+  const result = await organiserService.toggleStaffStatus(
+    req.user.id,
+    req.user.role,
+    req.params.id,
+    req.body.isActive
+  );
+  res.status(200).json(result);
+});
+
+export const deleteStaff = asyncHandler(async (req, res) => {
+  const result = await organiserService.deleteOrganiserStaff(
+    req.user.id,
+    req.user.role,
+    req.params.id
+  );
+  res.status(200).json(result);
+});
+

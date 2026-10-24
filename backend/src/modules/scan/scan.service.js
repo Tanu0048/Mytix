@@ -6,8 +6,22 @@ import { AppError } from "../../utils/errors.js";
 /**
  * Validates organiser authorization for an event.
  */
-async function verifyOrganiserEventAccess(userId, userRole, eventId) {
+async function verifyOrganiserEventAccess(userId, userRole, eventId, staffOrganiserId, staffEventId) {
   if (userRole === "ADMIN") return true;
+
+  if (userRole === "STAFF") {
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: { organiserId: true }
+    });
+    if (!event || event.organiserId !== staffOrganiserId) {
+      throw new AppError("FORBIDDEN", 403, "You do not have permission to scan tickets for this organiser's event.");
+    }
+    if (staffEventId && eventId !== staffEventId) {
+      throw new AppError("FORBIDDEN", 403, "This ticket is for a different event than your assigned gate.");
+    }
+    return true;
+  }
 
   const organiser = await prisma.organiser.findUnique({
     where: { userId }
@@ -32,7 +46,7 @@ async function verifyOrganiserEventAccess(userId, userRole, eventId) {
 /**
  * Online turnstile scan execution with atomic CAS status update and scan telemetry.
  */
-export async function processOnlineScan({ qrToken, gate, deviceId, userId, userRole }) {
+export async function processOnlineScan({ qrToken, gate, deviceId, userId, userRole, staffId, staffOrganiserId, staffEventId }) {
   const now = new Date();
 
   // 1. Offline cryptographic verification (Spot fakes instantly)
@@ -76,7 +90,7 @@ export async function processOnlineScan({ qrToken, gate, deviceId, userId, userR
   }
 
   // Check event access
-  await verifyOrganiserEventAccess(userId, userRole, ticket.order.event.id);
+  await verifyOrganiserEventAccess(userId, userRole, ticket.order.event.id, staffOrganiserId, staffEventId);
 
   const event = ticket.order.event;
   if (event.status === "CANCELLED") {
@@ -150,6 +164,7 @@ export async function processOnlineScan({ qrToken, gate, deviceId, userId, userR
         ticketId: ticket.id,
         gate,
         deviceId,
+        staffId: staffId || null,
         result: "VALID",
         scannedAt: now
       }
@@ -341,3 +356,149 @@ export async function getLiveScanStats(eventId, userId, userRole) {
     gateBreakdown
   };
 }
+
+export async function searchEventAttendees({ eventId, query, userId, userRole, staffOrganiserId }) {
+  await verifyOrganiserEventAccess(userId, userRole, eventId, staffOrganiserId);
+  const clean = (query || "").trim();
+  if (!clean || clean.length < 2) return [];
+
+  const tickets = await prisma.ticket.findMany({
+    where: {
+      order: {
+        eventId,
+        status: "PAID"
+      },
+      OR: [
+        { attendeeName: { contains: clean, mode: "insensitive" } },
+        { order: { user: { name: { contains: clean, mode: "insensitive" } } } },
+        { order: { user: { email: { contains: clean, mode: "insensitive" } } } }
+      ]
+    },
+    take: 25,
+    include: {
+      order: {
+        include: {
+          user: { select: { name: true, email: true } },
+          items: { include: { ticketType: { select: { name: true } } } }
+        }
+      }
+    }
+  });
+
+  return tickets.map(t => ({
+    id: t.id,
+    attendeeName: t.attendeeName || t.order.user.name,
+    orderId: t.orderId,
+    ticketTypeName: t.order.items[0]?.ticketType?.name || "General Admission",
+    status: t.status,
+    usedAt: t.usedAt,
+    usedGate: t.usedGate,
+    seat: t.seat
+  }));
+}
+
+export async function manualCheckInTicket({ ticketId, gate, userId, userRole, staffOrganiserId, staffId }) {
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: {
+      order: {
+        include: {
+          event: { select: { id: true, title: true, organiserId: true, status: true } },
+          items: { include: { ticketType: { select: { name: true } } } }
+        }
+      }
+    }
+  });
+
+  if (!ticket) {
+    throw new AppError("NOT_FOUND", 404, "Ticket not found.");
+  }
+
+  await verifyOrganiserEventAccess(userId, userRole, ticket.order.event.id, staffOrganiserId);
+
+  if (ticket.status === "USED") {
+    return {
+      success: false,
+      alreadyUsed: true,
+      message: `Already checked in at ${ticket.usedGate || "gate"} on ${ticket.usedAt?.toLocaleTimeString()}`
+    };
+  }
+
+  const now = new Date();
+  await prisma.ticket.update({
+    where: { id: ticket.id },
+    data: {
+      status: "USED",
+      usedAt: now,
+      usedGate: gate || "Manual Desk"
+    }
+  });
+
+  await prisma.scanLog.create({
+    data: {
+      ticketId: ticket.id,
+      gate: gate || "Manual Desk",
+      deviceId: "manual-checkin",
+      staffId: staffId || null,
+      result: "VALID",
+      scannedAt: now
+    }
+  });
+
+  return {
+    success: true,
+    attendeeName: ticket.attendeeName,
+    ticketTypeName: ticket.order.items[0]?.ticketType?.name || "General Admission",
+    message: "Manually checked in successfully."
+  };
+}
+
+export async function getStaffAccessibleEvents(userId, userRole, staffOrganiserId, staffEventId) {
+  if (userRole === "STAFF") {
+    const where = {
+      organiserId: staffOrganiserId,
+      status: "PUBLISHED"
+    };
+    if (staffEventId) {
+      where.id = staffEventId;
+    }
+    return prisma.event.findMany({
+      where,
+      select: {
+        id: true,
+        title: true,
+        startsAt: true,
+        venue: { select: { name: true, city: true } }
+      },
+      orderBy: { startsAt: "asc" }
+    });
+  }
+
+  if (userRole === "ORGANISER") {
+    const organiser = await prisma.organiser.findUnique({ where: { userId } });
+    if (!organiser) return [];
+    return prisma.event.findMany({
+      where: { organiserId: organiser.id, status: "PUBLISHED" },
+      select: {
+        id: true,
+        title: true,
+        startsAt: true,
+        venue: { select: { name: true, city: true } }
+      },
+      orderBy: { startsAt: "asc" }
+    });
+  }
+
+  // Admin
+  return prisma.event.findMany({
+    where: { status: "PUBLISHED" },
+    select: {
+      id: true,
+      title: true,
+      startsAt: true,
+      venue: { select: { name: true, city: true } }
+    },
+    orderBy: { startsAt: "asc" }
+  });
+}
+

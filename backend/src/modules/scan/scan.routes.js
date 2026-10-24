@@ -12,18 +12,42 @@ import {
   scanTicketHandler,
   exportManifestHandler,
   syncOfflineScansHandler,
-  getScanStatsHandler
+  getScanStatsHandler,
+  searchAttendeesHandler,
+  manualCheckinHandler,
+  getAccessibleEventsHandler
 } from "./scan.controller.js";
 
 export const scanRouter = Router();
 
-// Scanning endpoints are strictly restricted to event Organisers and Admins
+// Scanning & Gate Check-In endpoints for Organisers, Admins, and Staff
 scanRouter.post(
   "/",
   authenticate,
-  authorize("ORGANISER", "ADMIN"),
+  authorize("ORGANISER", "ADMIN", "STAFF"),
   validate(scanTicketSchema),
   scanTicketHandler
+);
+
+scanRouter.get(
+  "/events",
+  authenticate,
+  authorize("ORGANISER", "ADMIN", "STAFF"),
+  getAccessibleEventsHandler
+);
+
+scanRouter.get(
+  "/search",
+  authenticate,
+  authorize("ORGANISER", "ADMIN", "STAFF"),
+  searchAttendeesHandler
+);
+
+scanRouter.post(
+  "/manual-checkin",
+  authenticate,
+  authorize("ORGANISER", "ADMIN", "STAFF"),
+  manualCheckinHandler
 );
 
 scanRouter.get(
@@ -37,7 +61,7 @@ scanRouter.get(
 scanRouter.post(
   "/sync",
   authenticate,
-  authorize("ORGANISER", "ADMIN"),
+  authorize("ORGANISER", "ADMIN", "STAFF"),
   validate(scanSyncSchema),
   syncOfflineScansHandler
 );
@@ -45,7 +69,7 @@ scanRouter.post(
 scanRouter.get(
   "/stats/:eventId",
   authenticate,
-  authorize("ORGANISER", "ADMIN"),
+  authorize("ORGANISER", "ADMIN", "STAFF"),
   validate(scanStatsParamSchema),
   getScanStatsHandler
 );

@@ -22,7 +22,8 @@ import {
   MapPin,
   FileText,
   Share2,
-  BookOpen
+  BookOpen,
+  QrCode
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -40,6 +41,7 @@ export default function Sidebar() {
   const adminNavItems = [
     { name: "Overview", href: "/", icon: LayoutDashboard },
     { name: "Events", href: "/events", icon: CalendarDays },
+    { name: "Gate Staff", href: "/staff", icon: QrCode },
     { name: "Venues & Cities", href: "/venues", icon: MapPin },
     { name: "Banners", href: "/banners", icon: ImageIcon },
     { name: "Organisers", href: "/organisers", icon: Users },
@@ -55,6 +57,7 @@ export default function Sidebar() {
   const organiserNavItems = [
     { name: "Overview", href: "/", icon: LayoutDashboard },
     { name: "Events", href: "/events", icon: CalendarDays },
+    { name: "Gate Staff", href: "/staff", icon: QrCode },
     { name: "Venues & Cities", href: "/venues", icon: MapPin },
     { name: "Orders", href: "/orders", icon: ShoppingBag },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },

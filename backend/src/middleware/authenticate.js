@@ -17,6 +17,27 @@ export async function authenticate(req, _res, next) {
     const payload = verifyAccessToken(token);
     let role = payload.role;
 
+    // Handle STAFF authentication
+    if (payload.role === "STAFF") {
+      const dbStaff = await prisma.staff.findUnique({
+        where: { id: payload.sub }
+      });
+      if (!dbStaff || !dbStaff.isActive) {
+        return next(new AppError("FORBIDDEN", 403, "Staff access has been revoked by the event organiser."));
+      }
+
+      req.user = {
+        id: dbStaff.id,
+        role: "STAFF",
+        staffId: dbStaff.staffId,
+        name: dbStaff.name,
+        organiserId: dbStaff.organiserId,
+        eventId: dbStaff.eventId,
+        assignedGate: dbStaff.assignedGate
+      };
+      return next();
+    }
+
     // Fetch live role from DB so role promotions (e.g. to ADMIN) reflect immediately without requiring re-login
     try {
       const dbUser = await prisma.user.findUnique({
