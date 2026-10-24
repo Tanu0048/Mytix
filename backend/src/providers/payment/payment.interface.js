@@ -49,4 +49,13 @@ export class PaymentProvider {
   async createRefund(_params) {
     throw new Error("Method createRefund() must be implemented.");
   }
+
+  /**
+   * Retrieve all refunds associated with a payment intent for reconciliation.
+   * @param {string} paymentIntentId
+   * @returns {Promise<Array<{ id: string, amount: number, status: string }>>}
+   */
+  async getPaymentRefunds(_paymentIntentId) {
+    throw new Error("Method getPaymentRefunds() must be implemented.");
+  }
 }

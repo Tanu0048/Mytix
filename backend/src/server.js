@@ -16,6 +16,14 @@ const server = app.listen(env.PORT, async () => {
   } catch (err) {
     logger.error("Failed to start background worker service", { error: err.message });
   }
+
+  // Resume any interrupted event cancellations from PostgreSQL after restart
+  try {
+    const { resumeInterruptedEventRefunds } = await import("./modules/admin/admin.service.js");
+    await resumeInterruptedEventRefunds();
+  } catch (err) {
+    logger.error("Failed to resume interrupted event refunds on startup", { error: err.message });
+  }
 });
 
 async function gracefulShutdown(signal) {

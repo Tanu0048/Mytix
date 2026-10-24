@@ -203,7 +203,8 @@ export async function cancelEvent(req, res, next) {
       req.body?.reason,
       req.user.id
     );
-    res.status(200).json({
+    const statusCode = result.isBackground ? 202 : 200;
+    res.status(statusCode).json({
       success: true,
       data: result
     });

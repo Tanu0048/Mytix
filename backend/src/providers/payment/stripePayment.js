@@ -109,9 +109,32 @@ export class StripePaymentProvider extends PaymentProvider {
     } catch (err) {
       logger.error("Failed to process Stripe refund", {
         paymentIntentId,
+        error: err.message,
+        type: err.type
+      });
+      const appErr = new AppError("REFUND_FAILED", err.statusCode || 500, `Refund processing failed: ${err.message}`);
+      appErr.originalError = err;
+      appErr.type = err.type;
+      appErr.code = err.code;
+      throw appErr;
+    }
+  }
+
+  async getPaymentRefunds(paymentIntentId) {
+    const stripe = this.ensureClient();
+    try {
+      const list = await stripe.refunds.list({ payment_intent: paymentIntentId });
+      return (list.data || []).map((r) => ({
+        id: r.id,
+        amount: r.amount,
+        status: r.status
+      }));
+    } catch (err) {
+      logger.error("Failed to list Stripe refunds for PaymentIntent", {
+        paymentIntentId,
         error: err.message
       });
-      throw new AppError("REFUND_FAILED", 500, `Refund processing failed: ${err.message}`);
+      throw new AppError("REFUND_LOOKUP_FAILED", 500, `Refund lookup failed: ${err.message}`);
     }
   }
 }
