@@ -2,13 +2,14 @@ import { prisma } from "../../lib/prisma.js";
 import { logger } from "../../lib/logger.js";
 
 /**
- * Default Australian domestic card pricing parameters.
- * Domestic card surcharge: 1.7% + 30c AUD.
+ * Default platform pricing parameters.
+ * Flat fee: 4.0% (covers domestic, international card processing and platform margin).
+ * Fixed transaction fee: 0c AUD.
  */
 const DEFAULT_RATES = {
   buyerPaysStripeFee: true,
-  percent: 0.017,
-  fixedCents: 30
+  percent: 0.04,
+  fixedCents: 0
 };
 
 /**
