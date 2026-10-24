@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -104,13 +105,15 @@ export default function AuthPage() {
 
         {/* Top Brand Logo */}
         <div className="relative z-10 flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-amber-300 text-slate-950 shadow-lg shadow-amber-500/25 group-hover:scale-105 transition-transform">
-              <Ticket className="w-5 h-5 stroke-[2.5]" />
-            </div>
-            <span className="text-2xl font-black tracking-tight text-white lowercase">
-              mytix
-            </span>
+          <Link href="/" className="flex items-center group">
+            <Image 
+              src="/mytix-logo-white.png" 
+              alt="Mytix" 
+              width={140} 
+              height={46} 
+              priority
+              className="h-9 w-auto object-contain group-hover:scale-105 transition-transform"
+            />
           </Link>
         </div>
 
@@ -195,8 +198,15 @@ export default function AuthPage() {
 
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200/70 text-amber-600 mb-3 shadow-inner">
-              <Ticket className="w-6 h-6 stroke-[2.2]" />
+            <div className="flex justify-center mb-4">
+              <Image 
+                src="/mytix-logo.png" 
+                alt="Mytix" 
+                width={130} 
+                height={42} 
+                priority
+                className="h-8.5 w-auto object-contain"
+              />
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               {isLogin ? 'Welcome back' : 'Create an account'}

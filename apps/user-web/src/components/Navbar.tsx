@@ -144,8 +144,15 @@ export default function Navbar() {
       <nav className="bg-white px-3 sm:px-4 py-3 border-b border-gray-100 sticky top-0 z-50 text-gray-800 shadow-xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 md:gap-8">
           <div className="flex items-center gap-3 sm:gap-6">
-            <Link href="/" className="text-xl sm:text-2xl font-black tracking-tight cursor-pointer text-gray-900 flex items-center shrink-0">
-              Myt<span className="text-yellow-500">ix</span>
+            <Link href="/" className="flex items-center shrink-0 py-1">
+              <Image 
+                src="/mytix-logo.png" 
+                alt="Mytix" 
+                width={125} 
+                height={40} 
+                priority 
+                className="h-8 sm:h-9 w-auto object-contain"
+              />
             </Link>
             
             <Link href="/events" className="hidden lg:block text-sm font-semibold text-gray-600 hover:text-black transition-colors">

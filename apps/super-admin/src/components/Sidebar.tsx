@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
@@ -74,10 +75,16 @@ export default function Sidebar() {
           <div className="flex flex-col items-center pt-6 pb-4">
             <button
               onClick={toggleSidebar}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-tr from-amber-500 to-amber-300 text-white shadow-md shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200/80 p-1.5 shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer overflow-hidden"
               title="Expand menu (Mytix)"
             >
-              <span className="text-2xl font-black tracking-tighter">M</span>
+              <Image 
+                src="/mytix-logo.png" 
+                alt="Mytix" 
+                width={36} 
+                height={36} 
+                className="w-full h-full object-contain"
+              />
             </button>
             <button
               onClick={toggleSidebar}
@@ -89,19 +96,16 @@ export default function Sidebar() {
           </div>
         ) : (
           <div className="flex items-center justify-between px-6 pt-7 pb-6">
-            <div className="flex items-center">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-tr from-amber-500 to-amber-300 text-white shadow-md shadow-amber-500/20">
-                <span className="text-2xl font-black tracking-tighter">M</span>
-              </div>
-              <div className="ml-3.5 flex flex-col">
-                <span className="text-xl font-extrabold tracking-tight text-slate-900 leading-tight">
-                  Mytix
-                </span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                  Event Organiser Panel
-                </span>
-              </div>
-            </div>
+            <Link href="/" className="flex items-center">
+              <Image 
+                src="/mytix-logo.png" 
+                alt="Mytix" 
+                width={130} 
+                height={42} 
+                priority
+                className="h-8.5 w-auto object-contain"
+              />
+            </Link>
 
             <button
               onClick={toggleSidebar}

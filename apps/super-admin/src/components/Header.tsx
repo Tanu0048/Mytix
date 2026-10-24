@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import Image from "next/image";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
 import { ChevronDown, PanelLeft } from "lucide-react";
@@ -15,7 +17,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100/80 px-8 py-4 flex items-center justify-between">
       
-      {/* Left side: Toggle button */}
+      {/* Left side: Toggle button and Mobile Brand Logo */}
       <div className="flex items-center gap-3">
         <button
           onClick={toggleSidebar}
@@ -24,6 +26,16 @@ export default function Header() {
         >
           <PanelLeft className="w-4 h-4" />
         </button>
+        <Link href="/" className="lg:hidden flex items-center">
+          <Image 
+            src="/mytix-logo.png" 
+            alt="Mytix" 
+            width={110} 
+            height={36} 
+            priority 
+            className="h-7 w-auto object-contain"
+          />
+        </Link>
       </div>
 
       {/* Right Controls: User Profile Pill */}

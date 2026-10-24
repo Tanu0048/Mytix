@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { CircleHelp, Ticket } from 'lucide-react';
 import { API_BASE } from '@/config/api';
@@ -89,8 +90,14 @@ export default function Footer() {
 
         {/* Logo and Dynamic Socials */}
         <div className="flex flex-col items-center pt-8 border-t border-gray-600">
-          <div className="text-3xl font-black tracking-tighter text-white mb-6">
-            Mytix<span className="text-red-500">.</span>
+          <div className="mb-6">
+            <Image 
+              src="/mytix-logo-white.png" 
+              alt="Mytix" 
+              width={140} 
+              height={45} 
+              className="h-9 w-auto object-contain"
+            />
           </div>
 
           {/* Social Icons row matching wireframe: circle with first letter + label below */}
