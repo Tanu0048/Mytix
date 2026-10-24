@@ -8,20 +8,18 @@ import {
   DollarSign, 
   Ticket, 
   CheckCircle2, 
-  Clock, 
-  XCircle, 
-  AlertCircle,
   Eye, 
   RefreshCw,
-  ExternalLink,
-  ChevronDown,
   X,
   User,
   MapPin,
   Calendar,
   CreditCard,
   Copy,
-  Check
+  Check,
+  Filter,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -35,12 +33,15 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Pagination Controls (Frontend Hygiene)
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
   const user = useAuthStore((state) => state.user);
 
   const fetchOrders = async () => {
     try {
       setIsRefreshing(true);
-      // Try organiser orders first, fallback to admin orders
       let res;
       try {
         res = await api.get("/organiser/orders");
@@ -87,6 +88,12 @@ export default function OrdersPage() {
     });
   }, [orders, statusFilter, searchQuery]);
 
+  // Pagination Calculations
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const paginatedOrders = useMemo(() => {
+    return filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredOrders, currentPage, pageSize]);
+
   // Derived Metrics
   const totalOrdersCount = orders.length;
   
@@ -112,7 +119,7 @@ export default function OrdersPage() {
 
   // Format Currency
   const formatCurrency = (cents: number, currency: string = "INR") => {
-    const symbol = currency === "INR" ? "$" : "$";
+    const symbol = "$";
     return `${symbol}${(cents / 100).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
@@ -156,35 +163,31 @@ export default function OrdersPage() {
     switch (status) {
       case "PAID":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
             PAID
           </span>
         );
       case "PENDING":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-amber-50 text-amber-700 border border-amber-200/80 shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200/60">
             PENDING
           </span>
         );
       case "FAILED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-red-50 text-red-700 border border-red-200/80 shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60">
             FAILED
           </span>
         );
       case "CANCELLED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-slate-100 text-slate-700 border border-slate-200/80 shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200/60">
             CANCELLED
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-slate-50 text-slate-700 border border-slate-200">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200/60">
             {status}
           </span>
         );
@@ -192,31 +195,24 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 pb-24 relative">
-      {/* Ambient background glow */}
-      <div className="absolute -top-12 -right-12 w-80 h-80 bg-amber-200/15 rounded-full blur-3xl pointer-events-none -z-10" />
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 pb-20 max-w-7xl">
 
-      {/* ===== HEADER ===== */}
-      <header className="mb-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* ===== CLEAN HEADER ===== */}
+      <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-100/80 border border-amber-200/60 text-amber-900 text-[10px] font-extrabold uppercase tracking-wider">
-              Real-time Ledger
-            </span>
-          </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">
-            Orders & <span className="text-amber-500">Sales</span>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Orders & Sales
           </h1>
-          <p className="mt-1 text-sm font-semibold text-slate-400">
-            Track customer ticket orders, transactions, and payment statuses.
+          <p className="mt-1 text-sm text-slate-500">
+            Real-time customer transactions, payment settlements, and order history.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={fetchOrders}
             disabled={isRefreshing}
-            className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white hover:bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 transition-all shadow-xs cursor-pointer disabled:opacity-50"
             title="Refresh Orders"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-amber-600" : "text-slate-400"}`} />
@@ -226,219 +222,177 @@ export default function OrdersPage() {
           <button
             onClick={handleExportCSV}
             disabled={filteredOrders.length === 0}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-extrabold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Download className="h-4 w-4 stroke-[2.5]" />
-            <span>Export CSV</span>
+            <Download className="h-3.5 w-3.5" />
+            <span>Excel / CSV</span>
           </button>
         </div>
       </header>
 
-      {/* ===== 4 STAT CARDS ===== */}
+      {/* ===== 4 CLEAN STAT CARDS (REFERENCE STYLE) ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         
         {/* Card 1: Total Orders */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-amber-600" />
-            </div>
-            <svg className="w-16 h-8 text-amber-400 stroke-current fill-none stroke-[2.5]" viewBox="0 0 64 32">
-              <path d="M2 26 Q 20 22, 32 14 T 62 6" />
-            </svg>
-          </div>
+        <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Orders</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">{totalOrdersCount}</p>
-            <p className="text-[11px] font-bold text-emerald-600 mt-1.5 flex items-center gap-1">
-              <span>↑ Live</span> <span className="text-slate-400 font-medium">all events</span>
-            </p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Orders</p>
+            <p className="text-2xl font-bold text-slate-900 tracking-tight mt-1">{totalOrdersCount}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-600 flex items-center justify-center shrink-0">
+            <ShoppingBag className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 2: Total Revenue */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50/90 border border-emerald-200/60 flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-emerald-600" />
-            </div>
-            <svg className="w-16 h-8 text-emerald-400 stroke-current fill-none stroke-[2.5]" viewBox="0 0 64 32">
-              <path d="M2 28 Q 18 18, 36 20 T 62 4" />
-            </svg>
-          </div>
+        <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Gross Sales</p>
+            <p className="text-2xl font-bold text-slate-900 tracking-tight mt-1">
               {formatCurrency(totalRevenueCents)}
             </p>
-            <p className="text-[11px] font-bold text-emerald-600 mt-1.5 flex items-center gap-1">
-              <span>↑ Paid</span> <span className="text-slate-400 font-medium">net sales</span>
-            </p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/70 text-emerald-600 flex items-center justify-center shrink-0">
+            <DollarSign className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 3: Tickets Sold */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center">
-              <Ticket className="w-6 h-6 text-amber-600" />
-            </div>
-            <svg className="w-16 h-8 text-amber-400 stroke-current fill-none stroke-[2.5]" viewBox="0 0 64 32">
-              <path d="M2 22 Q 22 28, 40 12 T 62 8" />
-            </svg>
-          </div>
+        <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tickets Sold</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">{totalTicketsSold}</p>
-            <p className="text-[11px] font-bold text-emerald-600 mt-1.5 flex items-center gap-1">
-              <span>↑ Issued</span> <span className="text-slate-400 font-medium">to attendees</span>
-            </p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tickets Issued</p>
+            <p className="text-2xl font-bold text-slate-900 tracking-tight mt-1">{totalTicketsSold}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/70 text-blue-600 flex items-center justify-center shrink-0">
+            <Ticket className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 4: Success Rate */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50/90 border border-blue-200/60 flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-blue-600" />
-            </div>
-            <svg className="w-16 h-8 text-blue-400 stroke-current fill-none stroke-[2.5]" viewBox="0 0 64 32">
-              <path d="M2 18 Q 24 10, 42 16 T 62 6" />
-            </svg>
-          </div>
+        <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Checkout Success</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">{successRate}%</p>
-            <p className="text-[11px] font-bold text-blue-600 mt-1.5 flex items-center gap-1">
-              <span>{paidOrdersCount} Paid</span> <span className="text-slate-400 font-medium">out of {totalOrdersCount}</span>
-            </p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Success Rate</p>
+            <p className="text-2xl font-bold text-slate-900 tracking-tight mt-1">{successRate}%</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200/70 text-purple-600 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
 
       </div>
 
-      {/* ===== SEARCH & FILTER BAR ===== */}
-      <div className="bg-white rounded-3xl p-5 mb-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-        
-        {/* Search Input */}
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by Order ID, customer name, email, or event..."
-            className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-11 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+      {/* ===== FILTER BAR (REFERENCE STYLE) ===== */}
+      <div className="rounded-xl bg-white p-5 border border-slate-200/90 shadow-xs mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
+            <Filter className="h-4 w-4 text-amber-600" />
+            <span>Filter Orders</span>
+          </div>
+          <span className="text-xs font-medium text-slate-500">
+            Showing {paginatedOrders.length} of {filteredOrders.length} orders (Page {currentPage} of {totalPages})
+          </span>
         </div>
 
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-          {["ALL", "PAID", "PENDING", "FAILED", "CANCELLED"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all shrink-0 cursor-pointer ${
-                statusFilter === status
-                  ? "bg-[#FFF9EB] text-amber-950 border border-amber-300/80 shadow-2xs font-extrabold"
-                  : "text-slate-500 hover:bg-slate-50 border border-transparent"
-              }`}
-            >
-              {status === "ALL" ? "All Orders" : status}
-            </button>
-          ))}
-        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="relative sm:col-span-2">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              placeholder="Search by Order ID, customer name, email, or event..."
+              className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2 pl-9 pr-8 text-xs font-medium text-slate-900 outline-none focus:border-amber-400 focus:bg-white transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => { setSearchQuery(""); setCurrentPage(1); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-2 px-3 text-xs font-medium text-slate-800 outline-none focus:border-amber-400 focus:bg-white transition-all cursor-pointer"
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="PAID">Paid</option>
+              <option value="PENDING">Pending</option>
+              <option value="FAILED">Failed</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      {/* ===== ORDERS TABLE ===== */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60 text-[11px] font-black uppercase tracking-wider text-slate-400">
-                <th className="py-4 pl-6 pr-4">Order ID</th>
-                <th className="py-4 px-4">Customer</th>
-                <th className="py-4 px-4">Event</th>
-                <th className="py-4 px-4">Tickets</th>
-                <th className="py-4 px-4">Amount</th>
-                <th className="py-4 px-4">Status</th>
-                <th className="py-4 px-4">Date</th>
-                <th className="py-4 pl-4 pr-6 text-right">Action</th>
+      {/* ===== ORDERS DATA TABLE (HORIZONTAL SCROLLABLE & PAGINATED) ===== */}
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden">
+        
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-slate-900">Orders Ledger</h2>
+          <span className="text-xs text-slate-400 font-medium">
+            {filteredOrders.length} total records
+          </span>
+        </div>
+
+        <div className="overflow-x-auto min-w-full">
+          <table className="w-full text-left text-xs text-slate-600 min-w-[800px]">
+            <thead className="bg-slate-50 text-[11px] font-semibold uppercase text-slate-500 border-b border-slate-100">
+              <tr>
+                <th className="px-5 py-3.5">Order ID</th>
+                <th className="px-5 py-3.5">Customer</th>
+                <th className="px-5 py-3.5">Event</th>
+                <th className="px-5 py-3.5">Tickets</th>
+                <th className="px-5 py-3.5">Amount</th>
+                <th className="px-5 py-3.5">Status</th>
+                <th className="px-5 py-3.5">Date</th>
+                <th className="px-5 py-3.5 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100/90 text-sm">
+            
+            <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center animate-spin">
-                        <RefreshCw className="w-5 h-5 text-amber-600" />
-                      </div>
-                      <p className="font-bold text-slate-600 text-sm">Loading orders ledger...</p>
-                    </div>
+                  <td colSpan={8} className="px-5 py-12 text-center text-slate-400 font-medium">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-amber-500" />
+                    <span>Loading orders...</span>
                   </td>
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center">
-                    <div className="flex flex-col items-center justify-center max-w-md mx-auto p-6">
-                      <div className="w-16 h-16 rounded-3xl bg-amber-50/80 border border-amber-200/50 flex items-center justify-center mb-4 text-amber-600 shadow-2xs">
-                        <ShoppingBag className="w-8 h-8" />
-                      </div>
-                      <h3 className="text-base font-black text-slate-900 mb-1">No Orders Found</h3>
-                      <p className="text-sm font-semibold text-slate-400 text-center leading-relaxed mb-4">
-                        {searchQuery || statusFilter !== "ALL"
-                          ? "No orders match your filter criteria. Try clearing search or selecting a different status."
-                          : "When customers purchase tickets for your events, order records and payment confirmations will appear here."}
-                      </p>
-                      {(searchQuery || statusFilter !== "ALL") && (
-                        <button
-                          onClick={() => {
-                            setSearchQuery("");
-                            setStatusFilter("ALL");
-                          }}
-                          className="px-4 py-2 rounded-xl text-sm font-bold text-amber-900 bg-[#FFF9EB] border border-amber-200 hover:bg-amber-100/70 transition-all cursor-pointer"
-                        >
-                          Clear Filters
-                        </button>
-                      )}
-                    </div>
+                  <td colSpan={8} className="px-5 py-12 text-center">
+                    <ShoppingBag className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    <h3 className="text-sm font-bold text-slate-800">No orders found</h3>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                      {searchQuery || statusFilter !== "ALL"
+                        ? "No orders match your filter criteria."
+                        : "Orders placed by customers will appear here."}
+                    </p>
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => {
+                paginatedOrders.map((order) => {
                   const ticketsCount = order._count?.tickets || order.tickets?.length || 1;
-                  const initials = (order.user?.name || "G")
-                    .split(" ")
-                    .map((n: string) => n[0])
-                    .join("")
-                    .substring(0, 2)
-                    .toUpperCase();
 
                   return (
                     <tr 
                       key={order.id} 
-                      className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+                      className="hover:bg-slate-50/60 transition-colors group cursor-pointer"
                       onClick={() => setSelectedOrder(order)}
                     >
                       {/* Order ID */}
-                      <td className="py-4 pl-6 pr-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-slate-900 text-sm tracking-tight">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-semibold text-slate-900 text-xs">
                             {order.orderNumber}
                           </span>
                           <button
                             onClick={(e) => handleCopyId(order.orderNumber, e)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-slate-200/60 rounded-md text-slate-400 hover:text-slate-700"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-slate-200/60 rounded text-slate-400 hover:text-slate-700"
                             title="Copy Order ID"
                           >
                             {copiedId === order.orderNumber ? (
@@ -451,69 +405,59 @@ export default function OrdersPage() {
                       </td>
 
                       {/* Customer */}
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-amber-100/80 border border-amber-200/80 text-amber-900 font-black text-[11px] flex items-center justify-center shrink-0">
-                            {initials}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-slate-900 truncate">
-                              {order.user?.name || "Guest Customer"}
-                            </p>
-                            <p className="text-[11px] font-semibold text-slate-400 truncate">
-                              {order.user?.email || "N/A"}
-                            </p>
-                          </div>
-                        </div>
+                      <td className="px-5 py-3.5">
+                        <p className="font-semibold text-slate-900 truncate">
+                          {order.user?.name || "Guest Customer"}
+                        </p>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {order.user?.email || "N/A"}
+                        </p>
                       </td>
 
                       {/* Event */}
-                      <td className="py-4 px-4">
-                        <div className="min-w-0 max-w-50">
-                          <p className="font-bold text-slate-900 truncate" title={order.event?.title}>
-                            {order.event?.title || "Special Event"}
-                          </p>
-                          <p className="text-[11px] font-semibold text-slate-400 truncate flex items-center gap-1">
-                            <MapPin className="w-2.5 h-2.5 shrink-0 text-slate-400" />
-                            {order.event?.venue?.name || "Venue"} ({order.event?.venue?.city || "City"})
-                          </p>
-                        </div>
+                      <td className="px-5 py-3.5">
+                        <p className="font-medium text-slate-800 truncate max-w-44" title={order.event?.title}>
+                          {order.event?.title || "Special Event"}
+                        </p>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {order.event?.venue?.name || "Venue"} ({order.event?.venue?.city || "City"})
+                        </p>
                       </td>
 
                       {/* Tickets Count */}
-                      <td className="py-4 px-4">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold text-[11px]">
+                      <td className="px-5 py-3.5">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-[11px]">
                           <Ticket className="w-3 h-3 text-slate-400" />
-                          {ticketsCount} {ticketsCount === 1 ? "Ticket" : "Tickets"}
+                          {ticketsCount}
                         </span>
                       </td>
 
                       {/* Amount */}
-                      <td className="py-4 px-4 font-black text-slate-900">
+                      <td className="px-5 py-3.5 font-bold text-slate-900">
                         {formatCurrency(order.totalCents, order.currency)}
                       </td>
 
                       {/* Status */}
-                      <td className="py-4 px-4">
+                      <td className="px-5 py-3.5">
                         {getStatusBadge(order.status)}
                       </td>
 
                       {/* Date */}
-                      <td className="py-4 px-4 text-[11px] font-semibold text-slate-500 whitespace-nowrap">
+                      <td className="px-5 py-3.5 text-[11px] text-slate-500 whitespace-nowrap">
                         {formatDate(order.createdAt)}
                       </td>
 
                       {/* Action */}
-                      <td className="py-4 pl-4 pr-6 text-right">
+                      <td className="px-5 py-3.5 text-right">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedOrder(order);
                           }}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-slate-100 hover:bg-[#FFF9EB] hover:text-amber-900 hover:border-amber-200 border border-transparent text-slate-600 transition-all shadow-2xs cursor-pointer"
-                          title="View Order Details"
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                          title="View Details"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                       </td>
                     </tr>
@@ -524,32 +468,53 @@ export default function OrdersPage() {
           </table>
         </div>
 
-        {/* Footer info */}
-        {filteredOrders.length > 0 && (
-          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-sm font-semibold text-slate-400">
-            <span>Showing {filteredOrders.length} of {orders.length} orders</span>
-            <span>Total Value: <strong className="text-slate-800">{formatCurrency(filteredOrders.reduce((s, o) => s + (o.totalCents || 0), 0))}</strong></span>
+        {/* Clean Pagination Footer */}
+        {filteredOrders.length > pageSize && (
+          <div className="p-3.5 border-t border-slate-100 flex items-center justify-between bg-slate-50/40 text-xs">
+            <span className="text-slate-500 font-medium">
+              Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filteredOrders.length)} of {filteredOrders.length} orders
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium cursor-pointer"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <span className="px-2 font-semibold text-slate-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium cursor-pointer"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         )}
+
       </div>
 
-      {/* ===== ORDER DETAILS MODAL ===== */}
+      {/* ===== ORDER DETAILS MODAL (PRESERVED LOGIC) ===== */}
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-7 border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-150">
             
             {/* Modal Header */}
-            <div className="flex items-start justify-between pb-5 border-b border-slate-100">
+            <div className="flex items-start justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
                   <ShoppingBag className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 leading-tight">
+                  <h3 className="text-base font-bold text-slate-900 leading-tight">
                     Order Details
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono text-sm font-bold text-slate-500">
+                    <span className="font-mono text-xs font-semibold text-slate-500">
                       {selectedOrder.orderNumber}
                     </span>
                     {getStatusBadge(selectedOrder.status)}
@@ -559,85 +524,85 @@ export default function OrdersPage() {
 
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="py-5 space-y-4">
+            <div className="py-4 space-y-3">
               
               {/* Customer Box */}
-              <div className="p-4 rounded-2xl bg-slate-50/60 border border-slate-100 space-y-2">
-                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/70 space-y-1.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5" /> Customer Information
                 </p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-slate-500">Name</span>
-                  <span className="font-bold text-slate-900">{selectedOrder.user?.name || "Guest Attendee"}</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-500">Name</span>
+                  <span className="font-semibold text-slate-900">{selectedOrder.user?.name || "Guest Attendee"}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-slate-500">Email</span>
-                  <span className="font-bold text-slate-900">{selectedOrder.user?.email || "N/A"}</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-500">Email</span>
+                  <span className="font-semibold text-slate-900">{selectedOrder.user?.email || "N/A"}</span>
                 </div>
                 {selectedOrder.user?.phone && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-slate-500">Phone</span>
-                    <span className="font-bold text-slate-900">{selectedOrder.user.phone}</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-slate-500">Phone</span>
+                    <span className="font-semibold text-slate-900">{selectedOrder.user.phone}</span>
                   </div>
                 )}
               </div>
 
               {/* Event Box */}
-              <div className="p-4 rounded-2xl bg-slate-50/60 border border-slate-100 space-y-2">
-                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/70 space-y-1.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" /> Event & Venue
                 </p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-slate-500">Event</span>
-                  <span className="font-bold text-slate-900">{selectedOrder.event?.title || "Special Event"}</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-500">Event</span>
+                  <span className="font-semibold text-slate-900">{selectedOrder.event?.title || "Special Event"}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-slate-500">Venue</span>
-                  <span className="font-bold text-slate-900">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-500">Venue</span>
+                  <span className="font-semibold text-slate-900">
                     {selectedOrder.event?.venue?.name || "Venue"}, {selectedOrder.event?.venue?.city || "City"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-slate-500">Event Date</span>
-                  <span className="font-bold text-slate-900">{formatDate(selectedOrder.event?.startsAt)}</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-500">Date</span>
+                  <span className="font-semibold text-slate-900">{formatDate(selectedOrder.event?.startsAt)}</span>
                 </div>
               </div>
 
-              {/* Transaction Summary */}
-              <div className="p-4 rounded-2xl bg-[#FFF9EB]/60 border border-amber-200/70 space-y-2">
-                <p className="text-[11px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+              {/* Payment Summary */}
+              <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200/70 space-y-1.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
                   <CreditCard className="w-3.5 h-3.5" /> Payment Summary
                 </p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-slate-600">Tickets Quantity</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-600">Tickets Quantity</span>
                   <span className="font-bold text-slate-900">
                     {selectedOrder._count?.tickets || selectedOrder.tickets?.length || 1} Tickets
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-slate-600">Base Ticket Price</span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-600">Base Price</span>
                   <span className="font-bold text-slate-900">
                     {formatCurrency(selectedOrder.ticketTotalCents || selectedOrder.totalCents, selectedOrder.currency)}
                   </span>
                 </div>
                 {selectedOrder.buyerFeeCents > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold text-slate-600">Processing Fee</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-slate-600">Processing Fee</span>
                     <span className="font-bold text-slate-900">
                       {formatCurrency(selectedOrder.buyerFeeCents, selectedOrder.currency)}
                     </span>
                   </div>
                 )}
-                <div className="pt-2 border-t border-amber-200/80 flex items-center justify-between text-base">
-                  <span className="font-black text-slate-900">Total Charged</span>
-                  <span className="font-black text-amber-950 text-base">
+                <div className="pt-2 border-t border-amber-200 flex items-center justify-between text-sm">
+                  <span className="font-bold text-slate-900">Total Paid</span>
+                  <span className="font-bold text-amber-950">
                     {formatCurrency(selectedOrder.totalCents, selectedOrder.currency)}
                   </span>
                 </div>
@@ -646,10 +611,10 @@ export default function OrdersPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="pt-3 flex justify-end">
+            <div className="pt-2 flex justify-end">
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-colors cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
               >
                 Close
               </button>

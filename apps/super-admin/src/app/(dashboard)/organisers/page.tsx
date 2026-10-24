@@ -22,7 +22,10 @@ import {
   AlertCircle, 
   Sparkles,
   Users,
-  Trash2
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Filter
 } from "lucide-react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -47,6 +50,8 @@ export default function OrganisersPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "APPROVED" | "SUSPENDED">("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   // Create Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -139,6 +144,11 @@ export default function OrganisersPage() {
   const totalCount = organisers.length;
   const approvedCount = organisers.filter((o) => o.status === "APPROVED").length;
   const suspendedCount = organisers.filter((o) => o.status === "SUSPENDED").length;
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrganisers.length / pageSize));
+  const paginatedOrganisers = useMemo(() => {
+    return filteredOrganisers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredOrganisers, currentPage, pageSize]);
 
   // Generate random strong password
   const generateRandomPassword = () => {
@@ -269,19 +279,14 @@ export default function OrganisersPage() {
         </div>
       )}
 
-      {/* ===== Header ===== */}
-      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* ===== Clean Standard Header ===== */}
+      <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200/60">
-              <ShieldCheck className="w-3.5 h-3.5" /> Organiser Management
-            </span>
-          </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 mt-2">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Organisers Directory
           </h1>
-          <p className="mt-1 text-sm font-semibold text-slate-400">
-            Create organiser accounts, assign login credentials, and manage access.
+          <p className="mt-1 text-sm text-slate-500">
+            Create organiser accounts, assign login credentials, and manage platform permissions.
           </p>
         </div>
 
@@ -289,7 +294,7 @@ export default function OrganisersPage() {
           <button
             onClick={fetchOrganisers}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 text-sm font-bold transition-all shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 text-xs font-semibold transition-all shadow-xs cursor-pointer"
             title="Refresh list"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-amber-500" : ""}`} />
@@ -301,9 +306,9 @@ export default function OrganisersPage() {
               setCreateError("");
               setIsCreateModalOpen(true);
             }}
-            className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-2.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-4 py-2 text-xs font-bold text-slate-950 transition-all shadow-xs hover:shadow-sm cursor-pointer"
           >
-            <Plus className="h-4 w-4 stroke-3" />
+            <Plus className="h-4 w-4 stroke-[2.5]" />
             <span>Create New Organiser</span>
           </button>
         </div>
@@ -338,151 +343,140 @@ export default function OrganisersPage() {
         </div>
       ) : (
         <>
-          {/* ===== 3 Stat Cards ===== */}
+          {/* ===== 3 Clean Stat Cards (Reference Style) ===== */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
             {/* Total */}
-            <div className="group rounded-3xl bg-white p-5 border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] hover:shadow-md transition-all">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Organisers</p>
-                  <p className="text-3xl font-black text-slate-900 mt-1">{totalCount}</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/50 flex items-center justify-center text-amber-600">
-                  <Users className="w-6 h-6" />
-                </div>
+            <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Organisers</p>
+                <p className="text-2xl font-bold text-slate-900 tracking-tight mt-1">{totalCount}</p>
               </div>
-              <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-slate-400">
-                <span>Registered organiser accounts</span>
+              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-600 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5" />
               </div>
             </div>
 
             {/* Active */}
-            <div className="group rounded-3xl bg-white p-5 border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] hover:shadow-md transition-all">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Active & Ready</p>
-                  <p className="text-3xl font-black text-emerald-600 mt-1">{approvedCount}</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/50 flex items-center justify-center text-emerald-600">
-                  <UserCheck className="w-6 h-6" />
-                </div>
+            <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active & Ready</p>
+                <p className="text-2xl font-bold text-slate-900 tracking-tight mt-1">{approvedCount}</p>
               </div>
-              <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-emerald-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span>Can log in & create events</span>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/70 text-emerald-600 flex items-center justify-center shrink-0">
+                <UserCheck className="w-5 h-5" />
               </div>
             </div>
 
             {/* Suspended */}
-            <div className="group rounded-3xl bg-white p-5 border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] hover:shadow-md transition-all">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Suspended</p>
-                  <p className="text-3xl font-black text-rose-600 mt-1">{suspendedCount}</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200/50 flex items-center justify-center text-rose-600">
-                  <UserX className="w-6 h-6" />
-                </div>
+            <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Suspended</p>
+                <p className="text-2xl font-bold text-slate-900 tracking-tight mt-1">{suspendedCount}</p>
               </div>
-              <div className="mt-3 flex items-center gap-1.5 text-[11px] font-bold text-rose-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                <span>Login temporarily blocked</span>
+              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200/70 text-rose-600 flex items-center justify-center shrink-0">
+                <UserX className="w-5 h-5" />
               </div>
             </div>
           </div>
 
-          {/* ===== Toolbar & Filters ===== */}
-          <div className="rounded-3xl bg-white border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] p-5 mb-6">
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          {/* ===== Toolbar & Filters (Reference Style) ===== */}
+          <div className="rounded-xl bg-white border border-slate-200/90 shadow-xs p-5 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
+                <Filter className="h-4 w-4 text-amber-600" />
+                <span>Filter Organisers</span>
+              </div>
+              <span className="text-xs font-medium text-slate-500">
+                Showing {paginatedOrganisers.length} of {filteredOrganisers.length} organisers (Page {currentPage} of {totalPages})
+              </span>
+            </div>
+
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
               {/* Status Tabs */}
-              <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-50 border border-slate-200/60 overflow-x-auto">
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-50 border border-slate-200/70 overflow-x-auto">
                 <button
-                  onClick={() => setStatusFilter("ALL")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-black transition-all shrink-0 cursor-pointer ${
+                  onClick={() => { setStatusFilter("ALL"); setCurrentPage(1); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                     statusFilter === "ALL"
-                      ? "bg-[#F6C636] text-slate-950 shadow-xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                      ? "bg-white text-slate-900 border border-slate-200/80 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   <span>All</span>
-                  <span className="px-1.5 py-0.5 rounded-md bg-black/10 text-[10px] font-extrabold">{totalCount}</span>
+                  <span className="px-1.5 py-0.2 rounded bg-slate-100 text-[10px] text-slate-600">{totalCount}</span>
                 </button>
 
                 <button
-                  onClick={() => setStatusFilter("APPROVED")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-black transition-all shrink-0 cursor-pointer ${
+                  onClick={() => { setStatusFilter("APPROVED"); setCurrentPage(1); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                     statusFilter === "APPROVED"
-                      ? "bg-emerald-500 text-white shadow-xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200/70 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   <span>Active</span>
-                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${statusFilter === "APPROVED" ? "bg-white/20" : "bg-slate-200 text-slate-700"}`}>
-                    {approvedCount}
-                  </span>
+                  <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-[10px] text-emerald-700">{approvedCount}</span>
                 </button>
 
                 <button
-                  onClick={() => setStatusFilter("SUSPENDED")}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-black transition-all shrink-0 cursor-pointer ${
+                  onClick={() => { setStatusFilter("SUSPENDED"); setCurrentPage(1); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                     statusFilter === "SUSPENDED"
-                      ? "bg-rose-500 text-white shadow-xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                      ? "bg-rose-50 text-rose-800 border border-rose-200/70 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   <span>Suspended</span>
-                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${statusFilter === "SUSPENDED" ? "bg-white/20" : "bg-slate-200 text-slate-700"}`}>
-                    {suspendedCount}
-                  </span>
+                  <span className="px-1.5 py-0.2 rounded bg-rose-100 text-[10px] text-rose-700">{suspendedCount}</span>
                 </button>
               </div>
 
               {/* Search Box */}
-              <div className="relative w-full md:w-80">
+              <div className="relative flex-1 md:max-w-xs">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                   placeholder="Search by business, name, email..."
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2 pl-10 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-1.5 pl-9 pr-3 text-xs font-medium text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white transition-all"
                 />
               </div>
             </div>
           </div>
 
-          {/* ===== Organisers Table ===== */}
-          <div className="rounded-3xl bg-white border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] overflow-hidden">
+          {/* ===== Organisers Table (Horizontal Scrollable & Paginated) ===== */}
+          <div className="rounded-xl bg-white border border-slate-200/90 shadow-xs overflow-hidden">
             {isLoading ? (
-              <div className="p-16 flex flex-col items-center justify-center text-slate-400 gap-3">
-                <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                <p className="text-sm font-bold">Loading organisers directory...</p>
+              <div className="p-12 flex flex-col items-center justify-center text-slate-400 gap-2">
+                <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                <p className="text-xs font-semibold">Loading organisers directory...</p>
               </div>
             ) : filteredOrganisers.length === 0 ? (
-              <div className="p-16 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 mx-auto mb-3">
-                  <Users className="w-6 h-6" />
+              <div className="p-12 text-center">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 mx-auto mb-2">
+                  <Users className="w-5 h-5" />
                 </div>
-                <h3 className="text-base font-black text-slate-900">No Organisers Found</h3>
-                <p className="text-sm font-semibold text-slate-400 mt-1 max-w-sm mx-auto">
+                <h3 className="text-sm font-bold text-slate-900">No Organisers Found</h3>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                   {searchQuery ? "No partners match your search query." : "Click 'Create New Organiser' above to add your first partner account."}
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50/60 border-b border-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-400">
+              <div className="overflow-x-auto min-w-full">
+                <table className="w-full text-left text-xs min-w-[800px]">
+                  <thead className="bg-slate-50 border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                     <tr>
-                      <th className="px-6 py-4">Business / Host</th>
-                      <th className="px-6 py-4">Account User</th>
-                      <th className="px-6 py-4">Contact Phone</th>
-                      <th className="px-6 py-4">Account Status</th>
-                      <th className="px-6 py-4">Joined Date</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                      <th className="px-5 py-3.5">Business / Host</th>
+                      <th className="px-5 py-3.5">Account User</th>
+                      <th className="px-5 py-3.5">Contact Phone</th>
+                      <th className="px-5 py-3.5">Account Status</th>
+                      <th className="px-5 py-3.5">Joined Date</th>
+                      <th className="px-5 py-3.5 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                    {filteredOrganisers.map((org) => {
+                    {paginatedOrganisers.map((org) => {
                       const isApproved = org.status === "APPROVED";
                       return (
                         <tr key={org.id} className="hover:bg-slate-50/40 transition-colors">
@@ -652,6 +646,34 @@ export default function OrganisersPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {/* Clean Pagination Footer */}
+            {!isLoading && filteredOrganisers.length > pageSize && (
+              <div className="p-3.5 border-t border-slate-100 flex items-center justify-between bg-slate-50/40 text-xs">
+                <span className="text-slate-500 font-medium">
+                  Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filteredOrganisers.length)} of {filteredOrganisers.length} organisers
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium cursor-pointer"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="px-2 font-semibold text-slate-700">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium cursor-pointer"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
           </div>
