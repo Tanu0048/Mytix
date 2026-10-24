@@ -199,19 +199,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Quick Staff Mode Banner */}
-          {loginType === "STAFF" && (
-            <div className="mb-4 py-2 px-3 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-between text-[11px] font-bold text-amber-900">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Phone Gate Scanner
-              </span>
-              <span className="text-[10px] uppercase tracking-wider text-amber-700 bg-amber-200/60 px-2 py-0.5 rounded-md">
-                No Email Needed
-              </span>
-            </div>
-          )}
-
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 flex items-center gap-2 text-rose-700 text-xs sm:text-sm font-bold animate-in fade-in">
@@ -293,23 +280,16 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              {/* Helper Note for Staff (No Forgot Password) */}
-              {loginType === "STAFF" ? (
-                <p className="text-[11px] font-medium text-slate-400 mt-1.5 text-center">
-                  Staff credentials are created and managed by your event organiser.
-                </p>
-              ) : (
-                loginType === "ADMIN" && (
-                  <div className="flex justify-end mt-1.5">
-                    <button
-                      type="button"
-                      onClick={() => alert("Password reset instructions sent to registered admin email.")}
-                      className="text-[11px] font-bold text-slate-500 hover:text-slate-900 hover:underline transition-colors cursor-pointer"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                )
+              {loginType === "ADMIN" && (
+                <div className="flex justify-end mt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => alert("Password reset instructions sent to registered admin email.")}
+                    className="text-[11px] font-bold text-slate-500 hover:text-slate-900 hover:underline transition-colors cursor-pointer"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               )}
             </div>
 
