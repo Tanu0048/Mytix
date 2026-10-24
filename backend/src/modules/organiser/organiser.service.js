@@ -5,6 +5,7 @@ import { AppError } from "../../utils/errors.js";
 import { parseCursorPagination, formatPaginatedResponse } from "../../utils/pagination.js";
 import { generateTicketsForOrder } from "../tickets/ticket.service.js";
 import { deleteCached } from "../../lib/cache.js";
+import { hashPassword } from "../auth/password.service.js";
 
 export async function applyForOrganiser(userId, data) {
   const existing = await prisma.organiser.findUnique({
@@ -738,5 +739,167 @@ export async function listOrganiserOrders(userId, query = {}) {
   });
 
   return formatPaginatedResponse(orders, limit);
+}
+
+// ----------------------------------------------------
+// STAFF MANAGEMENT (Organiser Isolated)
+// ----------------------------------------------------
+
+async function resolveOrganiser(userId, userRole) {
+  let organiser = await prisma.organiser.findUnique({
+    where: { userId }
+  });
+  if (!organiser && userRole === "ADMIN") {
+    organiser = await prisma.organiser.findFirst({ where: { status: "APPROVED" } });
+  }
+  if (!organiser) {
+    throw new AppError("FORBIDDEN", 403, "Organiser account not found.");
+  }
+  return organiser;
+}
+
+export async function listOrganiserStaff(userId, userRole) {
+  const organiser = await resolveOrganiser(userId, userRole);
+  const staffList = await prisma.staff.findMany({
+    where: { organiserId: organiser.id },
+    include: {
+      event: { select: { id: true, title: true } }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  return staffList.map(s => ({
+    id: s.id,
+    staffId: s.staffId,
+    name: s.name,
+    assignedGate: s.assignedGate,
+    assignedEvent: s.event ? { id: s.event.id, title: s.event.title } : null,
+    isActive: s.isActive,
+    createdAt: s.createdAt
+  }));
+}
+
+export async function createOrganiserStaff(userId, userRole, data) {
+  const organiser = await resolveOrganiser(userId, userRole);
+
+  const cleanStaffId = (data.staffId || "").trim();
+  if (!cleanStaffId) {
+    throw new AppError("VALIDATION_ERROR", 400, "Staff ID is required.");
+  }
+  if (!data.password || data.password.length < 6) {
+    throw new AppError("VALIDATION_ERROR", 400, "Password must be at least 6 characters.");
+  }
+
+  // Check unique Staff ID
+  const existing = await prisma.staff.findUnique({
+    where: { staffId: cleanStaffId }
+  });
+  if (existing) {
+    throw new AppError("CONFLICT", 409, `Staff ID '${cleanStaffId}' is already taken. Please choose another.`);
+  }
+
+  // If eventId provided, verify event ownership by this organiser
+  if (data.eventId) {
+    const event = await prisma.event.findFirst({
+      where: { id: data.eventId, organiserId: organiser.id }
+    });
+    if (!event) {
+      throw new AppError("FORBIDDEN", 403, "Assigned event does not belong to your organiser profile.");
+    }
+  }
+
+  const passwordHash = await hashPassword(data.password);
+
+  const created = await prisma.staff.create({
+    data: {
+      staffId: cleanStaffId,
+      name: data.name || cleanStaffId,
+      passwordHash,
+      organiserId: organiser.id,
+      assignedGate: data.assignedGate || "Main Gate",
+      eventId: data.eventId || null,
+      isActive: true
+    },
+    include: {
+      event: { select: { id: true, title: true } }
+    }
+  });
+
+  return {
+    id: created.id,
+    staffId: created.staffId,
+    name: created.name,
+    assignedGate: created.assignedGate,
+    assignedEvent: created.event ? { id: created.event.id, title: created.event.title } : null,
+    isActive: created.isActive,
+    createdAt: created.createdAt
+  };
+}
+
+export async function updateStaffPassword(userId, userRole, id, newPassword) {
+  const organiser = await resolveOrganiser(userId, userRole);
+
+  if (!newPassword || newPassword.length < 6) {
+    throw new AppError("VALIDATION_ERROR", 400, "Password must be at least 6 characters.");
+  }
+
+  // Strict isolation check: must match id AND organiserId
+  const staff = await prisma.staff.findFirst({
+    where: { id, organiserId: organiser.id }
+  });
+  if (!staff) {
+    throw new AppError("NOT_FOUND", 404, "Staff member not found or access denied.");
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+
+  await prisma.staff.update({
+    where: { id: staff.id },
+    data: { passwordHash }
+  });
+
+  return { success: true, message: "Staff password successfully updated." };
+}
+
+export async function toggleStaffStatus(userId, userRole, id, isActive) {
+  const organiser = await resolveOrganiser(userId, userRole);
+
+  // Strict isolation check
+  const staff = await prisma.staff.findFirst({
+    where: { id, organiserId: organiser.id }
+  });
+  if (!staff) {
+    throw new AppError("NOT_FOUND", 404, "Staff member not found or access denied.");
+  }
+
+  const updated = await prisma.staff.update({
+    where: { id: staff.id },
+    data: { isActive: Boolean(isActive) }
+  });
+
+  return {
+    id: updated.id,
+    staffId: updated.staffId,
+    isActive: updated.isActive,
+    message: updated.isActive ? "Staff access enabled." : "Staff access revoked."
+  };
+}
+
+export async function deleteOrganiserStaff(userId, userRole, id) {
+  const organiser = await resolveOrganiser(userId, userRole);
+
+  // Strict isolation check
+  const staff = await prisma.staff.findFirst({
+    where: { id, organiserId: organiser.id }
+  });
+  if (!staff) {
+    throw new AppError("NOT_FOUND", 404, "Staff member not found or access denied.");
+  }
+
+  await prisma.staff.delete({
+    where: { id: staff.id }
+  });
+
+  return { success: true, message: "Staff member deleted." };
 }
 

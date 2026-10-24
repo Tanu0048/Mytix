@@ -93,6 +93,26 @@ export const login = asyncHandler(async (req, res) => {
   res.status(200).json(responseData);
 });
 
+export const staffLogin = asyncHandler(async (req, res) => {
+  const isMobile = isMobileClient(req);
+  const result = await authService.loginStaff({ ...req.body, isMobile });
+  
+  res.cookie("access_token", result.accessToken, {
+    ...COOKIE_OPTIONS,
+    maxAge: 24 * 60 * 60 * 1000
+  });
+
+  const responseData = {
+    user: result.staff,
+    token: result.accessToken,
+    tokens: {
+      accessToken: result.accessToken
+    }
+  };
+
+  res.status(200).json(responseData);
+});
+
 export const googleAuth = asyncHandler(async (req, res) => {
   const isMobile = isMobileClient(req);
   const result = await authService.loginWithGoogle({ ...req.body, isMobile });

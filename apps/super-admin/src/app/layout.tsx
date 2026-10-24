@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -12,9 +12,18 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#06090e",
+};
+
 export const metadata: Metadata = {
-  title: "Mytix | Super Admin",
-  description: "Platform Administration Dashboard",
+  title: "Mytix | Portal & Turnstile Scanner",
+  description: "Platform Administration, Organiser Management, and Gate Scanner",
 };
 
 export default function RootLayout({

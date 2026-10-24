@@ -66,6 +66,62 @@ export async function loginUser({ email, password, isMobile = false }) {
   return { user, accessToken, refreshToken };
 }
 
+export async function loginStaff({ staffId, password, isMobile = true }) {
+  if (!staffId || !password) {
+    throw new AppError("VALIDATION_ERROR", 400, "Staff ID and password are required.");
+  }
+
+  const cleanStaffId = staffId.trim();
+  const staff = await prisma.staff.findUnique({
+    where: { staffId: cleanStaffId },
+    include: {
+      organiser: { select: { id: true, businessName: true, status: true } },
+      event: { select: { id: true, title: true, status: true } }
+    }
+  });
+
+  if (!staff || !staff.passwordHash) {
+    throw new AppError("INVALID_CREDENTIALS", 401, "Invalid Staff ID or password.");
+  }
+
+  if (!staff.isActive) {
+    throw new AppError("ACCESS_REVOKED", 403, "Your staff access has been revoked by the event organiser.");
+  }
+
+  if (staff.organiser?.status === "SUSPENDED") {
+    throw new AppError("ORGANISER_SUSPENDED", 403, "Organiser account is suspended. Contact event management.");
+  }
+
+  const isValid = await verifyPassword(staff.passwordHash, password);
+  if (!isValid) {
+    throw new AppError("INVALID_CREDENTIALS", 401, "Invalid Staff ID or password.");
+  }
+
+  const accessToken = generateAccessToken({
+    id: staff.id,
+    role: "STAFF",
+    staffId: staff.staffId,
+    name: staff.name,
+    organiserId: staff.organiserId,
+    eventId: staff.eventId,
+    assignedGate: staff.assignedGate
+  }, { isMobile });
+
+  return {
+    staff: {
+      id: staff.id,
+      staffId: staff.staffId,
+      name: staff.name,
+      role: "STAFF",
+      organiserId: staff.organiserId,
+      assignedGate: staff.assignedGate,
+      assignedEvent: staff.event ? { id: staff.event.id, title: staff.event.title } : null,
+      businessName: staff.organiser?.businessName
+    },
+    accessToken
+  };
+}
+
 export async function loginWithGoogle({ idToken, isMobile = false }) {
   const { user, isNewUser } = await authenticateWithGoogle(idToken);
 

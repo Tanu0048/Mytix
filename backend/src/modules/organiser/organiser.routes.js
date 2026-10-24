@@ -34,4 +34,11 @@ router.post("/venues", authorize("ORGANISER", "ADMIN"), organiserController.crea
 router.patch("/venues/:id", authorize("ORGANISER", "ADMIN"), organiserController.updateVenue);
 router.delete("/venues/:id", authorize("ORGANISER", "ADMIN"), organiserController.deleteVenue);
 
+// Gate Staff Management (Strictly Organiser Isolated)
+router.get("/staff", authorize("ORGANISER", "ADMIN"), organiserController.listStaff);
+router.post("/staff", authorize("ORGANISER", "ADMIN"), organiserController.createStaff);
+router.patch("/staff/:id/password", authorize("ORGANISER", "ADMIN"), organiserController.updateStaffPassword);
+router.patch("/staff/:id/status", authorize("ORGANISER", "ADMIN"), organiserController.toggleStaffStatus);
+router.delete("/staff/:id", authorize("ORGANISER", "ADMIN"), organiserController.deleteStaff);
+
 export default router;
