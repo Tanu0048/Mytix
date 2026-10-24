@@ -158,20 +158,15 @@ export default function Sidebar() {
                   <Link
                     href={item.href}
                     scroll={false}
-                    className={`group relative flex items-center rounded-2xl px-4 py-3 text-base font-bold border transition-all duration-200 ease-in-out select-none active:scale-[0.98] ${
+                    className={`group relative flex items-center rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-150 select-none ${
                       isActive
-                        ? "bg-[#FFF9EB] text-amber-950 border-amber-300/80 shadow-2xs font-extrabold"
-                        : "text-slate-500 border-transparent hover:bg-slate-50/80 hover:text-slate-900"
+                        ? "bg-amber-50 text-amber-900 border border-amber-200/70"
+                        : "text-slate-600 border border-transparent hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
-                    {/* Glowing Left Indicator for Active Tab */}
-                    {isActive && (
-                      <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-amber-500 transition-all duration-200" />
-                    )}
-
                     <Icon
-                      className={`mr-3 h-5 w-5 shrink-0 transition-all duration-200 ${
-                        isActive ? "text-amber-500 scale-105" : "text-slate-400 group-hover:text-slate-700 group-hover:scale-105"
+                      className={`mr-2.5 h-4 w-4 shrink-0 transition-colors ${
+                        isActive ? "text-amber-600" : "text-slate-400 group-hover:text-slate-600"
                       }`}
                     />
                     <span className="truncate">{item.name}</span>
@@ -219,10 +214,10 @@ export default function Sidebar() {
           {/* Sign Out Button */}
           <button 
             onClick={handleLogout}
-            className="group flex w-full items-center rounded-xl px-4 py-2.5 text-sm font-bold text-slate-400 transition-all hover:bg-red-50 hover:text-red-500 cursor-pointer"
+            className="group flex w-full items-center rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer"
           >
-            <LogOut className="mr-2.5 h-4 w-4 text-slate-400 group-hover:text-red-500" />
-            Sign Out
+            <LogOut className="mr-2.5 h-4 w-4 text-rose-500" />
+            <span>Sign Out</span>
           </button>
         </div>
       )}
