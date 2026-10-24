@@ -29,6 +29,28 @@ export const changePassword = asyncHandler(async (req, res) => {
   res.status(200).json({ message: result.message });
 });
 
+export const changeEmail = asyncHandler(async (req, res) => {
+  const result = await userService.changeUserEmail(
+    req.user.id,
+    req.body.currentPassword,
+    req.body.newEmail
+  );
+
+  res.cookie("access_token", result.accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 15 * 60 * 1000
+  });
+
+  res.status(200).json({
+    message: result.message,
+    user: result.user,
+    accessToken: result.accessToken
+  });
+});
+
 export const getOrders = asyncHandler(async (req, res) => {
   const orders = await userService.getUserOrders(req.user.id, req.query);
   res.status(200).json(orders);
