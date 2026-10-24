@@ -1,4 +1,0 @@
-
-> mytix-backend@1.0.0 start:api
-> node src/server.js
-
