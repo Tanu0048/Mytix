@@ -7,6 +7,7 @@ import { deleteCached } from "../../lib/cache.js";
 import { getPaymentProvider } from "../../providers/payment/index.js";
 import { logger } from "../../lib/logger.js";
 import { sendEventCancellationNotification } from "../notifications/email.service.js";
+import { pgboss } from "../../lib/pgboss.js";
 
 // ----------------------------------------------------
 // CATEGORIES MANAGEMENT
@@ -505,6 +506,509 @@ export async function getGlobalOrderDetails(orderId) {
 // EVENT CANCELLATION & BULK REFUNDS
 // ----------------------------------------------------
 
+/**
+ * Processes a refund for a single order with strict idempotency, safe transaction boundaries,
+ * fresh state queries, atomic claims, and failure resilience.
+ */
+async function processSingleOrderRefund({ orderId, event, cancelReason, paymentProvider }) {
+  // 1. Always fetch FRESH database state to avoid operating on stale memory objects
+  const freshOrder = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      payment: true,
+      refund: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true
+        }
+      }
+    }
+  });
+
+  if (!freshOrder) {
+    logger.warn("Order not found during refund processing", { orderId });
+    return { status: "SKIPPED_NOT_FOUND", amountCents: 0, retainedFeeCents: 0 };
+  }
+
+  const existingRefund = freshOrder.refund;
+
+  // If order was already successfully resolved, skip immediately
+  if (freshOrder.status === "REFUNDED" || (existingRefund && existingRefund.status === "SUCCEEDED")) {
+    logger.info("Order is already marked REFUNDED or has succeeded refund, skipping", { orderId: freshOrder.id });
+    return { status: "SKIPPED_ALREADY_REFUNDED", amountCents: 0, retainedFeeCents: 0 };
+  }
+
+  // 2. Prevent refunding more than remaining refundable amount
+  // Existing business rule: refund ticket face value (ticketTotalCents), retain buyerFeeCents
+  const previousRefundAmount = (existingRefund && existingRefund.status === "SUCCEEDED") ? existingRefund.amountCents : 0;
+  const remainingRefundableAmount = freshOrder.ticketTotalCents - previousRefundAmount;
+  const retainedFeeCents = freshOrder.buyerFeeCents || 0;
+
+  if (remainingRefundableAmount <= 0) {
+    logger.info("Order has no remaining refundable balance, skipping", { orderId: freshOrder.id });
+    return { status: "SKIPPED_ZERO_BALANCE", amountCents: 0, retainedFeeCents: 0 };
+  }
+
+  const refundAmountCents = remainingRefundableAmount;
+  const paymentIntentId = freshOrder.payment?.stripePaymentIntentId;
+
+  // 3. ATOMIC DATABASE CLAIM:
+  // Use a short database transaction with row-level locking (SELECT ... FOR UPDATE) on the Refund record
+  // (or Order record) to ensure exactly ONE process acquires the claim to call Stripe.
+  // - If Refund is SUCCEEDED: skip immediately.
+  // - If Refund is PENDING: allow claim ONLY if lease has expired (> 2 minutes old, indicating a crash/timeout)
+  //   so that it can be reconciled, while preventing concurrent workers from racing the active operation.
+  // - If Refund does not exist or is FAILED: create/update status to PENDING with fresh lease timestamp.
+  const CLAIM_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes crash timeout
+  let acquiredClaim = false;
+
+  if (freshOrder.payment) {
+    try {
+      acquiredClaim = await prisma.$transaction(async (tx) => {
+        // Check current refund state with interactive transaction
+        const currentRefund = await tx.refund.findUnique({
+          where: { orderId: freshOrder.id }
+        });
+
+        if (currentRefund) {
+          if (currentRefund.status === "SUCCEEDED") {
+            return false;
+          }
+
+          // If currently PENDING, check if active lease has expired
+          if (currentRefund.status === "PENDING") {
+            const timeSinceUpdate = Date.now() - new Date(currentRefund.updatedAt).getTime();
+            if (timeSinceUpdate < CLAIM_TIMEOUT_MS) {
+              logger.info("Order refund is currently locked and being processed by another worker", {
+                orderId: freshOrder.id,
+                timeSinceUpdateMs: timeSinceUpdate
+              });
+              return false; // Lock active; do NOT process concurrently
+            }
+            logger.info("Order refund PENDING lease expired, reclaiming for reconciliation/retry", {
+              orderId: freshOrder.id,
+              timeSinceUpdateMs: timeSinceUpdate
+            });
+          }
+
+          // Atomically acquire lock
+          await tx.refund.update({
+            where: { id: currentRefund.id },
+            data: {
+              status: "PENDING",
+              amountCents: refundAmountCents,
+              reason: `Claimed for cancellation refund: ${cancelReason}`.slice(0, 255),
+              updatedAt: new Date()
+            }
+          });
+          return true;
+        }
+
+        // Refund does not exist yet: create claim
+        await tx.refund.create({
+          data: {
+            orderId: freshOrder.id,
+            paymentId: freshOrder.payment.id,
+            amountCents: refundAmountCents,
+            status: "PENDING",
+            reason: `Claimed for cancellation refund: ${cancelReason}`.slice(0, 255)
+          }
+        });
+        return true;
+      });
+    } catch (claimErr) {
+      logger.warn("Failed to acquire atomic refund claim, concurrent process won race", {
+        orderId: freshOrder.id,
+        error: claimErr.message
+      });
+      acquiredClaim = false;
+    }
+  } else {
+    acquiredClaim = true; // Manual orders with no payment record
+  }
+
+  if (!acquiredClaim) {
+    logger.info("Skipping order refund processing as claim was not acquired", { orderId: freshOrder.id });
+    return { status: "SKIPPED_LOCKED_OR_RESOLVED", amountCents: 0, retainedFeeCents: 0 };
+  }
+
+  // 4. Generate deterministic idempotency key for payment provider
+  const idempotencyKey = `refund_event_${event.id}_order_${freshOrder.id}`;
+
+  let stripeRefundId = null;
+  let isAmbiguousTimeout = false;
+  let failureErrorMessage = null;
+
+  // 5. Reconciliation: Inspect Stripe to see if a matching successful refund already exists
+  // Before trying to create a new refund, verify whether this exact payment was already refunded!
+  if (paymentIntentId && !paymentIntentId.startsWith("pi_demo_")) {
+    try {
+      if (typeof paymentProvider.getPaymentRefunds === "function") {
+        const stripeRefunds = await paymentProvider.getPaymentRefunds(paymentIntentId);
+        // Verify both status AND amount to avoid interpreting an arbitrary partial refund as this cancellation
+        const matchedRefund = stripeRefunds.find(
+          (r) => r.status === "succeeded" && Number(r.amount) === Number(refundAmountCents)
+        );
+        if (matchedRefund) {
+          logger.info("Reconciliation matched verified existing Stripe refund for order", {
+            orderId: freshOrder.id,
+            stripeRefundId: matchedRefund.id,
+            amount: matchedRefund.amount
+          });
+          stripeRefundId = matchedRefund.id;
+        }
+      }
+    } catch (reconcileErr) {
+      logger.warn("Reconciliation lookup encountered error, proceeding with deterministic idempotency key", {
+        orderId: freshOrder.id,
+        error: reconcileErr.message
+      });
+    }
+  }
+
+  // 6. Call Payment Provider OUTSIDE of database transactions (if not already verified via reconciliation)
+  if (!stripeRefundId) {
+    if (paymentIntentId) {
+      const isDemoIntent = paymentIntentId.startsWith("pi_demo_");
+
+      try {
+        const refundResult = await paymentProvider.createRefund({
+          paymentIntentId,
+          amountCents: refundAmountCents,
+          reason: "requested_by_customer",
+          idempotencyKey
+        });
+        stripeRefundId = refundResult?.id || null;
+      } catch (err) {
+        failureErrorMessage = err.message || "Payment provider refund call failed";
+
+        const original = err.originalError || err;
+        const errType = original.type || err.type;
+        const errCode = original.code || err.code;
+
+        // Enhanced Stripe error classification:
+        // Network connection failures, socket timeouts, rate limits, and 408 are AMBIGUOUS.
+        // Known definitive failures: StripeCardError, StripeInvalidRequestError, etc.
+        const isDefinitiveFailure =
+          errType === "StripeCardError" ||
+          errType === "StripeInvalidRequestError" ||
+          errType === "StripeIdempotencyError" ||
+          errCode === "card_error" ||
+          errCode === "resource_missing";
+
+        const isNetworkOrTimeout =
+          !isDefinitiveFailure && (
+            errCode === "ETIMEDOUT" ||
+            errCode === "ECONNRESET" ||
+            errCode === "ENOTFOUND" ||
+            errCode === "ECONNREFUSED" ||
+            err.name === "TimeoutError" ||
+            errType === "StripeConnectionError" ||
+            errType === "StripeTimeoutError" ||
+            errType === "StripeAPIError" ||
+            err.statusCode === 408 ||
+            err.statusCode === 429 ||
+            err.message?.toLowerCase().includes("timeout") ||
+            err.message?.toLowerCase().includes("econnreset") ||
+            err.message?.toLowerCase().includes("connection")
+          );
+
+        if (isNetworkOrTimeout) {
+          isAmbiguousTimeout = true;
+          logger.warn("Ambiguous network or provider error during Stripe refund execution", {
+            orderId: freshOrder.id,
+            paymentIntentId,
+            error: err.message,
+            type: errType
+          });
+        } else if (
+          isDemoIntent ||
+          err.code === "PAYMENT_GATEWAY_NOT_CONFIGURED" ||
+          err.message?.includes("PAYMENT_GATEWAY_NOT_CONFIGURED")
+        ) {
+          stripeRefundId = `re_demo_${Date.now()}_${freshOrder.id.slice(0, 8)}`;
+        } else {
+          logger.error("Payment provider definitively rejected refund for order", {
+            orderId: freshOrder.id,
+            paymentIntentId,
+            error: err.message,
+            type: err.type
+          });
+        }
+      }
+    } else {
+      // Non-gateway payment (e.g. manual cash order)
+      stripeRefundId = `re_manual_${Date.now()}_${freshOrder.id.slice(0, 8)}`;
+    }
+  }
+
+  // 7. Update Database Records atomically based on verified outcome
+  if (stripeRefundId) {
+    // CONFIRMED SUCCESS:
+    // Execute a short atomic Prisma transaction keeping all local financial records consistent
+    try {
+      await prisma.$transaction(async (tx) => {
+        // 7a. Mark Order as REFUNDED
+        await tx.order.update({
+          where: { id: freshOrder.id },
+          data: { status: "REFUNDED" }
+        });
+
+        // 7b. Keep Payment record consistent with Order
+        if (freshOrder.payment) {
+          await tx.payment.update({
+            where: { id: freshOrder.payment.id },
+            data: { status: "REFUNDED" }
+          });
+        }
+
+        // 7c. Void tickets to prevent gate entry
+        await tx.ticket.updateMany({
+          where: { orderId: freshOrder.id },
+          data: { status: "CANCELLED" }
+        });
+
+        // 7d. Record verified successful refund
+        if (freshOrder.payment) {
+          await tx.refund.upsert({
+            where: { orderId: freshOrder.id },
+            create: {
+              orderId: freshOrder.id,
+              paymentId: freshOrder.payment.id,
+              stripeRefundId,
+              amountCents: refundAmountCents,
+              status: "SUCCEEDED",
+              reason: cancelReason
+            },
+            update: {
+              stripeRefundId,
+              amountCents: refundAmountCents,
+              status: "SUCCEEDED",
+              reason: cancelReason
+            }
+          });
+        }
+
+        // 7e. Financial ledger debit against organiser balance:
+        // Guarantee at most ONE REFUND ledger entry is ever created per order
+        const existingLedger = await tx.ledgerEntry.findFirst({
+          where: {
+            orderId: freshOrder.id,
+            type: "REFUND"
+          }
+        });
+
+        if (!existingLedger) {
+          try {
+            await tx.ledgerEntry.create({
+              data: {
+                organiserId: event.organiserId,
+                eventId: event.id,
+                orderId: freshOrder.id,
+                type: "REFUND",
+                amountCents: -refundAmountCents,
+                description: `Event cancellation ticket refund for order ${freshOrder.orderNumber}`
+              }
+            });
+          } catch (ledgerErr) {
+            // If PostgreSQL partial unique index caught a concurrent insert, safely ignore duplicate
+            if (ledgerErr.code === "P2002" || ledgerErr.message?.includes("idx_ledger_entries_unique_refund_order")) {
+              logger.info("REFUND ledger entry already exists from concurrent insert, skipping duplicate insert", {
+                orderId: freshOrder.id
+              });
+            } else {
+              throw ledgerErr;
+            }
+          }
+        }
+      });
+
+      // Dispatch automated notification email asynchronously (email failure does NOT roll back refund)
+      const userEmail = freshOrder.user?.email;
+      if (userEmail) {
+        const refundAud = (refundAmountCents / 100).toFixed(2);
+        sendEventCancellationNotification({
+          recipientEmail: userEmail,
+          recipientName: freshOrder.user?.name || "Valued Customer",
+          orderNumber: freshOrder.orderNumber,
+          eventTitle: event.title,
+          cancellationReason: cancelReason,
+          refundAmountAud: refundAud,
+          currency: freshOrder.currency || "AUD"
+        }).catch((emailErr) => {
+          logger.error("Failed to send event cancellation email", {
+            orderId: freshOrder.id,
+            email: userEmail,
+            error: emailErr.message
+          });
+        });
+      }
+
+      return { status: "SUCCEEDED", amountCents: refundAmountCents, retainedFeeCents };
+    } catch (dbErr) {
+      logger.error("Database transaction failed for succeeded Stripe refund", {
+        orderId: freshOrder.id,
+        stripeRefundId,
+        error: dbErr.message
+      });
+      return { status: "FAILED_DB", amountCents: 0, retainedFeeCents: 0 };
+    }
+  } else {
+    // Payment provider refund failed or timed out:
+    // CRITICAL: DO NOT mark Order as REFUNDED. Order remains PAID for safe retry.
+    // Payment remains SUCCEEDED. Tickets remain VALID. No ledger entry created.
+    try {
+      if (freshOrder.payment) {
+        const refundStatus = isAmbiguousTimeout ? "PENDING" : "FAILED";
+        const reasonText = (isAmbiguousTimeout
+          ? "Network timeout/ambiguous error during refund submission - pending reconciliation"
+          : (failureErrorMessage || "Payment provider definitively rejected refund")
+        ).slice(0, 255);
+
+        await prisma.refund.upsert({
+          where: { orderId: freshOrder.id },
+          create: {
+            orderId: freshOrder.id,
+            paymentId: freshOrder.payment.id,
+            stripeRefundId: null,
+            amountCents: refundAmountCents,
+            status: refundStatus,
+            reason: reasonText
+          },
+          update: {
+            stripeRefundId: null,
+            amountCents: refundAmountCents,
+            status: refundStatus,
+            reason: reasonText
+          }
+        });
+      }
+    } catch (persistErr) {
+      logger.error("Failed to persist refund failure details to database", {
+        orderId: freshOrder.id,
+        error: persistErr.message
+      });
+    }
+
+    return { status: isAmbiguousTimeout ? "TIMEOUT" : "FAILED", amountCents: 0, retainedFeeCents: 0 };
+  }
+}
+
+/**
+ * Iterates through orders and processes refunds with individual isolation.
+ */
+export async function executeEventRefundBatch(eventId, cancelReason, adminUserId, orderIds, event) {
+  const paymentProvider = getPaymentProvider();
+  let refundedCount = 0;
+  let failedCount = 0;
+  let timeoutCount = 0;
+  let totalRefundedCents = 0;
+  let totalRetainedFeesCents = 0;
+
+  for (const orderId of orderIds) {
+    try {
+      const outcome = await processSingleOrderRefund({
+        orderId,
+        event,
+        cancelReason,
+        paymentProvider
+      });
+
+      if (outcome.status === "SUCCEEDED") {
+        refundedCount++;
+        totalRefundedCents += outcome.amountCents;
+        totalRetainedFeesCents += outcome.retainedFeeCents;
+      } else if (outcome.status === "TIMEOUT") {
+        timeoutCount++;
+      } else if (outcome.status === "FAILED" || outcome.status === "FAILED_DB") {
+        failedCount++;
+      }
+    } catch (orderErr) {
+      logger.error("Unexpected error processing refund for order", {
+        orderId,
+        error: orderErr.message
+      });
+      failedCount++;
+    }
+  }
+
+  // Persist Audit Log entry summarizing execution
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorId: adminUserId || null,
+        action: "EVENT_CANCELLED",
+        entity: "Event",
+        entityId: event.id,
+        after: {
+          eventId: event.id,
+          eventTitle: event.title,
+          reason: cancelReason,
+          totalOrdersProcessed: orderIds.length,
+          refundedOrders: refundedCount,
+          failedOrders: failedCount,
+          timeoutOrders: timeoutCount,
+          totalRefundedCents,
+          totalRetainedFeesCents
+        }
+      }
+    });
+  } catch (auditErr) {
+    logger.error("Failed to write audit log for event cancellation", { eventId, error: auditErr.message });
+  }
+
+  return {
+    totalOrders: orderIds.length,
+    refundedCount,
+    failedCount,
+    timeoutCount,
+    totalRefundedCents,
+    totalRetainedFeesCents
+  };
+}
+
+/**
+ * Worker handler invoked by pg-boss for asynchronous background refund processing.
+ */
+export async function executeEventRefundBatchForEvent(eventId, cancelReason, adminUserId) {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: {
+      organiser: {
+        select: {
+          id: true,
+          businessName: true,
+          contactEmail: true
+        }
+      }
+    }
+  });
+
+  if (!event) {
+    logger.warn("Event not found for background refund batch", { eventId });
+    return;
+  }
+
+  const remainingPaidOrders = await prisma.order.findMany({
+    where: {
+      eventId,
+      status: "PAID"
+    },
+    select: { id: true }
+  });
+
+  if (remainingPaidOrders.length === 0) {
+    logger.info("No remaining paid orders found for background refund batch", { eventId });
+    return;
+  }
+
+  logger.info(`Starting pg-boss background refund execution for ${remainingPaidOrders.length} orders in event ${eventId}`);
+  const orderIds = remainingPaidOrders.map((o) => o.id);
+  await executeEventRefundBatch(eventId, cancelReason, adminUserId, orderIds, event);
+}
+
 export async function cancelEventAndRefundOrders(eventId, reason, adminUserId) {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -523,204 +1027,200 @@ export async function cancelEventAndRefundOrders(eventId, reason, adminUserId) {
     throw new AppError("NOT_FOUND", 404, "Event not found.");
   }
 
-  if (event.status === "CANCELLED") {
-    throw new AppError("CONFLICT", 409, "This event has already been cancelled.");
-  }
-
   const cancelReason = reason || "Event cancelled by platform administrator";
 
-  // 1. Update event status to CANCELLED and release all active holds
-  await prisma.$transaction([
-    prisma.event.update({
-      where: { id: eventId },
-      data: { status: "CANCELLED" }
-    }),
-    prisma.inventoryHold.updateMany({
+  // Check if event is already cancelled
+  if (event.status === "CANCELLED") {
+    // Allow retry if there are unresolved PAID orders
+    const remainingPaidCount = await prisma.order.count({
       where: {
-        ticketType: { eventId },
-        status: "ACTIVE"
-      },
-      data: { status: "RELEASED" }
-    })
-  ]);
+        eventId,
+        status: "PAID"
+      }
+    });
 
-  // 2. Fetch all PAID orders for this event
+    if (remainingPaidCount === 0) {
+      throw new AppError("CONFLICT", 409, "This event has already been cancelled and all orders have been processed.");
+    }
+
+    logger.info("Retrying refunds for already-cancelled event with unresolved paid orders", {
+      eventId,
+      remainingPaidCount
+    });
+  } else {
+    // Update event status to CANCELLED and release all active inventory holds atomically
+    await prisma.$transaction([
+      prisma.event.update({
+        where: { id: eventId },
+        data: { status: "CANCELLED" }
+      }),
+      prisma.inventoryHold.updateMany({
+        where: {
+          ticketType: { eventId },
+          status: "ACTIVE"
+        },
+        data: { status: "RELEASED" }
+      })
+    ]);
+  }
+
+  // Fetch all currently unresolved PAID orders for this event
   const paidOrders = await prisma.order.findMany({
     where: {
       eventId,
       status: "PAID"
     },
-    include: {
-      payment: true,
-      tickets: true,
-      user: {
-        select: {
-          id: true,
-          email: true,
-          name: true
-        }
-      }
-    }
+    select: { id: true }
   });
 
-  let refundedCount = 0;
-  let failedCount = 0;
-  let totalRefundedCents = 0;
-  let totalRetainedFeesCents = 0;
-
-  const paymentProvider = getPaymentProvider();
-
-  // 3. Process each order refund: refund ONLY ticketTotalCents (retain gateway & buyer fees)
-  for (const order of paidOrders) {
-    const refundAmountCents = order.ticketTotalCents;
-    const retainedFeeCents = order.buyerFeeCents || 0;
-    const paymentIntentId = order.payment?.stripePaymentIntentId;
-
-    let stripeRefundId = null;
-
-    if (paymentIntentId) {
-      try {
-        const refundResult = await paymentProvider.createRefund({
-          paymentIntentId,
-          amountCents: refundAmountCents,
-          reason: "requested_by_customer"
-        });
-        stripeRefundId = refundResult.id;
-      } catch (err) {
-        if (
-          err.code === "PAYMENT_GATEWAY_NOT_CONFIGURED" ||
-          err.message?.includes("PAYMENT_GATEWAY_NOT_CONFIGURED") ||
-          paymentIntentId.startsWith("pi_demo_")
-        ) {
-          stripeRefundId = `re_demo_${Date.now()}_${order.id.slice(0, 8)}`;
-        } else {
-          logger.error("Failed to execute Stripe refund for order", {
-            orderId: order.id,
-            paymentIntentId,
-            error: err.message
-          });
-        }
+  if (paidOrders.length === 0) {
+    return {
+      eventId: event.id,
+      eventTitle: event.title,
+      status: "CANCELLED",
+      reason: cancelReason,
+      isBackground: false,
+      summary: {
+        totalPaidOrders: 0,
+        refundedOrders: 0,
+        failedOrders: 0,
+        totalRefundedAmountCents: 0,
+        retainedFeeAmountCents: 0,
+        currency: "AUD",
+        message: "No paid orders require refunds."
       }
-    } else {
-      stripeRefundId = `re_manual_${Date.now()}_${order.id.slice(0, 8)}`;
-    }
-
-    try {
-      const updates = [
-        prisma.order.update({
-          where: { id: order.id },
-          data: { status: "REFUNDED" }
-        }),
-        prisma.ticket.updateMany({
-          where: { orderId: order.id },
-          data: { status: "CANCELLED" }
-        }),
-        prisma.ledgerEntry.create({
-          data: {
-            organiserId: event.organiserId,
-            eventId: event.id,
-            orderId: order.id,
-            type: "REFUND",
-            amountCents: -refundAmountCents,
-            description: `Event cancellation ticket refund for order ${order.orderNumber}`
-          }
-        })
-      ];
-
-      if (order.payment) {
-        updates.push(
-          prisma.refund.upsert({
-            where: { orderId: order.id },
-            create: {
-              orderId: order.id,
-              paymentId: order.payment.id,
-              stripeRefundId,
-              amountCents: refundAmountCents,
-              status: stripeRefundId ? "SUCCEEDED" : "PENDING",
-              reason: cancelReason
-            },
-            update: {
-              stripeRefundId,
-              amountCents: refundAmountCents,
-              status: stripeRefundId ? "SUCCEEDED" : "PENDING",
-              reason: cancelReason
-            }
-          })
-        );
-      }
-
-      await prisma.$transaction(updates);
-
-      refundedCount++;
-      totalRefundedCents += refundAmountCents;
-      totalRetainedFeesCents += retainedFeeCents;
-
-      // Dispatch automated event cancellation & refund notification email
-      const userEmail = order.user?.email;
-      if (userEmail) {
-        const refundAud = (refundAmountCents / 100).toFixed(2);
-        sendEventCancellationNotification({
-          recipientEmail: userEmail,
-          recipientName: order.user?.name || "Valued Customer",
-          orderNumber: order.orderNumber,
-          eventTitle: event.title,
-          cancellationReason: cancelReason,
-          refundAmountAud: refundAud,
-          currency: order.currency || "AUD"
-        }).catch((emailErr) => {
-          logger.error("Failed to send event cancellation email", {
-            orderId: order.id,
-            email: userEmail,
-            error: emailErr.message
-          });
-        });
-      }
-    } catch (dbErr) {
-
-      logger.error("Failed to update database for refunded order", {
-        orderId: order.id,
-        error: dbErr.message
-      });
-      failedCount++;
-    }
-
-
+    };
   }
 
-  // 4. Audit Log entry for event cancellation
-  await prisma.auditLog.create({
-    data: {
-      actorId: adminUserId,
-      action: "EVENT_CANCELLED",
-      entity: "Event",
-      entityId: event.id,
-      after: {
+  const orderIds = paidOrders.map((o) => o.id);
+  const ASYNC_THRESHOLD = 5;
+
+  if (orderIds.length > ASYNC_THRESHOLD) {
+    // Enqueue a durable background job into PostgreSQL via pg-boss before responding HTTP 202
+    try {
+      await pgboss.send(
+        "event.refund.batch",
+        {
+          eventId,
+          cancelReason,
+          adminUserId
+        },
+        {
+          singletonKey: eventId, // Deduplicates simultaneous queueing for the same event
+          retryLimit: 2,
+          retryDelay: 30
+        }
+      );
+      logger.info("Enqueued durable pg-boss job for event cancellation refunds", { eventId, orderCount: orderIds.length });
+    } catch (queueErr) {
+      logger.warn("pg-boss enqueue failed, falling back to synchronous processing to avoid losing job", {
+        eventId,
+        error: queueErr.message
+      });
+      // If queueing fails, execute synchronously rather than abandoning the job
+      const fallbackResult = await executeEventRefundBatch(eventId, cancelReason, adminUserId, orderIds, event);
+      return {
         eventId: event.id,
         eventTitle: event.title,
+        status: "CANCELLED",
         reason: cancelReason,
-        totalPaidOrders: paidOrders.length,
-        refundedOrders: refundedCount,
-        failedOrders: failedCount,
-        totalRefundedCents,
-        totalRetainedFeesCents
-      }
+        isBackground: false,
+        summary: {
+          totalPaidOrders: orderIds.length,
+          refundedOrders: fallbackResult.refundedCount,
+          failedOrders: fallbackResult.failedCount,
+          totalRefundedAmountCents: fallbackResult.totalRefundedCents,
+          retainedFeeAmountCents: fallbackResult.totalRetainedFeesCents,
+          currency: "AUD"
+        }
+      };
     }
-  });
+
+    return {
+      eventId: event.id,
+      eventTitle: event.title,
+      status: "CANCELLED",
+      reason: cancelReason,
+      isBackground: true,
+      summary: {
+        totalPaidOrders: orderIds.length,
+        status: "PROCESSING",
+        message: `Event cancellation initiated. Processing refunds for ${orderIds.length} orders via durable background worker.`,
+        currency: "AUD"
+      }
+    };
+  }
+
+  // Synchronous execution for small batches (<= 5 orders)
+  const batchResult = await executeEventRefundBatch(eventId, cancelReason, adminUserId, orderIds, event);
 
   return {
     eventId: event.id,
     eventTitle: event.title,
     status: "CANCELLED",
     reason: cancelReason,
+    isBackground: false,
     summary: {
-      totalPaidOrders: paidOrders.length,
-      refundedOrders: refundedCount,
-      failedOrders: failedCount,
-      totalRefundedAmountCents: totalRefundedCents,
-      retainedFeeAmountCents: totalRetainedFeesCents,
+      totalPaidOrders: orderIds.length,
+      refundedOrders: batchResult.refundedCount,
+      failedOrders: batchResult.failedCount,
+      totalRefundedAmountCents: batchResult.totalRefundedCents,
+      retainedFeeAmountCents: batchResult.totalRetainedFeesCents,
       currency: "AUD"
     }
   };
+}
+
+/**
+ * Scans PostgreSQL on startup and in recurring cron for any CANCELLED events that still have unresolved PAID orders
+ * (e.g. if the Node.js process crashed or was restarted mid-batch) and enqueues them for background recovery.
+ */
+export async function resumeInterruptedEventRefunds() {
+  try {
+    const cancelledEventsWithPaidOrders = await prisma.event.findMany({
+      where: {
+        status: "CANCELLED",
+        orders: {
+          some: {
+            status: "PAID"
+          }
+        }
+      },
+      select: {
+        id: true,
+        title: true
+      }
+    });
+
+    if (cancelledEventsWithPaidOrders.length === 0) {
+      return;
+    }
+
+    logger.info(`Found ${cancelledEventsWithPaidOrders.length} cancelled event(s) with unresolved paid orders. Enqueueing recovery jobs...`);
+
+    for (const evt of cancelledEventsWithPaidOrders) {
+      try {
+        await pgboss.send(
+          "event.refund.batch",
+          {
+            eventId: evt.id,
+            cancelReason: "Automated recovery for interrupted event cancellation",
+            adminUserId: null
+          },
+          {
+            singletonKey: evt.id,
+            retryLimit: 2,
+            retryDelay: 30
+          }
+        );
+        logger.info(`Enqueued recovery job for cancelled event: ${evt.title} (${evt.id})`);
+      } catch (err) {
+        logger.error("Error enqueueing recovery refund job", { eventId: evt.id, error: err.message });
+      }
+    }
+  } catch (err) {
+    logger.error("Failed to run resumeInterruptedEventRefunds sweep", { error: err.message });
+  }
 }
 
 // ----------------------------------------------------

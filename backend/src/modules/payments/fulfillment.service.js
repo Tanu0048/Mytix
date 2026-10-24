@@ -241,20 +241,27 @@ export async function handleExternalRefund(charge) {
     return;
   }
 
-  const updates = [
-    prisma.order.update({
+  await prisma.$transaction(async (tx) => {
+    // 1. Mark Order as REFUNDED
+    await tx.order.update({
       where: { id: order.id },
       data: { status: "REFUNDED" }
-    }),
-    prisma.payment.update({
+    });
+
+    // 2. Mark Payment as REFUNDED
+    await tx.payment.update({
       where: { id: payment.id },
       data: { status: "REFUNDED" }
-    }),
-    prisma.ticket.updateMany({
+    });
+
+    // 3. Void tickets
+    await tx.ticket.updateMany({
       where: { orderId: order.id },
       data: { status: "CANCELLED" }
-    }),
-    prisma.refund.upsert({
+    });
+
+    // 4. Upsert Refund record
+    await tx.refund.upsert({
       where: { orderId: order.id },
       create: {
         orderId: order.id,
@@ -270,25 +277,38 @@ export async function handleExternalRefund(charge) {
         status: "SUCCEEDED",
         reason: stripeRefund?.reason || "Refunded via Stripe dashboard"
       }
-    })
-  ];
+    });
 
-  if (order.status !== "REFUNDED") {
-    updates.push(
-      prisma.ledgerEntry.create({
-        data: {
-          organiserId: order.event.organiserId,
-          eventId: order.eventId,
-          orderId: order.id,
-          type: "REFUND",
-          amountCents: -order.ticketTotalCents,
-          description: `Stripe external refund for order ${order.orderNumber}`
+    // 5. Ensure at most ONE REFUND ledger entry is ever created for this order
+    const existingLedger = await tx.ledgerEntry.findFirst({
+      where: {
+        orderId: order.id,
+        type: "REFUND"
+      }
+    });
+
+    if (!existingLedger) {
+      try {
+        await tx.ledgerEntry.create({
+          data: {
+            organiserId: order.event.organiserId,
+            eventId: order.eventId,
+            orderId: order.id,
+            type: "REFUND",
+            amountCents: -order.ticketTotalCents,
+            description: `Stripe external refund for order ${order.orderNumber}`
+          }
+        });
+      } catch (ledgerErr) {
+        // If unique index idx_ledger_entries_unique_refund_order caught a concurrent insert, suppress duplicate
+        if (ledgerErr.code === "P2002" || ledgerErr.message?.includes("idx_ledger_entries_unique_refund_order")) {
+          logger.info("REFUND ledger entry already exists from concurrent execution, skipped duplicate insert", { orderId: order.id });
+        } else {
+          throw ledgerErr;
         }
-      })
-    );
-  }
-
-  await prisma.$transaction(updates);
+      }
+    }
+  });
 
   logger.info("Successfully processed external charge.refunded event", {
     orderId: order.id,

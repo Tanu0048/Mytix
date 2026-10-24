@@ -1,7 +1,7 @@
 import { StripePaymentProvider } from "./stripePayment.js";
 
 // Currently active payment provider adapter
-const paymentInstance = new StripePaymentProvider();
+let paymentInstance = new StripePaymentProvider();
 
 /**
  * Returns the currently active payment provider instance.
@@ -9,6 +9,10 @@ const paymentInstance = new StripePaymentProvider();
  */
 export function getPaymentProvider() {
   return paymentInstance;
+}
+
+export function setPaymentProvider(provider) {
+  paymentInstance = provider;
 }
 
 export { PaymentProvider } from "./payment.interface.js";

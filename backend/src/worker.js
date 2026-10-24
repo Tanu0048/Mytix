@@ -49,8 +49,26 @@ export async function startWorker() {
     try {
       const { reconcileStuckOrders } = await import("./modules/payments/reconcile.service.js");
       await reconcileStuckOrders();
+      const { resumeInterruptedEventRefunds } = await import("./modules/admin/admin.service.js");
+      await resumeInterruptedEventRefunds();
     } catch (err) {
       logger.error("Error running payment.reconcile task", { error: err.message });
+    }
+  });
+
+  // Durable worker consumer for event cancellation refund batches
+  await boss.work("event.refund.batch", async (jobs) => {
+    const jobList = Array.isArray(jobs) ? jobs : [jobs];
+    for (const job of jobList) {
+      const { eventId, cancelReason, adminUserId } = job.data;
+      logger.info("Executing event.refund.batch background job via pg-boss", { eventId, jobId: job.id });
+      try {
+        const { executeEventRefundBatchForEvent } = await import("./modules/admin/admin.service.js");
+        await executeEventRefundBatchForEvent(eventId, cancelReason, adminUserId);
+      } catch (err) {
+        logger.error("Error executing event.refund.batch job", { eventId, error: err.message });
+        throw err; // Trigger pg-boss retry policy
+      }
     }
   });
 
