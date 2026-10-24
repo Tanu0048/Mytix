@@ -1476,13 +1476,13 @@ export default function Home() {
           </div>
 
           <div className="relative z-10 flex items-center w-full md:w-auto shrink-0">
-             <a 
-               href="mailto:organisers@mytix.com.au" 
-               className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-8 py-4 rounded-full transition-all text-sm sm:text-base shadow-xl shadow-amber-400/20 hover:scale-105 active:scale-95 group"
+             <Link 
+               href="/become-an-organiser" 
+               className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-8 py-4 rounded-full transition-all text-sm sm:text-base shadow-xl shadow-amber-400/20 hover:scale-105 active:scale-95 group cursor-pointer"
              >
-               <Mail className="w-5 h-5 text-slate-950" />
-               <span>organisers@mytix.com.au</span>
-             </a>
+               <span>Contact Details & Requirements</span>
+               <ArrowRight className="w-5 h-5 text-slate-950 transition-transform group-hover:translate-x-1" />
+             </Link>
           </div>
         </div>
       </div>

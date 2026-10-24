@@ -26,5 +26,6 @@ router.get("/social-links", cacheHeaders(30), catalogController.getSocialLinks);
 router.get("/about-us", cacheHeaders(60), catalogController.getAboutUs);
 router.get("/contact-us", cacheHeaders(60), catalogController.getContactUs);
 router.get("/faq", cacheHeaders(60), catalogController.getFaq);
+router.get("/organiser-requirements", cacheHeaders(60), catalogController.getOrganiserRequirements);
 
 export default router;
