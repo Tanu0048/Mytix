@@ -563,7 +563,7 @@ export default function Home() {
                     if (offset === -1) prevSlide();
                     if (offset === 1) nextSlide();
                   }}
-                  className="absolute left-1/2 top-0 w-[84%] sm:w-[80%] md:w-[78%] lg:w-[76%] max-w h-full transition-all duration-500 ease-out cursor-pointer"
+                  className="absolute left-1/2 top-0 w-[84%] sm:w-[80%] md:w-[78%] lg:w-[76%] max-w-300 h-full transition-all duration-500 ease-out cursor-pointer"
                   style={{ 
                     transform: transformStyle,
                     zIndex: offset === 0 ? 20 : 10,

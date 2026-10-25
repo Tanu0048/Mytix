@@ -19,27 +19,31 @@ app.set("trust proxy", 1);
 // 1. Security Headers & CORS
 app.use(helmet());
 
-const allowedOrigins = (env.ALLOWED_ORIGINS || "")
-  .split(",")
-  .map((origin) => origin.trim())
+const allowedOrigins = [
+  ...(env.ALLOWED_ORIGINS || "").split(","),
+  ...(env.FRONTEND_URL || "").split(","),
+  ...(env.ADMIN_URL || "").split(",")
+]
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
   .filter(Boolean);
-
-if (env.FRONTEND_URL && !allowedOrigins.includes(env.FRONTEND_URL)) {
-  allowedOrigins.push(env.FRONTEND_URL);
-}
-if (env.ADMIN_URL && !allowedOrigins.includes(env.ADMIN_URL)) {
-  allowedOrigins.push(env.ADMIN_URL);
-}
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true);
-      if (env.NODE_ENV === "development" || allowedOrigins.includes(origin)) {
+      const cleanOrigin = origin.replace(/\/+$/, "");
+
+      // Allow development, localhost ports, and configured origins
+      if (
+        env.NODE_ENV === "development" ||
+        cleanOrigin.startsWith("http://localhost:") ||
+        cleanOrigin.startsWith("http://127.0.0.1:") ||
+        allowedOrigins.includes(cleanOrigin)
+      ) {
         return callback(null, true);
       }
-      return callback(new Error(`CORS error: Origin ${origin} not permitted.`));
+      return callback(null, false);
     },
     credentials: true
   })
