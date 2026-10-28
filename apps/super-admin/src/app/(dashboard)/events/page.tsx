@@ -272,7 +272,7 @@ export default function EventsPage() {
                 <th className="px-5 py-3.5">Event Details</th>
                 <th className="px-5 py-3.5">Date & Time</th>
                 <th className="px-5 py-3.5">Tickets Sold</th>
-                <th className="px-5 py-3.5">Trending (48h)</th>
+                {/* <th className="px-5 py-3.5">Trending (48h)</th> */}
                 <th className="px-5 py-3.5">Status</th>
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
@@ -281,14 +281,14 @@ export default function EventsPage() {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={5} className="px-5 py-12 text-center text-slate-400 font-medium">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-amber-500" />
                     <span>Loading events...</span>
                   </td>
                 </tr>
               ) : filteredEvents.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center">
+                  <td colSpan={5} className="px-5 py-12 text-center">
                     <Calendar className="h-8 w-8 text-slate-300 mx-auto mb-2" />
                     <h3 className="text-sm font-bold text-slate-800">No events found</h3>
                     <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
@@ -370,7 +370,8 @@ export default function EventsPage() {
                         </div>
                       </td>
 
-                      {/* Column 4: Trending (48h) */}
+                      {/* Column 4: Trending (48h) (Temporarily commented out - preserved for future use) */}
+                      {/*
                       <td className="px-5 py-3.5">
                         {trendingMap.has(event.id) ? (
                           (() => {
@@ -400,6 +401,7 @@ export default function EventsPage() {
                           <span className="text-slate-400 text-xs">--</span>
                         )}
                       </td>
+                      */}
 
                       {/* Column 5: Status */}
                       <td className="px-5 py-3.5">
