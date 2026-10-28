@@ -97,3 +97,8 @@ adminRouter.put("/faq", adminController.updateFaq);
 adminRouter.get("/organiser-requirements", adminController.getOrganiserRequirements);
 adminRouter.put("/organiser-requirements", adminController.updateOrganiserRequirements);
 
+
+// ----------------------------------------------------
+// TRENDING EVENTS (Super-Admin Observability)
+// ----------------------------------------------------
+adminRouter.get("/events/trending", adminController.getTrendingEvents);

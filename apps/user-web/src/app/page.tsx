@@ -421,8 +421,8 @@ export default function Home() {
 
   const allTrending = React.useMemo(() => {
     const rawList = [
-      ...(homeData?.featuredEvents || []),
-      ...(homeData?.trendingEvents || [])
+      ...(homeData?.trendingEvents || []),
+      ...(homeData?.featuredEvents || [])
     ];
     const seen = new Set<string>();
     const unique: any[] = [];
@@ -639,7 +639,7 @@ export default function Home() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
-                Featured events
+                Trending events
               </h2>
               {selectedCity && selectedCity !== 'All Cities' && (
                 <span className="text-xs md:text-sm font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-300 whitespace-nowrap">
@@ -650,7 +650,7 @@ export default function Home() {
             <p className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">
               {selectedCity && selectedCity !== 'All Cities' 
                 ? `Showing events taking place in ${selectedCity}` 
-                : "Don't miss these top events across Australia"}
+                : "Top selling events across Australia right now"}
             </p>
           </div>
           <Link href={`/events${selectedCity && selectedCity !== 'All Cities' ? `?city=${encodeURIComponent(selectedCity)}` : ''}`} className="text-xs sm:text-sm font-bold text-amber-600 hover:text-amber-700 inline-flex items-center group shrink-0 whitespace-nowrap self-start sm:self-auto">
@@ -693,8 +693,26 @@ export default function Home() {
               <div key={`featured-${item.id || item.slug}`} className="flex flex-col">
                 <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-4/5 rounded-2xl overflow-hidden mb-3 shadow-sm block border border-slate-200/90 bg-slate-100">
                   <SafeImage src={item.posterPath} alt={title} fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover" />
-                  <div className="absolute top-2.5 left-2.5 bg-amber-400 text-slate-950 text-[10px] uppercase font-black px-2.5 py-1 rounded-lg shadow-sm">
-                    Featured
+                  <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start pointer-events-none">
+                    {item.trendingMetrics?.rank ? (
+                      <div className={`text-[10px] uppercase font-black px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1 ${
+                        item.trendingMetrics.rank === 1
+                          ? 'bg-amber-400 text-slate-950 ring-1 ring-amber-500/50'
+                          : 'bg-slate-900/90 text-white backdrop-blur-xs'
+                      }`}>
+                        {item.trendingMetrics.rank === 1 && <Flame className="w-3 h-3 text-amber-950 fill-amber-950" />}
+                        <span>#{item.trendingMetrics.rank} Trending</span>
+                      </div>
+                    ) : (
+                      <div className="bg-amber-400 text-slate-950 text-[10px] uppercase font-black px-2.5 py-1 rounded-lg shadow-sm">
+                        Featured
+                      </div>
+                    )}
+                    {item.trendingMetrics?.recentSalesCount >= 10 && (
+                      <div className="bg-rose-600 text-white text-[9px] uppercase font-black px-2 py-0.5 rounded-md shadow-xs">
+                        Selling Fast
+                      </div>
+                    )}
                   </div>
                   {/* Seats / Status badge on poster */}
                   <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none gap-1">

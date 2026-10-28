@@ -22,3 +22,11 @@ export const slugParamSchema = {
     slug: z.string().min(1, "Slug parameter is required.")
   })
 };
+
+export const getTrendingEventsQuerySchema = {
+  query: z.object({
+    city: z.string().trim().max(100).optional(),
+    limit: z.coerce.number().int().min(1).max(50).default(8)
+  })
+};
+

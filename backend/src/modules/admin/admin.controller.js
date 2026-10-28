@@ -410,3 +410,16 @@ export async function updateOrganiserRequirements(req, res, next) {
 }
 
 
+
+export async function getTrendingEvents(req, res, next) {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : 20;
+    const data = await adminService.getTrendingEventsDiagnostics(limit);
+    res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    next(error);
+  }
+}

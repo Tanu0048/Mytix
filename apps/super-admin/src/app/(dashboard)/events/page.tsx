@@ -21,7 +21,8 @@ import {
   Loader2,
   AlertTriangle,
   X,
-  Search
+  Search,
+  Flame
 } from "lucide-react";
 import api from "@/lib/api";
 
@@ -47,15 +48,30 @@ export default function EventsPage() {
 
   const [upcomingEvents, setUpcomingEvents] = useState(0);
 
+  const [trendingMap, setTrendingMap] = useState<Map<string, any>>(new Map());
+
   const fetchEvents = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get("/organiser/events");
-      const list = res.data.data || [];
-      setEvents(list);
-      const currentTime = Date.now();
-      const upcoming = list.filter((e: any) => e.startsAt && new Date(e.startsAt).getTime() > currentTime).length;
-      setUpcomingEvents(upcoming);
+      const [eventsRes, trendingRes] = await Promise.allSettled([
+        api.get("/organiser/events"),
+        api.get("/admin/events/trending")
+      ]);
+
+      if (eventsRes.status === "fulfilled") {
+        const list = eventsRes.value.data.data || [];
+        setEvents(list);
+        const currentTime = Date.now();
+        const upcoming = list.filter((e: any) => e.startsAt && new Date(e.startsAt).getTime() > currentTime).length;
+        setUpcomingEvents(upcoming);
+      }
+
+      if (trendingRes.status === "fulfilled") {
+        const tList = trendingRes.value.data?.data?.events || [];
+        const tMap = new Map();
+        tList.forEach((item: any) => tMap.set(item.id, item));
+        setTrendingMap(tMap);
+      }
     } catch (err) {
       console.error("Failed to fetch events", err);
     } finally {
@@ -256,6 +272,7 @@ export default function EventsPage() {
                 <th className="px-5 py-3.5">Event Details</th>
                 <th className="px-5 py-3.5">Date & Time</th>
                 <th className="px-5 py-3.5">Tickets Sold</th>
+                <th className="px-5 py-3.5">Trending (48h)</th>
                 <th className="px-5 py-3.5">Status</th>
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
@@ -264,14 +281,14 @@ export default function EventsPage() {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400 font-medium">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-amber-500" />
                     <span>Loading events...</span>
                   </td>
                 </tr>
               ) : filteredEvents.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center">
+                  <td colSpan={6} className="px-5 py-12 text-center">
                     <Calendar className="h-8 w-8 text-slate-300 mx-auto mb-2" />
                     <h3 className="text-sm font-bold text-slate-800">No events found</h3>
                     <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
@@ -353,7 +370,38 @@ export default function EventsPage() {
                         </div>
                       </td>
 
-                      {/* Column 4: Status */}
+                      {/* Column 4: Trending (48h) */}
+                      <td className="px-5 py-3.5">
+                        {trendingMap.has(event.id) ? (
+                          (() => {
+                            const t = trendingMap.get(event.id);
+                            return (
+                              <div className="flex flex-col gap-1 items-start">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300">
+                                    <Flame className="w-3 h-3 text-amber-600 fill-amber-600" />
+                                    #{t.rank} Trending
+                                  </span>
+                                  <span className="text-[11px] font-bold text-slate-700">
+                                    {t.recentSalesCount} sold
+                                  </span>
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {t.rankingSource === "RECENT_SALES"
+                                    ? "48h Velocity"
+                                    : t.rankingSource === "ALL_TIME_SALES"
+                                    ? "All-Time Volume"
+                                    : "Upcoming Show"}
+                                </span>
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          <span className="text-slate-400 text-xs">--</span>
+                        )}
+                      </td>
+
+                      {/* Column 5: Status */}
                       <td className="px-5 py-3.5">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
                           isDraft 
