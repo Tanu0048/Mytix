@@ -1084,7 +1084,9 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Browse by city */}
+      {/* =========================================================================
+          BROWSE BY CITY (Temporarily commented out - preserved for future use)
+      =========================================================================
       {availableCities.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 mb-20">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
@@ -1133,7 +1135,7 @@ export default function Home() {
                       : 'border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1'
                   }`}
                 >
-                  {/* City Background Photo with Zoom on Hover */}
+                  // City Background Photo with Zoom on Hover
                   <Image
                     src={homeData?.cityImages?.[city.toLowerCase().trim()] || DEFAULT_CITY_IMAGE}
                     alt={city}
@@ -1142,14 +1144,14 @@ export default function Home() {
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                   />
 
-                  {/* Gradient Dark Overlay */}
+                  // Gradient Dark Overlay
                   <div className={`absolute inset-0 transition-opacity duration-300 ${
                     isSelected 
                       ? 'bg-linear-to-t from-slate-950 via-slate-950/60 to-slate-950/40' 
                       : 'bg-linear-to-t from-slate-950/90 via-slate-950/50 to-slate-950/25 group-hover:from-slate-950 group-hover:via-slate-950/60'
                   }`} />
 
-                  {/* Top Badges */}
+                  // Top Badges
                   <div className="relative z-10 flex items-center justify-between w-full">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md text-white border border-white/20">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -1163,7 +1165,7 @@ export default function Home() {
                     )}
                   </div>
 
-                  {/* Bottom City Name & Action */}
+                  // Bottom City Name & Action
                   <div className="relative z-10">
                     <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-amber-300 mb-0.5">
                       {stateName}
@@ -1182,6 +1184,7 @@ export default function Home() {
           </div>
         </div>
       )}
+      */}
 
       {/* Coming up list - High-End Luxury Live Tour Dates */}
       <div className="max-w-7xl mx-auto px-4 mb-20">
