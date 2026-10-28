@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { getCached, setCached } from "../../lib/cache.js";
 import { CACHE_TTL } from "../../config/constants.js";
+import { getTrendingEvents } from "./trending.service.js";
 
 export async function getHomePageData() {
   const cacheKey = "catalog:home";
@@ -27,19 +28,8 @@ export async function getHomePageData() {
       }
     }),
 
-    // Trending events
-    prisma.event.findMany({
-      where: {
-        status: "PUBLISHED",
-        startsAt: { gte: now }
-      },
-      take: 8,
-      orderBy: { createdAt: "desc" },
-      include: {
-        venue: { select: { name: true, city: true, state: true } },
-        ticketTypes: { select: { priceCents: true, available: true, quantity: true, sold: true } }
-      }
-    }),
+    // Dynamic Trending Events (Option A: 48h Sales Velocity with 3-tier fallback)
+    getTrendingEvents({ limit: 8 }),
 
     // Artists with upcoming events
     prisma.artist.findMany({
@@ -101,4 +91,3 @@ export async function getHomePageData() {
   setCached(cacheKey, response, CACHE_TTL.STATIC_PAGES_SECONDS * 1000);
   return response;
 }
-

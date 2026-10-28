@@ -3,7 +3,7 @@ import * as catalogController from "./catalog.controller.js";
 import { validate } from "../../middleware/validate.js";
 import { cacheHeaders } from "../../middleware/cacheHeaders.js";
 import { publicLimiter } from "../../middleware/rateLimit.js";
-import { getEventsQuerySchema, slugParamSchema } from "./catalog.schema.js";
+import { getEventsQuerySchema, slugParamSchema, getTrendingEventsQuerySchema } from "./catalog.schema.js";
 
 const router = Router();
 
@@ -13,6 +13,7 @@ router.get("/home", cacheHeaders(30), catalogController.getHome);
 router.get("/categories", catalogController.getCategories);
 router.get("/events", validate(getEventsQuerySchema), cacheHeaders(15), catalogController.getEvents);
 router.get("/events/upcoming", validate(getEventsQuerySchema), cacheHeaders(15), catalogController.getUpcomingEvents);
+router.get("/events/trending", validate(getTrendingEventsQuerySchema), cacheHeaders(15), catalogController.getTrendingEvents);
 router.get("/events/:slug", validate(slugParamSchema), cacheHeaders(15), catalogController.getEventBySlug);
 router.get("/events/:slug/availability", validate(slugParamSchema), cacheHeaders(5), catalogController.getAvailability);
 router.get("/events/:slug/seats", validate(slugParamSchema), cacheHeaders(3), catalogController.getSeats);

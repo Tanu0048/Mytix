@@ -1657,3 +1657,8 @@ export async function updateOrganiserRequirements(reqData) {
 }
 
 
+
+export async function getTrendingEventsDiagnostics(limit = 20) {
+  const { getTrendingDiagnostics } = await import("../catalog/trending.service.js");
+  return getTrendingDiagnostics({ limit });
+}

@@ -2,10 +2,16 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import * as catalogService from "./catalog.service.js";
 import { getHomePageData } from "./home.service.js";
 import { getEventAvailability, getEventSeats } from "./availability.service.js";
+import { getTrendingEvents as fetchTrendingEvents } from "./trending.service.js";
 
 export const getHome = asyncHandler(async (_req, res) => {
   const data = await getHomePageData();
   res.status(200).json(data);
+});
+
+export const getTrendingEvents = asyncHandler(async (req, res) => {
+  const data = await fetchTrendingEvents(req.query);
+  res.status(200).json({ data });
 });
 
 export const getEvents = asyncHandler(async (req, res) => {
@@ -92,4 +98,3 @@ export const getOrganiserRequirements = asyncHandler(async (_req, res) => {
   const data = await catalogService.getPublicOrganiserRequirements();
   res.status(200).json(data);
 });
-
