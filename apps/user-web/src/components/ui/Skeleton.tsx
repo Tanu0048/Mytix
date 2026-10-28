@@ -1,10 +1,13 @@
 import React from 'react';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 
 export const Skeleton = ({ className = "" }: { className?: string }) => {
   return (
     <div 
-      className={`relative overflow-hidden bg-gray-200 rounded-md ${className} before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-linear-to-r before:from-transparent before:via-white/60 before:to-transparent`}
-    />
+      className={`relative overflow-hidden bg-slate-200/80 rounded-md ${className}`}
+    >
+      <div className="absolute inset-0 -translate-x-full animate-shimmer bg-linear-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+    </div>
   );
 };
 
@@ -27,8 +30,54 @@ export const EventCardSkeleton = () => {
 
 export const BannerSkeleton = () => {
   return (
-    <div className="relative w-full h-40 sm:h-56 md:h-80 lg:h-96 flex justify-center items-center overflow-hidden bg-gray-100 py-4">
-      <Skeleton className="w-11/12 max-w-7xl h-full rounded-xl md:rounded-2xl shadow-md" />
+    <div className="relative w-full h-full flex justify-center items-center overflow-hidden">
+      {/* Left Peek Banner (Visible on all screens with exact BookMyShow proportion) */}
+      <div 
+        className="absolute left-1/2 top-0 w-[84%] sm:w-[80%] md:w-[78%] lg:w-[76%] max-w-300 h-full rounded-2xl md:rounded-3xl overflow-hidden shadow-md border border-slate-200/90 bg-slate-200 pointer-events-none"
+        style={{ transform: 'translateX(calc(-150% - 14px))' }}
+      >
+        <div 
+          className="absolute inset-0 -translate-x-full animate-shimmer pointer-events-none" 
+          style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.45) 50%, transparent 100%)' }}
+        />
+      </div>
+
+      {/* Main Center Banner Card Skeleton */}
+      <div 
+        className="absolute left-1/2 top-0 w-[84%] sm:w-[80%] md:w-[78%] lg:w-[76%] max-w-300 h-full rounded-2xl md:rounded-3xl overflow-hidden shadow-xl border border-slate-300/80 bg-slate-200"
+        style={{ transform: 'translateX(-50%)' }}
+      >
+        <div 
+          className="absolute inset-0 -translate-x-full animate-shimmer pointer-events-none z-10" 
+          style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.55) 50%, transparent 100%)' }}
+        />
+      </div>
+
+      {/* Right Peek Banner (Visible on all screens with exact BookMyShow proportion) */}
+      <div 
+        className="absolute left-1/2 top-0 w-[84%] sm:w-[80%] md:w-[78%] lg:w-[76%] max-w-300 h-full rounded-2xl md:rounded-3xl overflow-hidden shadow-md border border-slate-200/90 bg-slate-200 pointer-events-none"
+        style={{ transform: 'translateX(calc(50% + 14px))' }}
+      >
+        <div 
+          className="absolute inset-0 -translate-x-full animate-shimmer pointer-events-none" 
+          style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.45) 50%, transparent 100%)' }}
+        />
+      </div>
+
+      {/* Navigation Arrows Skeleton */}
+      <div className="absolute left-1.5 sm:left-3 md:left-5 lg:left-7 top-1/2 -translate-y-1/2 z-30 w-8 h-12 md:w-9 md:h-14 bg-black/40 backdrop-blur-sm text-white/50 flex items-center justify-center rounded-lg md:rounded-xl shadow-lg border border-white/10 pointer-events-none">
+        <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 opacity-60" />
+      </div>
+      <div className="absolute right-1.5 sm:right-3 md:right-5 lg:right-7 top-1/2 -translate-y-1/2 z-30 w-8 h-12 md:w-9 md:h-14 bg-black/40 backdrop-blur-sm text-white/50 flex items-center justify-center rounded-lg md:rounded-xl shadow-lg border border-white/10 pointer-events-none">
+        <ChevronRight className="w-5 h-5 md:w-6 md:h-6 opacity-60" />
+      </div>
+
+      {/* Bottom Indicators Skeleton */}
+      <div className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 pointer-events-none">
+        <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-xs" />
+        <div className="w-5 h-1.5 rounded-full bg-amber-400 shadow-xs" />
+        <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-xs" />
+      </div>
     </div>
   );
 };

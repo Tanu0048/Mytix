@@ -8,7 +8,6 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   RefreshControl,
@@ -17,6 +16,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LocationStore } from '../../services/locationStore';
 import Skeleton from '../../components/Skeleton';
 
@@ -33,6 +33,11 @@ function getFullImageUrl(path: string | undefined): string {
 
 export default function ExploreEventsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? StatusBar.currentHeight || 28 : 0
+  );
   const params = useLocalSearchParams<{ q?: string; category?: string }>();
 
   const [categories, setCategories] = useState<string[]>(['All']);
@@ -251,11 +256,11 @@ export default function ExploreEventsScreen() {
     searchQuery.trim() !== '';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Header (Clean White) */}
-      <View style={styles.header}>
+      {/* Header (Clean White with Safe Area Spacing) */}
+      <View style={[styles.header, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.headerTitle}>Explore Events</Text>
@@ -361,6 +366,9 @@ export default function ExploreEventsScreen() {
       {/* Event Grid / List */}
       {loading ? (
         <ScrollView
+          scrollEnabled={false}
+          bounces={false}
+          overScrollMode="never"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
         >
@@ -438,7 +446,7 @@ export default function ExploreEventsScreen() {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -450,7 +458,6 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 14 : 6,
     paddingBottom: 12,
   },
   headerTop: {

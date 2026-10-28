@@ -121,52 +121,6 @@ async function main() {
     }
   });
 
-  // 5. Seed Events
-  const event1 = await prisma.event.upsert({
-    where: { slug: "diljit-dosanjh-live-in-sydney" },
-    update: {},
-    create: {
-      organiserId: organiserUser.organiser.id,
-      venueId: venueSydney.id,
-      title: "Diljit Dosanjh: Born to Shine Australian Tour",
-      slug: "diljit-dosanjh-live-in-sydney",
-      description: "Experience the monumental live concert by Diljit Dosanjh at Qudos Bank Arena Sydney.",
-      startsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      doorsOpenAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 - 90 * 60 * 1000),
-      status: "PUBLISHED",
-      category: "Concert",
-      artists: {
-        create: [
-          { artistId: artistDiljit.id, isHeadline: true }
-        ]
-      },
-      ticketTypes: {
-        create: [
-          {
-            name: "General Admission Floor",
-            priceCents: 9900, // A$99.00
-            quantity: 5000,
-            available: 5000,
-            saleStartsAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-            saleEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            minPerOrder: 1,
-            maxPerOrder: 10
-          },
-          {
-            name: "VIP Premium Seated",
-            priceCents: 18900, // A$189.00
-            quantity: 1500,
-            available: 1500,
-            saleStartsAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-            saleEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            minPerOrder: 1,
-            maxPerOrder: 8
-          }
-        ]
-      }
-    }
-  });
-
   // 6. Seed Platform Settings
   await prisma.platformSettings.upsert({
     where: { key: "stripe_config" },
@@ -190,8 +144,8 @@ async function main() {
       data: {
         title: "Coldplay: Music of the Spheres World Tour - Sydney",
         imageUrl: "https://kfcocpzuzxpinqgnzhsq.supabase.co/storage/v1/object/public/event-images/banners/coldplay-hero-banner.webp",
-        targetUrl: `/events/${event1.slug}`,
-        eventId: event1.id,
+        targetUrl: "/events",
+        eventId: null,
         displayOrder: 1,
         isActive: true
       }
@@ -201,7 +155,6 @@ async function main() {
 
   logger.info("Database seed completed successfully", {
     adminId: admin.id,
-    eventId: event1.id,
     venuesCount: 2,
     artistsCount: 2
   });

@@ -7,7 +7,6 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  SafeAreaView,
   StatusBar,
   RefreshControl,
   Platform,
@@ -17,12 +16,18 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { API_BASE } from '../../constants/api';
 import { fetchWithAuth, fetchFreshUserProfile } from '../../services/auth';
 
 export default function MyTicketsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? StatusBar.currentHeight || 28 : 0
+  );
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
   const [tickets, setTickets] = useState<any[]>([]);
@@ -365,11 +370,11 @@ export default function MyTicketsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Header (Clean White) */}
-      <View style={styles.header}>
+      {/* Header (Clean White with Safe Area Spacing) */}
+      <View style={[styles.header, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
         <View style={styles.headerIconCircle}>
           <Ionicons name="ticket" size={20} color="#D97706" />
         </View>
@@ -448,7 +453,7 @@ export default function MyTicketsScreen() {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -462,7 +467,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 14 : 8,
     paddingBottom: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,

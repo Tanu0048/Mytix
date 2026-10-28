@@ -6,7 +6,6 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  SafeAreaView,
   Dimensions,
   Platform,
   TextInput,
@@ -18,11 +17,14 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocationStore } from '../../services/locationStore';
 import Skeleton from '../../components/Skeleton';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const MYTIX_LOGO = require('../../assets/images/Minimalist_Mytix_Yellow_X_Logo-removebg-preview.png');
+const CACHE_KEY = '@mytix_home_cache_v1';
 
 const { width } = Dimensions.get('window');
 const BANNER_CARD_WIDTH = width - 32;
@@ -38,6 +40,11 @@ function getFullImageUrl(path: string | undefined): string {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? StatusBar.currentHeight || 28 : 0
+  );
 
   const [banners, setBanners] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -51,6 +58,7 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasFetchError, setHasFetchError] = useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
   const citySlideAnim = useRef(new Animated.Value(400)).current;
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
@@ -65,7 +73,30 @@ export default function HomeScreen() {
     return unsubscribe;
   }, []);
 
-  const loadData = useCallback(async () => {
+  // 1. Immediately hydrate from cache to prevent empty screen flashes
+  useEffect(() => {
+    async function loadCachedHomeData() {
+      try {
+        const cached = await AsyncStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.banners?.length) setBanners(parsed.banners);
+          if (parsed.categories?.length) setCategories(parsed.categories);
+          if (parsed.featuredEvents?.length) setFeaturedEvents(parsed.featuredEvents);
+          if (parsed.trendingEvents?.length) setTrendingEvents(parsed.trendingEvents);
+          if (parsed.allEvents?.length) setAllEvents(parsed.allEvents);
+          if (parsed.venues?.length) setVenues(parsed.venues);
+          if (parsed.availableCities?.length) setAvailableCities(parsed.availableCities);
+          setLoading(false);
+        }
+      } catch (err) {
+        // Ignore cache parse error
+      }
+    }
+    loadCachedHomeData();
+  }, []);
+
+  const loadData = useCallback(async (isRetry = false) => {
     try {
       const [bannersRes, homeRes, catRes, eventsRes, venuesRes] = await Promise.all([
         fetch(`${API_BASE}/banners`).catch(() => null),
@@ -75,17 +106,33 @@ export default function HomeScreen() {
         fetch(`${API_BASE}/venues`).catch(() => null),
       ]);
 
+      let anySuccess = false;
+      let newBanners = banners;
+      let newCategories = categories;
+      let newFeatured = featuredEvents;
+      let newTrending = trendingEvents;
+      let newAllEvents = allEvents;
+      let newVenues = venues;
+      let newCities = availableCities;
+
       if (catRes && catRes.ok) {
         const cData = await catRes.json();
         const catList = Array.isArray(cData) ? cData : (cData.data || []);
-        setCategories(catList);
+        if (catList.length > 0) {
+          newCategories = catList;
+          setCategories(catList);
+          anySuccess = true;
+        }
       }
 
       if (bannersRes && bannersRes.ok) {
         const bData = await bannersRes.json();
-        setBanners(bData.data || []);
-      } else {
-        setBanners([]);
+        const bList = bData.data || [];
+        if (bList.length > 0) {
+          newBanners = bList;
+          setBanners(bList);
+          anySuccess = true;
+        }
       }
 
       let evList: any[] = [];
@@ -98,18 +145,22 @@ export default function HomeScreen() {
           const startsAt = e.startsAt || e.startDate;
           return startsAt && new Date(startsAt).getTime() > now;
         });
-        setAllEvents(evList);
-      } else {
-        setAllEvents([]);
+        if (evList.length > 0) {
+          newAllEvents = evList;
+          setAllEvents(evList);
+          anySuccess = true;
+        }
       }
 
       let vList: any[] = [];
       if (venuesRes && venuesRes.ok) {
         const vData = await venuesRes.json();
         vList = Array.isArray(vData) ? vData : (vData.data || []);
-        setVenues(vList);
-      } else {
-        setVenues([]);
+        if (vList.length > 0) {
+          newVenues = vList;
+          setVenues(vList);
+          anySuccess = true;
+        }
       }
 
       if (homeRes && homeRes.ok) {
@@ -119,8 +170,19 @@ export default function HomeScreen() {
             const startsAt = e.startsAt || e.startDate;
             return startsAt && new Date(startsAt).getTime() > now;
           });
-        setFeaturedEvents(filterUpcoming(hData.featuredEvents));
-        setTrendingEvents(filterUpcoming(hData.trendingEvents));
+        const feat = filterUpcoming(hData.featuredEvents);
+        const trend = filterUpcoming(hData.trendingEvents);
+
+        if (feat.length > 0) {
+          newFeatured = feat;
+          setFeaturedEvents(feat);
+          anySuccess = true;
+        }
+        if (trend.length > 0) {
+          newTrending = trend;
+          setTrendingEvents(trend);
+          anySuccess = true;
+        }
 
         // Dynamically extract cities configured by admin across venues & events
         const dynamicCities = [
@@ -135,22 +197,51 @@ export default function HomeScreen() {
 
         const uniqueCities = Array.from(new Set(dynamicCities)).sort();
         if (uniqueCities.length > 0) {
-          setAvailableCities(['All Cities', ...uniqueCities]);
-        } else {
-          setAvailableCities(['All Cities']);
+          newCities = ['All Cities', ...uniqueCities];
+          setAvailableCities(newCities);
         }
-      } else {
-        setFeaturedEvents([]);
-        setTrendingEvents([]);
-        setAvailableCities(['All Cities']);
+      }
+
+      if (anySuccess) {
+        setHasFetchError(false);
+        // Persist to local cache so user never sees empty screen
+        AsyncStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            banners: newBanners,
+            categories: newCategories,
+            featuredEvents: newFeatured,
+            trendingEvents: newTrending,
+            allEvents: newAllEvents,
+            venues: newVenues,
+            availableCities: newCities,
+          })
+        ).catch(() => {});
+      } else if (banners.length === 0 && featuredEvents.length === 0 && allEvents.length === 0) {
+        if (!isRetry) {
+          setTimeout(() => {
+            loadData(true);
+          }, 2500);
+          return;
+        }
+        setHasFetchError(true);
       }
     } catch (err) {
       console.error('Error loading home data:', err);
+      if (banners.length === 0 && featuredEvents.length === 0) {
+        if (!isRetry) {
+          setTimeout(() => {
+            loadData(true);
+          }, 2500);
+          return;
+        }
+        setHasFetchError(true);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [banners, categories, featuredEvents, trendingEvents, allEvents, venues, availableCities]);
 
   useEffect(() => {
     loadData();
@@ -255,12 +346,15 @@ export default function HomeScreen() {
       ? venues
       : venues.filter((v: any) => v.city?.toLowerCase() === selectedCity.toLowerCase());
 
+  const isInitialLoading = loading && banners.length === 0 && featuredEvents.length === 0;
+  const showConnectionFallback = hasFetchError && banners.length === 0 && featuredEvents.length === 0;
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Top Header Bar (Clean White) */}
-      <View style={styles.topHeader}>
+      {/* Top Header Bar (Clean White with Safe Area Spacing) */}
+      <View style={[styles.topHeader, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
         <View style={styles.brandRow}>
           <Image
             source={MYTIX_LOGO}
@@ -283,8 +377,8 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      {isInitialLoading ? (
+        <ScrollView scrollEnabled={false} bounces={false} overScrollMode="never" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* Search bar skeleton */}
           <View style={{ marginBottom: 16 }}>
             <Skeleton width="100%" height={46} borderRadius={16} />
@@ -294,18 +388,18 @@ export default function HomeScreen() {
             <Skeleton width="100%" height={BANNER_CARD_HEIGHT} borderRadius={18} />
           </View>
           {/* Categories chips skeleton */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, marginBottom: 24 }}>
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24, overflow: 'hidden' }}>
             {[90, 110, 95, 120, 85].map((w, idx) => (
               <Skeleton key={idx} width={w} height={38} borderRadius={22} />
             ))}
-          </ScrollView>
+          </View>
           {/* Section 1 header skeleton */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
             <Skeleton width={160} height={20} borderRadius={6} />
             <Skeleton width={50} height={14} borderRadius={4} />
           </View>
           {/* Horizontal cards skeleton */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 28 }}>
+          <View style={{ flexDirection: 'row', marginBottom: 28, overflow: 'hidden' }}>
             {[1, 2, 3].map((i) => (
               <View key={i} style={{ width: 170, marginRight: 14 }}>
                 <Skeleton width={170} height={210} borderRadius={14} style={{ marginBottom: 8 }} />
@@ -313,7 +407,7 @@ export default function HomeScreen() {
                 <Skeleton width={90} height={12} borderRadius={4} />
               </View>
             ))}
-          </ScrollView>
+          </View>
           {/* Section 2 header skeleton */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
             <Skeleton width={140} height={20} borderRadius={6} />
@@ -361,6 +455,64 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* If backend data hasn't arrived or network is offline, show Australian-themed Retry Card and Skeleton sections */}
+        {showConnectionFallback && (
+          <View style={styles.errorNoticeBox}>
+            <View style={styles.errorIconWrap}>
+              <Ionicons name="cloud-offline" size={22} color="#D97706" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.errorNoticeHeading}>Couldn't reach Mytix servers</Text>
+              <Text style={styles.errorNoticeSub}>
+                Pull down to refresh or tap retry to load live Australian events.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.errorRetryBtn}
+              onPress={() => {
+                setLoading(true);
+                setHasFetchError(false);
+                loadData();
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="refresh" size={14} color="#0F172A" />
+              <Text style={styles.errorRetryBtnText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Render skeleton placeholder sections when data hasn't arrived so sections never disappear! */}
+        {showConnectionFallback && (
+          <View style={{ paddingHorizontal: 16 }}>
+            {/* Banner skeleton */}
+            <View style={{ marginBottom: 20 }}>
+              <Skeleton width="100%" height={BANNER_CARD_HEIGHT} borderRadius={18} />
+            </View>
+            {/* Categories chips skeleton */}
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24, overflow: 'hidden' }}>
+              {[90, 110, 95, 120, 85].map((w, idx) => (
+                <Skeleton key={idx} width={w} height={38} borderRadius={22} />
+              ))}
+            </View>
+            {/* Section 1 header skeleton */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Skeleton width={160} height={20} borderRadius={6} />
+              <Skeleton width={50} height={14} borderRadius={4} />
+            </View>
+            {/* Horizontal cards skeleton */}
+            <View style={{ flexDirection: 'row', marginBottom: 28, overflow: 'hidden' }}>
+              {[1, 2, 3].map((i) => (
+                <View key={i} style={{ width: 170, marginRight: 14 }}>
+                  <Skeleton width={170} height={210} borderRadius={14} style={{ marginBottom: 8 }} />
+                  <Skeleton width={140} height={14} borderRadius={4} style={{ marginBottom: 6 }} />
+                  <Skeleton width={90} height={12} borderRadius={4} />
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Hero Banner Carousel (Fits ANY horizontal banner with zero cropping, auto-scrolls, 1 at a time) */}
         {banners.length > 0 && (
@@ -943,7 +1095,7 @@ export default function HomeScreen() {
           </Animated.View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -957,7 +1109,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 14 : 8,
     paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
@@ -968,20 +1119,65 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   brandLogo: {
-    width: 105,
-    height: 38,
+    width: 145,
+    height: 50,
   },
   locationSelector: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFBEB',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 20,
     gap: 6,
     borderWidth: 1,
     borderColor: '#FDE68A',
-    maxWidth: 160,
+    maxWidth: 165,
+  },
+  errorNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFBEB',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  errorIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FEF3C7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorNoticeHeading: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  errorNoticeSub: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  errorRetryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F6C636',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  errorRetryBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
   },
   locationText: {
     fontSize: 12,

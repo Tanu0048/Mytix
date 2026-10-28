@@ -3,13 +3,15 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Updates from 'expo-updates';
 import { useEffect, useState, useRef } from 'react';
-import { View, Image, Animated, StyleSheet, StatusBar } from 'react-native';
+import { View, Image, Animated, StyleSheet, StatusBar, Dimensions, Text, ActivityIndicator } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { CustomAlertModal } from '@/components/CustomAlert';
 
-const SPLASH_IMAGE = require('../assets/images/splash-screen.png');
+const SPLASH_IMAGE = require('../assets/images/Mytix Events_ Your Next Unforgettable Moment.png');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -22,7 +24,7 @@ export const unstable_settings = {
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -39,19 +41,19 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (loaded) {
-      // Hide native splash immediately so our custom splash takes over seamlessly
+      // Hide native splash so our custom high-res animated splash displays cleanly
       SplashScreen.hideAsync().catch(() => {});
 
-      // Keep splash image visible briefly for a smooth transition, then smoothly fade out
+      // Keep splash visible for 5 seconds as requested, then smoothly fade out
       const timer = setTimeout(() => {
         Animated.timing(splashFadeAnim, {
           toValue: 0,
-          duration: 400,
+          duration: 450,
           useNativeDriver: true,
         }).start(() => {
           setIsSplashVisible(false);
         });
-      }, 500);
+      }, 5000);
 
       return () => clearTimeout(timer);
     }
@@ -81,29 +83,31 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={styles.rootContainer}>
-      <RootLayoutNav />
-      <CustomAlertModal />
+    <SafeAreaProvider>
+      <View style={styles.rootContainer}>
+        <RootLayoutNav />
+        <CustomAlertModal />
 
-      {isSplashVisible && (
-        <Animated.View
-          style={[
-            styles.splashContainer,
-            {
-              opacity: splashFadeAnim,
-            },
-          ]}
-          pointerEvents={isSplashVisible ? 'auto' : 'none'}
-        >
-          <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-          <Image
-            source={SPLASH_IMAGE}
-            style={styles.splashImage}
-            resizeMode="contain"
-          />
-        </Animated.View>
-      )}
-    </View>
+        {isSplashVisible && (
+          <Animated.View
+            style={[
+              styles.splashContainer,
+              {
+                opacity: splashFadeAnim,
+              },
+            ]}
+            pointerEvents={isSplashVisible ? 'auto' : 'none'}
+          >
+            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+            <Image
+              source={SPLASH_IMAGE}
+              style={styles.splashImage}
+              resizeMode="cover"
+            />
+          </Animated.View>
+        )}
+      </View>
+    </SafeAreaProvider>
   );
 }
 
@@ -134,8 +138,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
     zIndex: 99999,
   },
   splashImage: {

@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   StatusBar,
   Alert,
   ActivityIndicator,
@@ -16,6 +15,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { API_BASE } from '../../constants/api';
 import { fetchWithAuth, logoutUser, fetchFreshUserProfile } from '../../services/auth';
@@ -41,6 +41,11 @@ const PROFILE_FAQS = [
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? StatusBar.currentHeight || 28 : 0
+  );
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
 
@@ -189,11 +194,11 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Header (Clean White) */}
-      <View style={styles.header}>
+      {/* Header (Clean White with Safe Area Spacing) */}
+      <View style={[styles.header, { paddingTop: topInset + (Platform.OS === 'android' ? 6 : 4) }]}>
         <Text style={styles.headerTitle}>Account Profile</Text>
         <Text style={styles.headerSubtitle}>Manage your profile, tickets and security</Text>
       </View>
@@ -491,7 +496,7 @@ export default function ProfileScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -502,7 +507,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? 14 : 8,
     paddingBottom: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,

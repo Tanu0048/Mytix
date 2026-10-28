@@ -412,6 +412,13 @@ export default function Home() {
   const nextSlide = () => setCurrentSlide((prev) => prev + 1);
   const prevSlide = () => setCurrentSlide((prev) => prev - 1);
 
+  const displayBanners = React.useMemo(() => {
+    if (!banners || banners.length === 0) return [];
+    if (banners.length === 1) return [banners[0], banners[0], banners[0]];
+    if (banners.length === 2) return [...banners, ...banners];
+    return [...banners, ...banners];
+  }, [banners]);
+
   const allTrending = React.useMemo(() => {
     const rawList = [
       ...(homeData?.trendingEvents || []),
@@ -528,73 +535,101 @@ export default function Home() {
 
 
       {/* Hero Carousel (Infinite Center Mode like BookMyShow) */}
-      <div className="relative w-full h-44 sm:h-64 md:h-84 lg:h-96 flex justify-center items-center overflow-hidden bg-white py-4 my-4">
+      <div className="relative w-full h-44 sm:h-60 md:h-76 lg:h-85 xl:h-95 overflow-hidden bg-neutral-100/80 py-2 sm:py-3 my-2">
         {loading ? (
           <BannerSkeleton />
         ) : banners.length > 0 ? (
-          <>
-            {[...banners, ...banners].map((slide, index) => {
-              const total = banners.length * 2;
-              let diff = index - currentSlide;
+          <div className="relative w-full h-full">
+            {displayBanners.map((slide, index) => {
+              const total = displayBanners.length;
+              let diff = index - (currentSlide % total);
               let offset = diff % total;
-              if (offset < -2) offset += total;
-              if (offset > 3) offset -= total;
+              if (offset < -Math.floor(total / 2)) offset += total;
+              if (offset > Math.floor(total / 2)) offset -= total;
 
               const isVisible = Math.abs(offset) <= 1;
+              const transformStyle = offset === 0 
+                ? 'translateX(-50%)' 
+                : offset === 1 
+                  ? 'translateX(calc(50% + 14px))' 
+                  : offset === -1 
+                    ? 'translateX(calc(-150% - 14px))' 
+                    : `translateX(calc(-50% + ${offset * 100}%))`;
 
               return (
                 <div 
                   key={`${slide.id}-${index}`}
-                  className="absolute w-11/12 max-w-7xl h-full transition-all duration-700 ease-in-out px-2"
+                  onClick={() => {
+                    if (offset === -1) prevSlide();
+                    if (offset === 1) nextSlide();
+                  }}
+                  className="absolute left-1/2 top-0 w-[84%] sm:w-[80%] md:w-[78%] lg:w-[76%] max-w-300 h-full transition-all duration-500 ease-out cursor-pointer"
                   style={{ 
-                    transform: `translateX(${offset * 100}%)`,
-                    zIndex: offset === 0 ? 10 : 0,
+                    transform: transformStyle,
+                    zIndex: offset === 0 ? 20 : 10,
                     opacity: isVisible ? 1 : 0,
                     pointerEvents: isVisible ? 'auto' : 'none'
                   }}
                 >
-                  <div className="relative w-full h-full rounded-2xl md:rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 hover:border-amber-400/80 transition-all cursor-pointer">
-                    <Image 
-                      src={slide.imageUrl || '/banner/placeholder.avif'} 
-                      alt={slide.title || 'Banner'} 
-                      fill
-                      priority={index === 0 || index === 1 || index === 5}
-                      className="object-cover"
-                    />
+                  <div className="relative w-full h-full rounded-2xl md:rounded-3xl overflow-hidden shadow-xl border border-slate-200/90 transition-all hover:shadow-2xl">
+                    {slide.targetUrl && offset === 0 ? (
+                      <Link href={slide.targetUrl} className="block w-full h-full relative">
+                        <Image 
+                          src={slide.imageUrl || '/banner/placeholder.avif'} 
+                          alt={slide.title || 'Banner'} 
+                          fill
+                          priority={index === 0 || index === 1}
+                          className="object-cover"
+                        />
+                      </Link>
+                    ) : (
+                      <Image 
+                        src={slide.imageUrl || '/banner/placeholder.avif'} 
+                        alt={slide.title || 'Banner'} 
+                        fill
+                        priority={index === 0 || index === 1}
+                        className="object-cover"
+                      />
+                    )}
                   </div>
                 </div>
               );
             })}
 
-            {/* Navigation Arrows */}
+            {/* Navigation Arrows (BookMyShow style) */}
             <button 
               onClick={prevSlide}
-              className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 z-20 w-8 h-10 md:w-10 md:h-14 bg-white/90 hover:bg-amber-400 hover:text-slate-950 backdrop-blur text-slate-800 flex items-center justify-center rounded-xl opacity-90 transition-all cursor-pointer border border-slate-200 shadow-md"
+              aria-label="Previous banner"
+              className="absolute left-1.5 sm:left-3 md:left-5 lg:left-7 top-1/2 -translate-y-1/2 z-30 w-8 h-12 md:w-9 md:h-14 bg-black/40 hover:bg-black/70 backdrop-blur-sm text-white flex items-center justify-center rounded-lg md:rounded-xl opacity-90 hover:opacity-100 transition-all cursor-pointer shadow-lg border border-white/10"
             >
-              <ChevronLeft className="w-5 h-5 md:w-8 md:h-8" />
+              <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
             </button>
             <button 
               onClick={nextSlide}
-              className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 z-20 w-8 h-10 md:w-10 md:h-14 bg-white/90 hover:bg-amber-400 hover:text-slate-950 backdrop-blur text-slate-800 flex items-center justify-center rounded-xl opacity-90 transition-all cursor-pointer border border-slate-200 shadow-md"
+              aria-label="Next banner"
+              className="absolute right-1.5 sm:right-3 md:right-5 lg:right-7 top-1/2 -translate-y-1/2 z-30 w-8 h-12 md:w-9 md:h-14 bg-black/40 hover:bg-black/70 backdrop-blur-sm text-white flex items-center justify-center rounded-lg md:rounded-xl opacity-90 hover:opacity-100 transition-all cursor-pointer shadow-lg border border-white/10"
             >
-              <ChevronRight className="w-5 h-5 md:w-8 md:h-8" />
+              <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
             </button>
 
-            {/* Indicators */}
-            <div className="absolute bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            {/* Indicators (Inside Banner bottom center) */}
+            <div className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 pointer-events-auto">
               {banners.map((_, index) => {
-                let activeDot = currentSlide % banners.length;
-                if (activeDot < 0) activeDot += banners.length;
+                let activeDot = ((currentSlide % banners.length) + banners.length) % banners.length;
+                const isActive = index === activeDot;
                 return (
                   <button 
                     key={index}
                     onClick={() => setCurrentSlide(index)}
-                    className={`h-2 rounded-full transition-all cursor-pointer ${index === activeDot ? 'w-6 bg-amber-400' : 'w-2 bg-slate-300 hover:bg-slate-400'}`}
+                    aria-label={`Go to slide ${index + 1}`}
+                    className={`h-1.5 rounded-full transition-all cursor-pointer shadow-xs ${
+                      isActive ? 'w-5 bg-amber-400' : 'w-1.5 bg-white/70 hover:bg-white'
+                    }`}
                   />
                 );
               })}
             </div>
-          </>
+          </div>
         ) : null}
       </div>
 
