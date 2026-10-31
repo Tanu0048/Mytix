@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { API_BASE } from '@/config/api';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { 
   CheckCircle, 
   CreditCard, 
@@ -40,9 +41,7 @@ function CheckoutContent() {
 
     async function fetchHold() {
       try {
-        const res = await fetch(`${API_BASE}/holds/${holdId}`, {
-          credentials: 'include'
-        });
+        const res = await fetchWithAuth(`${API_BASE}/holds/${holdId}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || data.message || 'Hold expired or not found');
         
@@ -78,12 +77,9 @@ function CheckoutContent() {
     setProcessing(true);
     try {
       // Create Checkout Session via backend (Stripe Australian Dollar processing)
-      const res = await fetch(`${API_BASE}/checkout`, {
+      const res = await fetchWithAuth(`${API_BASE}/checkout`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           holdId
         })

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { API_BASE } from '@/config/api';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { 
   User as UserIcon, 
   Mail, 
@@ -51,18 +52,9 @@ export default function ProfilePage() {
 
     try {
       setSaving(true);
-      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (storedToken) {
-        headers['Authorization'] = `Bearer ${storedToken}`;
-      }
-
-      const res = await fetch(`${API_BASE}/me`, {
+      const res = await fetchWithAuth(`${API_BASE}/me`, {
         method: 'PATCH',
-        headers,
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           name: trimmedName,
         }),
@@ -92,16 +84,8 @@ export default function ProfilePage() {
   const handleDeleteAccount = async () => {
     try {
       setDeleting(true);
-      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = {};
-      if (storedToken) {
-        headers['Authorization'] = `Bearer ${storedToken}`;
-      }
-
-      const res = await fetch(`${API_BASE}/me`, {
+      const res = await fetchWithAuth(`${API_BASE}/me`, {
         method: 'DELETE',
-        headers,
-        credentials: 'include',
       });
 
       if (res.ok) {

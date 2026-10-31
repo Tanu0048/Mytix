@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { API_BASE } from '@/config/api';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
 
 interface User {
   id: string;
@@ -27,18 +28,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   setToken: (token) => set({ token }),
   fetchUser: async () => {
     try {
-      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = {};
-      if (storedToken) {
-        headers['Authorization'] = `Bearer ${storedToken}`;
-      }
-
-      const res = await fetch(`${API_BASE}/me`, { 
-        credentials: 'include',
-        headers
-      });
+      const res = await fetchWithAuth(`${API_BASE}/me`);
       if (res.ok) {
         const data = await res.json();
+        const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         set({ user: data.data || data, token: storedToken, loading: false });
       } else {
         set({ user: null, loading: false });
