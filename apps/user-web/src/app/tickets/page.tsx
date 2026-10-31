@@ -8,6 +8,7 @@ import QRCode from 'react-qr-code';
 import { toast } from 'sonner';
 
 import { API_BASE } from '@/config/api';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
 
 export default function MyTicketsPage() {
   const router = useRouter();
@@ -28,16 +29,7 @@ export default function MyTicketsPage() {
 
   const fetchTickets = async () => {
     try {
-      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = {};
-      if (storedToken) {
-        headers['Authorization'] = `Bearer ${storedToken}`;
-      }
-
-      const res = await fetch(`${API_BASE}/me/tickets`, {
-        credentials: 'include',
-        headers
-      });
+      const res = await fetchWithAuth(`${API_BASE}/me/tickets`);
 
       if (res.ok) {
         const data = await res.json();
