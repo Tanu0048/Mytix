@@ -28,7 +28,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setToken: (token) => set({ token }),
   fetchUser: async () => {
     try {
-      const res = await fetchWithAuth(`${API_BASE}/me`);
+      const res = await fetchWithAuth(`${API_BASE}/me`, {}, { redirectOnFail: false });
       if (res.ok) {
         const data = await res.json();
         const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;

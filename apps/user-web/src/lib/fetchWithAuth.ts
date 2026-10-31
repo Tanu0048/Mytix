@@ -75,13 +75,13 @@ async function refreshToken(): Promise<string | null> {
 /**
  * Force logout — clear auth state and redirect to /auth.
  */
-function forceLogout() {
+function forceLogout(redirect: boolean) {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('token');
   }
   useAuthStore.getState().setUser(null);
   useAuthStore.getState().setToken(null);
-  if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth')) {
+  if (redirect && typeof window !== 'undefined' && !window.location.pathname.includes('/auth')) {
     window.location.href = '/auth';
   }
 }
@@ -107,7 +107,8 @@ function getAuthHeaders(extraHeaders?: Record<string, string>): Record<string, s
  */
 export async function fetchWithAuth(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  { redirectOnFail = true }: { redirectOnFail?: boolean } = {}
 ): Promise<Response> {
   // Skip refresh logic for auth endpoints themselves
   const isAuthEndpoint = url.includes('/auth/login') ||
@@ -135,7 +136,7 @@ export async function fetchWithAuth(
 
   if (!newToken) {
     // Refresh failed — force logout
-    forceLogout();
+    forceLogout(redirectOnFail);
     return response;
   }
 
@@ -153,7 +154,7 @@ export async function fetchWithAuth(
 
   // If retry also fails with 401, force logout
   if (retryResponse.status === 401) {
-    forceLogout();
+    forceLogout(redirectOnFail);
   }
 
   return retryResponse;
