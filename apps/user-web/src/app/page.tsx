@@ -446,6 +446,80 @@ export default function Home() {
     ? allTrending.filter((item: any) => item.venue?.city?.toLowerCase() === selectedCity.toLowerCase())
     : allTrending;
   const trending = cityFiltered;
+
+  // Dedicated Trending events list (from homeData.trendingEvents, fallback to allTrending)
+  const trendingList = React.useMemo(() => {
+    const rawList = (homeData?.trendingEvents && homeData.trendingEvents.length > 0)
+      ? homeData.trendingEvents
+      : allTrending;
+    const seen = new Set<string>();
+    const unique: any[] = [];
+    const now = Date.now();
+
+    for (const item of rawList) {
+      if (!item) continue;
+      const key = String(item.id || item.slug || '');
+      if (!key || seen.has(key)) continue;
+
+      const startsAt = item.startsAt || item.startDate;
+      if (!startsAt || new Date(startsAt).getTime() <= now) continue;
+
+      seen.add(key);
+      unique.push(item);
+    }
+
+    if (selectedCity && selectedCity !== 'All Cities') {
+      return unique.filter((item: any) => item.venue?.city?.toLowerCase() === selectedCity.toLowerCase());
+    }
+    return unique;
+  }, [homeData, allTrending, selectedCity]);
+
+  // Dedicated Featured events list (from homeData.featuredEvents, with deduplication against top trending)
+  const featuredList = React.useMemo(() => {
+    const rawList = (homeData?.featuredEvents && homeData.featuredEvents.length > 0)
+      ? homeData.featuredEvents
+      : allTrending;
+    const trendingTopKeys = new Set(trendingList.slice(0, 4).map((i: any) => String(i.id || i.slug || '')));
+    const seen = new Set<string>();
+    const unique: any[] = [];
+    const now = Date.now();
+
+    // 1. Prioritize upcoming events not in top 4 trending to avoid duplicates
+    for (const item of rawList) {
+      if (!item) continue;
+      const key = String(item.id || item.slug || '');
+      if (!key || seen.has(key)) continue;
+
+      const startsAt = item.startsAt || item.startDate;
+      if (!startsAt || new Date(startsAt).getTime() <= now) continue;
+
+      if (!trendingTopKeys.has(key)) {
+        seen.add(key);
+        unique.push(item);
+      }
+    }
+
+    // 2. If fewer than 4 events found and rawList has more, include them so section is nicely filled
+    if (unique.length < 4) {
+      for (const item of rawList) {
+        if (!item) continue;
+        const key = String(item.id || item.slug || '');
+        if (!key || seen.has(key)) continue;
+
+        const startsAt = item.startsAt || item.startDate;
+        if (!startsAt || new Date(startsAt).getTime() <= now) continue;
+
+        seen.add(key);
+        unique.push(item);
+      }
+    }
+
+    if (selectedCity && selectedCity !== 'All Cities') {
+      return unique.filter((item: any) => item.venue?.city?.toLowerCase() === selectedCity.toLowerCase());
+    }
+    return unique;
+  }, [homeData, allTrending, trendingList, selectedCity]);
+
   const artists = homeData?.upcomingArtists || [];
 
   // Dynamically build category tabs from backend/admin categories
@@ -633,12 +707,12 @@ export default function Home() {
         ) : null}
       </div>
 
-      {/* Featured events */}
-      <div className="max-w-7xl mx-auto px-4 mt-16 mb-16">
+      {/* Trending events */}
+      <div className="max-w-7xl mx-auto px-4 mt-14 mb-14">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6 sm:mb-8">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                 Trending events
               </h2>
               {selectedCity && selectedCity !== 'All Cities' && (
@@ -661,7 +735,7 @@ export default function Home() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
           {loading ? (
             Array(4).fill(0).map((_, i) => <EventCardSkeleton key={i} />)
-          ) : trending.length === 0 ? (
+          ) : trendingList.length === 0 ? (
             <div className="col-span-full bg-white/90 rounded-3xl p-10 border border-slate-200 text-center shadow-lg">
               <MapPin className="w-12 h-12 text-amber-500 mx-auto mb-3 opacity-80" />
               <h3 className="text-xl font-black text-slate-900">No events currently listed in {selectedCity}</h3>
@@ -675,10 +749,9 @@ export default function Home() {
                 Explore All Cities
               </button>
             </div>
-          ) : trending.slice(0, 4).map((item: any) => {
+          ) : trendingList.slice(0, 4).map((item: any) => {
             const title = item.title;
             const sub = `${item.venue?.city || 'Location'} • ${item.venue?.name || 'Venue'}`;
-            const img = item.posterPath || '/banner/placeholder.avif';
             const totalAvailable = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
             const totalQuantity = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.quantity ?? 0), 0) ?? 0;
             const minPrice = item.ticketTypes?.length 
@@ -690,7 +763,7 @@ export default function Home() {
             const isSoldOut = totalAvailable <= 0;
 
             return (
-              <div key={`featured-${item.id || item.slug}`} className="flex flex-col">
+              <div key={`trending-${item.id || item.slug}`} className="flex flex-col">
                 <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-4/5 rounded-2xl overflow-hidden mb-3 shadow-sm block border border-slate-200/90 bg-slate-100">
                   <SafeImage src={item.posterPath} alt={title} fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover" />
                   <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start pointer-events-none">
@@ -704,8 +777,9 @@ export default function Home() {
                         <span>#{item.trendingMetrics.rank} Trending</span>
                       </div>
                     ) : (
-                      <div className="bg-amber-400 text-slate-950 text-[10px] uppercase font-black px-2.5 py-1 rounded-lg shadow-sm">
-                        Featured
+                      <div className="bg-amber-400 text-slate-950 text-[10px] uppercase font-black px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1">
+                        <Flame className="w-3 h-3 text-slate-950 fill-slate-950" />
+                        <span>Trending</span>
                       </div>
                     )}
                     {item.trendingMetrics?.recentSalesCount >= 10 && (
@@ -766,6 +840,112 @@ export default function Home() {
           })}
         </div>
       </div>
+
+      {/* Featured events */}
+      {(loading || featuredList.length > 0) && (
+        <div className="max-w-7xl mx-auto px-4 mb-16">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6 sm:mb-8">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                  Featured events
+                </h2>
+                {selectedCity && selectedCity !== 'All Cities' && (
+                  <span className="text-xs md:text-sm font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-300 whitespace-nowrap">
+                    in {selectedCity}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">
+                {selectedCity && selectedCity !== 'All Cities' 
+                  ? `Showing featured events taking place in ${selectedCity}` 
+                  : "Don't miss these top events across Australia"}
+              </p>
+            </div>
+            <Link href={`/events${selectedCity && selectedCity !== 'All Cities' ? `?city=${encodeURIComponent(selectedCity)}` : ''}`} className="text-xs sm:text-sm font-bold text-amber-600 hover:text-amber-700 inline-flex items-center group shrink-0 whitespace-nowrap self-start sm:self-auto">
+              <span>See all</span> <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+            {loading ? (
+              Array(4).fill(0).map((_, i) => <EventCardSkeleton key={i} />)
+            ) : featuredList.slice(0, 4).map((item: any) => {
+              const title = item.title;
+              const sub = `${item.venue?.city || 'Location'} • ${item.venue?.name || 'Venue'}`;
+              const totalAvailable = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
+              const totalQuantity = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.quantity ?? 0), 0) ?? 0;
+              const minPrice = item.ticketTypes?.length 
+                ? Math.min(...item.ticketTypes.map((t: any) => t.priceCents || 0)) / 100 
+                : 0;
+              const now = new Date();
+              const startsAt = item.startsAt ? new Date(item.startsAt) : null;
+              const isBookingClosed = startsAt ? now >= new Date(startsAt.getTime() - 60 * 60 * 1000) : false;
+              const isSoldOut = totalAvailable <= 0;
+
+              return (
+                <div key={`featured-${item.id || item.slug}`} className="flex flex-col">
+                  <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-4/5 rounded-2xl overflow-hidden mb-3 shadow-sm block border border-slate-200/90 bg-slate-100">
+                    <SafeImage src={item.posterPath} alt={title} fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover" />
+                    <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start pointer-events-none">
+                      <div className="bg-amber-400 text-slate-950 text-[10px] uppercase font-black px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-slate-950" />
+                        <span>Featured</span>
+                      </div>
+                    </div>
+                    {/* Seats / Status badge on poster */}
+                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none gap-1">
+                      {isBookingClosed ? (
+                        <span className="bg-slate-900/90 backdrop-blur-sm text-slate-300 border border-slate-700 text-[11px] font-extrabold uppercase px-2 py-1 rounded-lg shadow">
+                          Booking Closed
+                        </span>
+                      ) : isSoldOut ? (
+                        <span className="bg-red-600/95 backdrop-blur-sm text-white text-[11px] font-extrabold uppercase px-2 py-1 rounded-lg shadow">
+                          Sold Out
+                        </span>
+                      ) : (
+                        <span className="bg-black/75 backdrop-blur-sm text-white text-[11px] font-semibold px-2 py-1 rounded-lg shadow flex items-center gap-1.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${totalAvailable <= 10 ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`}></span>
+                          {totalAvailable} / {totalQuantity || 100} Seats
+                        </span>
+                      )}
+                      {minPrice > 0 && !isBookingClosed && !isSoldOut && (
+                        <span className="bg-amber-400 text-slate-950 text-[11px] font-black px-2.5 py-1 rounded-lg shadow-sm">
+                          ${minPrice}
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                  <div className="flex flex-col flex-1">
+                    <p className="text-xs text-slate-500 font-semibold mb-1 truncate flex items-center gap-1"><MapPin className="w-3 h-3 text-amber-500"/> {sub}</p>
+                    <Link href={`/events/${item.slug}`} className="font-bold text-slate-900 leading-tight mb-2 line-clamp-2">
+                      {title}
+                    </Link>
+                    <div className="mt-auto pt-2 flex items-center justify-between border-t border-slate-100">
+                      <span className="text-xs font-bold text-slate-500">
+                        {item.startsAt ? new Date(item.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Upcoming'}
+                      </span>
+                      {isBookingClosed ? (
+                        <span className="text-xs font-bold text-slate-400 cursor-not-allowed">
+                          Closed
+                        </span>
+                      ) : isSoldOut ? (
+                        <span className="text-xs font-bold text-red-500 cursor-not-allowed">
+                          Sold Out
+                        </span>
+                      ) : (
+                        <Link href={`/events/${item.slug}`} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center">
+                          Get tickets <ChevronRight className="w-3 h-3 ml-0.5" />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Browse by Category - Authentic Live Ticketing Shelf (BookMyShow / Eventbrite Style) */}
       <div className="max-w-7xl mx-auto px-4 mb-20">

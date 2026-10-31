@@ -340,7 +340,17 @@ export default function HomeScreen() {
   const displayTrending =
     filteredTrending.length > 0
       ? filteredTrending
-      : (hasEventsInCity ? filteredUpcomingEvents : trendingEvents);
+      : (hasEventsInCity ? filteredUpcomingEvents : (trendingEvents.length > 0 ? trendingEvents : allEvents));
+
+  const displayFeatured = (() => {
+    const raw = (filteredFeatured.length > 0
+      ? filteredFeatured
+      : (featuredEvents.length > 0 ? featuredEvents : allEvents));
+    const trendingTopKeys = new Set(displayTrending.slice(0, 4).map((e: any) => String(e.id || e.slug || '')));
+    const deduped = raw.filter((e: any) => !trendingTopKeys.has(String(e.id || e.slug || '')));
+    return deduped.length > 0 ? deduped : raw;
+  })();
+
   const filteredVenues =
     !selectedCity || selectedCity === 'All Cities' || selectedCity === 'All of Australia'
       ? venues
@@ -623,8 +633,122 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Featured Events Horizontal Carousel */}
-        {(filteredFeatured.length > 0 || showCityEmptyState) && (
+        {/* Trending Events Horizontal Shelf */}
+        {displayTrending.length > 0 && !showCityEmptyState && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.sectionHeading}>
+                    {isSpecificCitySelected ? `Trending in ${selectedCity}` : 'Trending Events'}
+                  </Text>
+                  <View style={styles.livePulseDot} />
+                </View>
+                <Text style={styles.sectionSubheading}>
+                  {isSpecificCitySelected
+                    ? `Top selling shows in ${selectedCity} right now`
+                    : 'Top selling events across Australia right now'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/movies')}>
+                <Text style={styles.seeAllText}>See All</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalEventsScroll}
+            >
+              {displayTrending.map((event: any, idx: number) => {
+                const totalAvail =
+                  event.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
+                const minPrice = event.ticketTypes?.length
+                  ? Math.min(...event.ticketTypes.map((t: any) => t.priceCents || 0)) / 100
+                  : 0;
+                const rank = event.trendingMetrics?.rank || (idx + 1);
+                const isSellingFast = event.trendingMetrics?.recentSalesCount >= 10;
+
+                return (
+                  <TouchableOpacity
+                    key={`trending-${event.id || event.slug}`}
+                    style={styles.featuredCard}
+                    activeOpacity={0.9}
+                    onPress={() => router.push(`/event/${event.slug}`)}
+                  >
+                    <View style={styles.featuredPosterContainer}>
+                      <Image
+                        source={{ uri: getFullImageUrl(event.posterPath) }}
+                        style={styles.featuredPoster}
+                        resizeMode="cover"
+                      />
+                      {/* Top Badges: Rank & Selling Fast */}
+                      <View style={styles.badgeTopLeftContainer}>
+                        <View
+                          style={[
+                            styles.rankBadge,
+                            rank === 1 ? styles.rank1Badge : styles.rankOtherBadge,
+                          ]}
+                        >
+                          <Ionicons
+                            name="flame"
+                            size={11}
+                            color={rank === 1 ? '#0F172A' : '#F59E0B'}
+                          />
+                          <Text
+                            style={[
+                              styles.rankBadgeText,
+                              rank === 1 ? styles.rank1BadgeText : styles.rankOtherBadgeText,
+                            ]}
+                          >
+                            #{rank} Trending
+                          </Text>
+                        </View>
+                        {isSellingFast && (
+                          <View style={styles.sellingFastBadge}>
+                            <Text style={styles.sellingFastText}>Selling Fast</Text>
+                          </View>
+                        )}
+                      </View>
+
+                      <View style={styles.seatsOverlay}>
+                        <View
+                          style={[
+                            styles.seatsDot,
+                            { backgroundColor: totalAvail <= 10 ? '#FB923C' : '#10B981' },
+                          ]}
+                        />
+                        <Text style={styles.seatsText}>{totalAvail} Seats</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.featuredInfo}>
+                      <Text style={styles.featuredTitle} numberOfLines={1}>
+                        {event.title}
+                      </Text>
+                      {event.venue && (
+                        <Text style={styles.featuredVenue} numberOfLines={1}>
+                          {event.venue.name}, {event.venue.city || 'Australia'}
+                        </Text>
+                      )}
+                      <View style={styles.featuredFooter}>
+                        <Text style={styles.featuredPrice}>
+                          {minPrice > 0 ? `From $${minPrice.toFixed(0)} AUD` : 'Explore'}
+                        </Text>
+                        <View style={styles.bookSmallPill}>
+                          <Text style={styles.bookSmallText}>Book</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Featured Events Horizontal Shelf */}
+        {(displayFeatured.length > 0 || showCityEmptyState) && (
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <View>
@@ -640,7 +764,7 @@ export default function HomeScreen() {
                     ? 'Top verified live shows you can attend across Australian capitals'
                     : isSpecificCitySelected
                     ? `Popular verified shows in ${selectedCity}`
-                    : 'Handpicked highlights across Australia'}
+                    : "Don't miss these top events across Australia"}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => router.push('/(tabs)/movies')}>
@@ -653,12 +777,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalEventsScroll}
             >
-              {(filteredFeatured.length > 0
-                ? filteredFeatured
-                : featuredEvents.length > 0
-                ? featuredEvents
-                : allEvents
-              ).map((event) => {
+              {displayFeatured.map((event: any) => {
                 const totalAvail =
                   event.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
                 const minPrice = event.ticketTypes?.length
@@ -667,7 +786,7 @@ export default function HomeScreen() {
 
                 return (
                   <TouchableOpacity
-                    key={event.id || event.slug}
+                    key={`featured-${event.id || event.slug}`}
                     style={styles.featuredCard}
                     activeOpacity={0.9}
                     onPress={() => router.push(`/event/${event.slug}`)}
@@ -678,13 +797,14 @@ export default function HomeScreen() {
                         style={styles.featuredPoster}
                         resizeMode="cover"
                       />
-                      {event.category && (
-                        <View style={styles.featuredCategoryBadge}>
-                          <Text style={styles.featuredCategoryText}>
-                            {event.category.toUpperCase()}
-                          </Text>
+                      {/* Gold Featured Badge */}
+                      <View style={styles.badgeTopLeftContainer}>
+                        <View style={styles.goldFeaturedBadge}>
+                          <Ionicons name="sparkles" size={10} color="#0F172A" />
+                          <Text style={styles.goldFeaturedBadgeText}>Featured</Text>
                         </View>
-                      )}
+                      </View>
+
                       <View style={styles.seatsOverlay}>
                         <View
                           style={[
@@ -764,7 +884,6 @@ export default function HomeScreen() {
         </View>
 
         {/* Trending Events Vertical List */}
-        {/* Trending Events Vertical List */}
         {displayTrending.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
@@ -778,13 +897,13 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.verticalList}>
-              {displayTrending.slice(0, 6).map((event) => {
+              {displayTrending.slice(0, 6).map((event: any) => {
                 const minPrice = event.ticketTypes?.length
                   ? Math.min(...event.ticketTypes.map((t: any) => t.priceCents || 0)) / 100
                   : 0;
                 return (
                   <TouchableOpacity
-                    key={event.id || event.slug}
+                    key={`v-trending-${event.id || event.slug}`}
                     style={styles.verticalCard}
                     activeOpacity={0.8}
                     onPress={() => router.push(`/event/${event.slug}`)}
@@ -1354,6 +1473,86 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '900',
     color: '#0F172A',
+  },
+  livePulseDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+  },
+  badgeTopLeftContainer: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    flexDirection: 'column',
+    gap: 4,
+    alignItems: 'flex-start',
+    zIndex: 10,
+  },
+  rankBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  rank1Badge: {
+    backgroundColor: '#F59E0B',
+  },
+  rankOtherBadge: {
+    backgroundColor: 'rgba(15, 23, 42, 0.90)',
+  },
+  rankBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  rank1BadgeText: {
+    color: '#0F172A',
+  },
+  rankOtherBadgeText: {
+    color: '#FFFFFF',
+  },
+  sellingFastBadge: {
+    backgroundColor: '#E11D48',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  sellingFastText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  goldFeaturedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  goldFeaturedBadgeText: {
+    color: '#0F172A',
+    fontSize: 9,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   seatsOverlay: {
     position: 'absolute',

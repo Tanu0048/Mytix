@@ -186,7 +186,8 @@ export default function SeatPicker({
                             aria-disabled={isUnavailable || disabled}
                             onClick={() => {
                               if (isUnavailable || disabled) return;
-                              tier && onToggleSeat(seatKey, tier.id);
+                              const targetTierId = tier?.id || ticketTypes?.[0]?.id || "";
+                              onToggleSeat(seatKey, targetTierId);
                             }}
                             style={{ marginTop: `${curveOffset}px` }}
                             className={`group relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[9px] sm:text-[10px] font-black transition-all flex items-center justify-center select-none tracking-tighter ${

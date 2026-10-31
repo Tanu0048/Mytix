@@ -70,20 +70,24 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                 return;
               }
 
-              // Fallback: Query Supabase tickets table directly for booked seats
-              const { data: tickets } = await supabase
-                .from('tickets')
-                .select('seat_row, seat_number, section_name')
-                .neq('status', 'CANCELLED');
+              // Fallback: Query Supabase tickets table directly for booked seats for this specific event
+              const eventId = data?.id;
+              if (eventId) {
+                const { data: tickets } = await supabase
+                  .from('tickets')
+                  .select('seat_row, seat_number, section_name, orders!inner(event_id)')
+                  .eq('orders.event_id', eventId)
+                  .neq('status', 'CANCELLED');
 
-              if (tickets && tickets.length > 0) {
-                const booked = tickets
-                  .filter((t: any) => t.seat_row && t.seat_number)
-                  .map((t: any) => {
-                    const sec = t.section_name || '';
-                    return sec ? `${sec}:${t.seat_row}-${t.seat_number}` : `${t.seat_row}-${t.seat_number}`;
-                  });
-                setBookedSeats(booked);
+                if (tickets && tickets.length > 0) {
+                  const booked = tickets
+                    .filter((t: any) => t.seat_row && t.seat_number)
+                    .map((t: any) => {
+                      const sec = t.section_name || '';
+                      return sec ? `${sec}:${t.seat_row}-${t.seat_number}` : `${t.seat_row}-${t.seat_number}`;
+                    });
+                  setBookedSeats(booked);
+                }
               }
             } catch (e) {
               console.error("Could not load seat map status", e);
@@ -131,6 +135,12 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
         toast.error("Maximum 10 seats allowed per booking.");
         return;
       }
+      const resolvedTierId = tierId || event?.ticketTypes?.[0]?.id || "";
+      setSelectedSeats(prev => [...prev, seatKey]);
+      setSeatTierMap(prev => ({
+        ...prev,
+        [seatKey]: resolvedTierId
+      }));
     }
   };
 
