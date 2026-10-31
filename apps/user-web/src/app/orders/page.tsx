@@ -17,6 +17,7 @@ import {
   ShoppingBag
 } from 'lucide-react';
 import { API_BASE } from '@/config/api';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -39,16 +40,7 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const headers: Record<string, string> = {};
-      if (storedToken) {
-        headers['Authorization'] = `Bearer ${storedToken}`;
-      }
-
-      const res = await fetch(`${API_BASE}/me/orders`, {
-        credentials: 'include',
-        headers,
-      });
+      const res = await fetchWithAuth(`${API_BASE}/me/orders`);
 
       if (res.ok) {
         const data = await res.json();
