@@ -4,9 +4,11 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Save, Loader2, Plus, Trash2, Ticket } from "lucide-react";
 import api from "@/lib/api";
+import { useCategories } from "@/lib/useCategories";
 
 function EditEventForm() {
   const router = useRouter();
+  const { categories, loading: categoriesLoading } = useCategories();
   const params = useParams();
   const eventId = params.id as string;
   
@@ -231,7 +233,16 @@ function EditEventForm() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Category</label>
-                <input required type="text" name="category" value={formData.category} onChange={handleChange} placeholder="e.g. Concert, Comedy, Festival" className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" />
+                <select required name="category" value={formData.category} onChange={handleChange} disabled={categoriesLoading} className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white cursor-pointer disabled:cursor-wait">
+                  <option value="" disabled>{categoriesLoading ? "Loading categories…" : "Select a category"}</option>
+                  {/* Keep an older category that has since been removed, so saving doesn't silently change it */}
+                  {formData.category && !categories.includes(formData.category) && (
+                    <option value={formData.category}>{formData.category} (no longer listed)</option>
+                  )}
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Status</label>

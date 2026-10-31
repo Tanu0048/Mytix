@@ -1,13 +1,32 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-jakarta), var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Mytix brand yellow — matches the mobile app and logo */
+  --color-brand-50: #fef9e7;
+  --color-brand-100: #fdf0c2;
+  --color-brand-200: #fbe28a;
+  --color-brand-300: #f8d155;
+  --color-brand-400: #f5c22b;
+  --color-brand-500: #e9ae00;
+  --color-brand-600: #c48f00;
+  --color-brand-700: #9a6c00;
+  --color-brand-800: #714f04;
+
+  /* Primary ink for text, dark surfaces and primary buttons */
+  --color-ink: #0e1525;
+  --color-ink-soft: #1c2436;
+
+  --shadow-card: 0 1px 2px rgb(14 21 37 / 0.04), 0 8px 24px -12px rgb(14 21 37 / 0.12);
+  --shadow-pop: 0 2px 4px rgb(14 21 37 / 0.04), 0 24px 48px -16px rgb(14 21 37 / 0.24);
 }
 
 :root {
   --background: #ffffff;
-  --foreground: #333333;
+  --foreground: #1e293b;
 }
 
 body {
@@ -16,6 +35,39 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-brand-200);
+    color: var(--color-ink);
+  }
+}
+
+/* Shared page container: one max width and gutter across the app */
+@utility container-page {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 64rem) {
+    padding-inline: 2rem;
+  }
 }
 
 @layer utilities {
@@ -42,4 +94,3 @@ body {
     transform: translateX(100%);
   }
 }
-

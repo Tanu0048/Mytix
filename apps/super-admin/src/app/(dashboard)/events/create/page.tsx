@@ -26,9 +26,11 @@ import {
   Check
 } from "lucide-react";
 import api from "@/lib/api";
+import { useCategories } from "@/lib/useCategories";
 
 export default function CreateEventPage() {
   const router = useRouter();
+  const { categories, loading: categoriesLoading } = useCategories();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -148,7 +150,7 @@ export default function CreateEventPage() {
 
     try {
       if (!formData.category.trim()) {
-        throw new Error("Please enter a category.");
+        throw new Error("Please select a category.");
       }
       if (!formData.venueName.trim() || !formData.venueCity.trim()) {
         throw new Error("Please specify the venue name and city.");
@@ -409,16 +411,28 @@ export default function CreateEventPage() {
                 </label>
                 <div className="relative">
                   <Music className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  <input 
+                  <select
                     required
-                    type="text" 
-                    name="category" 
-                    value={formData.category} 
-                    onChange={handleChange} 
-                    placeholder="e.g. Concert, Comedy, Tech Fest, Workshop"
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
-                  />
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    disabled={categoriesLoading}
+                    className={`w-full appearance-none rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-10 text-sm font-semibold outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all cursor-pointer disabled:cursor-wait ${formData.category ? "text-slate-900" : "text-slate-400"}`}
+                  >
+                    <option value="" disabled>
+                      {categoriesLoading ? "Loading categories…" : "Select a category"}
+                    </option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat} className="text-slate-900">{cat}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
+                {!categoriesLoading && categories.length === 0 && (
+                  <p className="mt-1.5 text-xs font-medium text-red-500">
+                    No categories available. An admin needs to add them on the Categories page.
+                  </p>
+                )}
               </div>
 
               {/* Venue */}

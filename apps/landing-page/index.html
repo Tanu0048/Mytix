@@ -1,63 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-AU">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mytix - Smart Live Event Ticketing & Mobile Pass App</title>
-  <meta name="description" content="Discover, book and enter live concerts, comedy shows, music festivals and sports with Mytix. Paperless, fraud-proof digital QR tickets with instant turnstile gate entry.">
-  <meta name="theme-color" content="#4F46E5">
+  <title>Mytix — Live event tickets across Australia</title>
+  <meta name="description" content="Find concerts, comedy and live shows across Australia. Pick your seat, pay upfront with no surprise fees, and walk in with a QR ticket on your phone.">
+  <meta name="theme-color" content="#F5C22B">
   <link rel="icon" href="./favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="./images/app-icon.png">
 
-  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Mytix — Live event tickets across Australia">
+  <meta property="og:description" content="Find a show, pick your seat, and walk in with a QR ticket on your phone.">
+  <meta property="og:image" content="./images/app-icon.png">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 
-  <!-- Skip Link for Accessibility -->
-  <a href="#main" class="sr-only">Skip to content</a>
+  <a href="#main" class="skip-link">Skip to content</a>
 
-  <!-- ==================== HEADER / NAVBAR ==================== -->
-  <header class="navbar" id="navbar">
-    <div class="nav-container">
-      <a href="#" class="brand-logo" aria-label="Mytix Home">
-        <img src="./images/logo.png" alt="Mytix Logo" class="logo-img" onerror="this.style.display='none'; document.getElementById('text-logo').style.display='flex'">
-        <span id="text-logo" class="logo-fallback" style="display:none">
-          <span class="logo-name">My<span class="logo-accent">tix</span></span>
-        </span>
+  <!-- ==================== NAVBAR ==================== -->
+  <header class="nav" id="nav">
+    <div class="container nav-inner">
+      <a href="#top" class="nav-logo" aria-label="Mytix home">
+        <img src="./images/logo.png" alt="Mytix" width="94" height="36">
       </a>
 
-      <nav class="nav-links" id="nav-menu" aria-label="Main Navigation">
-        <a href="#hero" class="nav-link active">Home</a>
-        <a href="#features" class="nav-link">Features</a>
-        <a href="#problem" class="nav-link">The Problem</a>
-        <a href="#how-it-works" class="nav-link">How It Works</a>
-        <a href="#for-everyone" class="nav-link">For Everyone</a>
-        <a href="#faq" class="nav-link">FAQ</a>
-        <div class="mobile-nav-ctas">
-          <a href="#download" class="btn btn-secondary mobile-only">Download App</a>
-          <a href="https://mytix.in" target="_blank" class="btn btn-primary mobile-only">Explore Shows</a>
-        </div>
+      <nav class="nav-links" id="nav-menu" aria-label="Main">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#organisers">For organisers</a>
+        <a href="#faq">FAQ</a>
+        <a href="#download" class="btn btn-primary nav-menu-cta">Get the app</a>
       </nav>
 
       <div class="nav-actions">
-        <a href="#download" class="btn btn-secondary nav-btn-download">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true">
-            <path d="M12 3.5v11M7.5 10.5l4.5 4.5 4.5-4.5M4.5 19h15" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Download App
-        </a>
-        <a href="#features" class="btn btn-primary nav-btn-main">Explore Shows</a>
-        <button type="button" class="mobile-toggle" id="mobile-toggle" aria-label="Open mobile menu" aria-expanded="false">
-          <svg class="menu-icon-bars" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M4 6h16M4 12h16M4 18h16"/>
-          </svg>
-          <svg class="menu-icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M6 18L18 6M6 6l12 12"/>
-          </svg>
+        <a href="https://mytix-2.onrender.com" class="nav-text-link">Book on web</a>
+        <a href="#download" class="btn btn-primary btn-sm">Get the app</a>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+          <span></span><span></span>
         </button>
       </div>
     </div>
@@ -65,894 +51,322 @@
 
   <main id="main">
 
-    <!-- ==================== HERO SECTION ==================== -->
-    <section class="hero-section" id="hero">
-      <div class="hero-glow-bg" aria-hidden="true"></div>
-      <div class="hero-radial-mesh" aria-hidden="true"></div>
-      <div class="section-container">
-        <div class="hero-grid">
-          
-          <!-- Hero Text -->
-          <div class="hero-content">
-            <div class="badge-pill">
-              <span class="pulse-dot">
-                <span class="pulse-ring"></span>
-                <span class="dot-core"></span>
-              </span>
-              <span>All of Australia • Live Concerts &amp; Comedy</span>
-            </div>
+    <!-- ==================== HERO ==================== -->
+    <section class="hero" id="top">
+      <div class="container hero-grid">
 
-            <h1 class="hero-title">
-              Live Experiences, <br>
-              <span class="gradient-text">Across Australia.</span>
-            </h1>
-
-            <p class="hero-desc">
-              Discover events, artists, and venues across Sydney, Melbourne &amp; VIC. 
-              Browse by category, book paperless passes, and tap <strong>"Scan this code at the gate"</strong> for instant &lt;0.8s turnstile admission.
-            </p>
-
-            <div class="hero-ctas">
-              <a href="#download" class="btn btn-primary btn-lg">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" aria-hidden="true">
-                  <path d="M12 3.5v11M7.5 10.5l4.5 4.5 4.5-4.5M4.5 19h15" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Download App
-              </a>
-              <a href="#features" class="btn btn-secondary btn-lg">
-                Explore Features
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-right" aria-hidden="true">
-                  <path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </a>
-            </div>
-
-            <!-- App Store Badges -->
-            <div class="app-badges-block">
-              <p class="badges-label">Available on Mobile</p>
-              <div class="store-buttons">
-                <!-- App Store -->
-                <a href="#download" class="store-btn" aria-label="Download on Apple App Store">
-                  <svg viewBox="0 0 24 24" fill="currentColor" class="store-svg" aria-hidden="true">
-                    <path d="M16.36 12.72c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.83-.81-3-.79-1.55.02-2.98.9-3.77 2.28-1.61 2.79-.41 6.92 1.15 9.18.76 1.11 1.67 2.35 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.78.74 3 .72 1.24-.02 2.02-1.12 2.78-2.24.88-1.28 1.24-2.53 1.26-2.6-.03-.01-2.4-.92-2.41-3.68zM14.1 5.9c.63-.77 1.06-1.83.94-2.9-.91.04-2.01.61-2.67 1.37-.59.68-1.1 1.76-.96 2.8 1.01.08 2.05-.51 2.69-1.27z"/>
-                  </svg>
-                  <div class="store-btn-text">
-                    <span class="store-small">Download on the</span>
-                    <span class="store-name">App Store</span>
-                  </div>
-                </a>
-
-                <!-- Google Play -->
-                <a href="#download" class="store-btn" aria-label="Get it on Google Play">
-                  <svg viewBox="0 0 24 24" class="store-svg" aria-hidden="true">
-                    <path d="M3.6 2.4a1.3 1.3 0 0 0-.6 1.1v17a1.3 1.3 0 0 0 .6 1.1l.1.06 9.5-9.6v-.12L3.7 2.34l-.1.06z" fill="#00D2FF"/>
-                    <path d="M16.4 15.4l-3.2-3.24v-.12l3.2-3.24.08.05 3.8 2.18c1.08.62 1.08 1.63 0 2.25l-3.8 2.17-.08.05z" fill="#FFCE00"/>
-                    <path d="M16.48 15.35L13.2 12.1 3.6 21.7a1.05 1.05 0 0 0 1.34.04l11.54-6.39z" fill="#FF3A44"/>
-                    <path d="M16.48 8.85L4.94 2.46A1.05 1.05 0 0 0 3.6 2.5l9.6 9.6 3.28-3.25z" fill="#00E676"/>
-                  </svg>
-                  <div class="store-btn-text">
-                    <span class="store-small">Get it on</span>
-                    <span class="store-name">Google Play</span>
-                  </div>
-                </a>
-              </div>
-            </div>
-
-            <!-- Trust Bar (Clean, Professional, No Emojis) -->
-            <div class="hero-trust-bar">
-              <div class="trust-rating-stars">★★★★★</div>
-              <div class="trust-text">
-                <strong>4.9 Rating by Live Event Fans</strong>
-                <span>100% Verified Entry • Zero Counterfeit Passes</span>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- Hero Right: Realistic CSS Phone Mockup with Real Screenshot -->
-          <div class="hero-mockup-wrapper">
-            
-            <!-- Floating Companion Stat Card 1 -->
-            <div class="floating-stat-card card-top">
-              <div class="stat-icon-wrapper success">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="stat-svg">
-                  <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-              <div class="stat-info">
-                <span class="stat-label">Verified Pass Status</span>
-                <strong class="stat-val">VALID • SEAT A2</strong>
-                <span class="stat-sub">Forum Melbourne • Instant Scan</span>
-              </div>
-            </div>
-
-            <!-- Floating Companion Stat Card 2 -->
-            <div class="floating-stat-card card-bottom">
-              <div class="stat-icon-wrapper brand">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stat-svg">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <path d="M7 7h3v3H7zM14 7h3v3h-3zM7 14h3v3H7z"/>
-                </svg>
-              </div>
-              <div class="stat-info">
-                <span class="stat-label">Turnstile Entry Speed</span>
-                <strong class="stat-val">&lt; 0.8 Seconds</strong>
-                <span class="stat-sub">Tap "Scan this code at the gate"</span>
-              </div>
-            </div>
-
-            <!-- Interactive App Screen Switcher Tabs (Clean Professional, No Emojis) -->
-            <div class="mockup-screen-selector" role="tablist" aria-label="App Screen Preview Switcher">
-              <button type="button" class="mockup-tab-btn active" data-screen="./images/screen-home.png" role="tab" aria-selected="true">
-                <span>Home</span>
-              </button>
-              <button type="button" class="mockup-tab-btn" data-screen="./images/screen-ticket.png" role="tab" aria-selected="false">
-                <span>Live Pass</span>
-              </button>
-              <button type="button" class="mockup-tab-btn" data-screen="./images/screen-explore.png" role="tab" aria-selected="false">
-                <span>Explore</span>
-              </button>
-              <button type="button" class="mockup-tab-btn" data-screen="./images/screen-profile.png" role="tab" aria-selected="false">
-                <span>Profile</span>
-              </button>
-            </div>
-
-            <!-- The Realistic Smartphone Frame with Real Mytix App Screenshot -->
-            <div class="phone-mockup" role="region" aria-label="Mytix Mobile App Screen Preview">
-              <!-- Physical Phone Buttons -->
-              <div class="phone-btn phone-btn-vol-up"></div>
-              <div class="phone-btn phone-btn-vol-down"></div>
-              <div class="phone-btn phone-btn-power"></div>
-
-              <!-- Phone Chassis Glass -->
-              <div class="phone-chassis">
-                <img id="hero-screen-img" src="./images/screen-home.png" alt="Mytix App Home Screen" class="phone-real-screen-img">
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== CORE FEATURES (4-COLUMN GRID) ==================== -->
-    <section class="section bg-light" id="features">
-      <div class="section-container">
-        
-        <div class="section-header text-center">
-          <p class="section-eyebrow">Core Features</p>
-          <h2 class="section-heading">Everything a modern live ticket needs — in one app</h2>
-          <p class="section-subheading">
-            Zero paper waste, zero duplicate passes, and no more scrambling for poor cell service at packed arena gates.
+        <div class="hero-copy">
+          <p class="eyebrow-pill"><span class="live-dot" aria-hidden="true"></span>Now live across Australia</p>
+          <h1 class="hero-title">Every live show.<br><span class="hl">One tap</span> to the gate.</h1>
+          <p class="hero-lead">
+            Find concerts, comedy and live shows near you, pick your exact seat, and walk in with a QR ticket on your phone. No printouts, no surprise fees.
           </p>
-        </div>
 
-        <div class="features-grid">
-          
-          <!-- Card 1 -->
-          <div class="feature-card">
-            <div class="feat-icon-box gradient-indigo">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <rect x="3" y="3" width="7" height="7" rx="1.5"/>
-                <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-                <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-                <path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 21h3v-3M21 14v3"/>
-              </svg>
-            </div>
-            <h3 class="feat-title">Digital Passes &amp; Entry QR Codes</h3>
-            <p class="feat-desc">
-              Every pass includes live gate QR codes, assigned seating badges (VALID • SEAT A2), and unique Pass IDs for instant turnstile clearance.
-            </p>
-            <span class="feat-badge-pill">Turnstile Ready</span>
-          </div>
-
-          <!-- Card 2 -->
-          <div class="feature-card">
-            <div class="feat-icon-box gradient-amber">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9z"/>
-                <line x1="2" y1="2" x2="22" y2="22" stroke-width="2"/>
-              </svg>
-            </div>
-            <h3 class="feat-title">100% Offline Wallet</h3>
-            <p class="feat-desc">
-              Crowded arena with zero cellular reception? All passes and cryptographic signatures are cached locally in your "My Tickets" tab.
-            </p>
-            <span class="feat-badge-pill">Signal-Free</span>
-          </div>
-
-          <!-- Card 3 -->
-          <div class="feature-card">
-            <div class="feat-icon-box gradient-purple">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"/>
-                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
-              </svg>
-            </div>
-            <h3 class="feat-title">Browse by Category &amp; State</h3>
-            <p class="feat-desc">
-              Filter by All States, Sydney, Venue, or VIC. Explore curated Concerts, Comedy specials, and live tours across Australia.
-            </p>
-            <span class="feat-badge-pill">Regional Discovery</span>
-          </div>
-
-          <!-- Card 4 -->
-          <div class="feature-card">
-            <div class="feat-icon-box gradient-emerald">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <circle cx="18" cy="5" r="3"/>
-                <circle cx="6" cy="12" r="3"/>
-                <circle cx="18" cy="19" r="3"/>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-              </svg>
-            </div>
-            <h3 class="feat-title">Share Pass with Friend</h3>
-            <p class="feat-desc">
-              Booked for friends or family? Use 1-tap pass transfer directly from the ticket view to safely send individual entry passes without PDFs.
-            </p>
-            <span class="feat-badge-pill">1-Tap Share</span>
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ==================== THE PROBLEM SECTION ==================== -->
-    <section class="section bg-white" id="problem">
-      <div class="section-container">
-        <div class="problem-grid">
-          
-          <!-- Left Column -->
-          <div class="problem-narrative">
-            <p class="section-eyebrow">The Problem</p>
-            <h2 class="section-heading">Concert ticketing shouldn't run on messy PDFs and gate anxiety.</h2>
-            <p class="section-lead">
-              Going to a live gig should be the best night of your week. But traditional ticketing leaves fans standing in 40-minute gate lines, panicking when mobile internet fails, or getting turned away by fake screenshot scalpers.
-            </p>
-            <p class="section-body">
-              Mytix replaces archaic paper tickets with an end-to-end cryptographic mobile pass that guarantees verified entry in less than a second.
-            </p>
-
-            <a href="#features-deepdive" class="inline-cta-link">
-              <span>See how Mytix solves gate admissions</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="arrow-svg" aria-hidden="true">
-                <path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+          <div class="store-row">
+            <a href="#download" class="store-btn" aria-label="Download on the App Store">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.36 12.72c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.83-.81-3-.79-1.55.02-2.98.9-3.77 2.28-1.61 2.79-.41 6.92 1.15 9.18.76 1.11 1.67 2.35 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.78.74 3 .72 1.24-.02 2.02-1.12 2.78-2.24.88-1.28 1.24-2.53 1.26-2.6-.03-.01-2.4-.92-2.41-3.68zM14.1 5.9c.63-.77 1.06-1.83.94-2.9-.91.04-2.01.61-2.67 1.37-.59.68-1.1 1.76-.96 2.8 1.01.08 2.05-.51 2.69-1.27z"/></svg>
+              <span><small>Download on the</small>App Store</span>
+            </a>
+            <a href="#download" class="store-btn" aria-label="Get it on Google Play">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.6 2.4a1.3 1.3 0 0 0-.6 1.1v17a1.3 1.3 0 0 0 .6 1.1l.1.06 9.5-9.6v-.12L3.7 2.34l-.1.06z" fill="#00D2FF"/><path d="M16.4 15.4l-3.2-3.24v-.12l3.2-3.24.08.05 3.8 2.18c1.08.62 1.08 1.63 0 2.25l-3.8 2.17-.08.05z" fill="#FFCE00"/><path d="M16.48 15.35L13.2 12.1 3.6 21.7a1.05 1.05 0 0 0 1.34.04l11.54-6.39z" fill="#FF3A44"/><path d="M16.48 8.85L4.94 2.46A1.05 1.05 0 0 0 3.6 2.5l9.6 9.6 3.28-3.25z" fill="#00E676"/></svg>
+              <span><small>Get it on</small>Google Play</span>
             </a>
           </div>
 
-          <!-- Right Column: Comparison Card List -->
-          <div class="problem-card-box">
-            <h3 class="problem-box-title">What fans deal with today:</h3>
-            <ul class="problem-list">
-              <li class="problem-item">
-                <span class="problem-badge-x" aria-hidden="true">✕</span>
-                <div class="problem-item-text">
-                  <strong>Fake duplicate passes & screenshot scams</strong>
-                  <p>Unverified PDFs and forwarded screenshots getting fans rejected at turnstiles.</p>
+          <ul class="hero-points">
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Reserved seating</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Prices in AUD, GST included</li>
+            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Secure payments by Stripe</li>
+          </ul>
+        </div>
+
+        <!-- Hero visual: phone (home screen) + ticket stub -->
+        <div class="hero-visual" aria-hidden="true">
+          <div class="hero-halo"></div>
+
+          <div class="phone">
+            <div class="phone-screen">
+              <img src="./images/screen-home.png" alt="Mytix app home screen" class="phone-shot">
+            </div>
+          </div>
+
+          <div class="ticket-stub">
+            <div class="stub-main">
+              <div class="stub-badges"><span class="b-valid">Valid</span><span class="b-seat">Seat A2</span></div>
+              <strong class="stub-title">Neon Coast</strong>
+              <span class="stub-meta">Fri 14 Nov · 7:30 pm</span>
+              <span class="stub-meta">Forum Melbourne</span>
+            </div>
+            <div class="stub-qr"><svg class="qr" data-seed="7"></svg></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== CATEGORY STRIP ==================== -->
+    <section class="strip" aria-label="Event categories">
+      <div class="container strip-inner">
+        <span class="strip-label">On Mytix</span>
+        <ul class="strip-list">
+          <li>Concerts &amp; tours</li>
+          <li>Stand-up comedy</li>
+          <li>Live shows</li>
+          <li>Festivals</li>
+          <li>Special screenings</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ==================== FEATURES (BENTO) ==================== -->
+    <section class="section" id="features">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">Features</p>
+          <h2 class="section-title">Everything between “that looks good” and the front row.</h2>
+          <p class="section-lead">Mytix keeps the whole night in one app — finding the show, choosing your seat, paying, and getting through the gate.</p>
+        </header>
+
+        <div class="bento">
+
+          <!-- 1. Tickets -->
+          <article class="tile tile-wide tile-ticket reveal">
+            <div class="tile-copy">
+              <h3>Your ticket lives in your pocket</h3>
+              <p>Every booking appears instantly in <strong>My Tickets</strong> with your seat, venue, time and a QR code that staff scan at the door. A copy is emailed to you too.</p>
+            </div>
+            <div class="tile-art">
+              <div class="mini-pass">
+                <div class="mini-pass-top">
+                  <div class="stub-badges"><span class="b-valid">Valid</span><span class="b-seat">Seat C14</span></div>
+                  <strong>The Late Set</strong>
+                  <span>Sat 22 Nov · 8:00 pm · Enmore Theatre</span>
                 </div>
-              </li>
-              <li class="problem-item">
-                <span class="problem-badge-x" aria-hidden="true">✕</span>
-                <div class="problem-item-text">
-                  <strong>Zero cellular reception at packed venues</strong>
-                  <p>Crowded stadiums jam network towers, leaving attendees unable to open ticket links.</p>
+                <div class="mini-pass-bottom">
+                  <svg class="qr" data-seed="21"></svg>
+                  <span class="scan-pill">Scan this code at the gate</span>
                 </div>
-              </li>
-              <li class="problem-item">
-                <span class="problem-badge-x" aria-hidden="true">✕</span>
-                <div class="problem-item-text">
-                  <strong>Surprise hidden fees at checkout</strong>
-                  <p>Platforms springing 20% convenience charges on the very last payment screen.</p>
-                </div>
-              </li>
-              <li class="problem-item">
-                <span class="problem-badge-x" aria-hidden="true">✕</span>
-                <div class="problem-item-text">
-                  <strong>Painfully slow turnstile queues</strong>
-                  <p>Gate staff manually squinting at physical paper printouts causing massive bottlenecks.</p>
-                </div>
-              </li>
-              <li class="problem-item">
-                <span class="problem-badge-x" aria-hidden="true">✕</span>
-                <div class="problem-item-text">
-                  <strong>No instant transfer to friends</strong>
-                  <p>No clean way to split bulk passes with group members without sending raw PDFs.</p>
-                </div>
-              </li>
+              </div>
+            </div>
+          </article>
+
+          <!-- 2. Seats -->
+          <article class="tile tile-seats reveal">
+            <div class="tile-copy">
+              <h3>Pick your exact seat</h3>
+              <p>See live availability on the venue map and choose where you sit — not just a ticket tier.</p>
+            </div>
+            <div class="seat-map" role="img" aria-label="Seat map with selected seats">
+              <div class="stage">Stage</div>
+              <div class="seats" id="seat-grid"></div>
+              <div class="seat-legend"><span><i class="s-free"></i>Available</span><span><i class="s-taken"></i>Taken</span><span><i class="s-pick"></i>Yours</span></div>
+            </div>
+          </article>
+
+          <!-- 3. Discover -->
+          <article class="tile tile-discover reveal">
+            <div class="tile-copy">
+              <h3>Find what’s on near you</h3>
+              <p>Search by event, artist or venue and filter by city to see what’s happening this week.</p>
+            </div>
+            <div class="discover-art">
+              <div class="app-search lg">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                Comedy in Melbourne
+              </div>
+              <div class="app-chips lg"><span class="dark">All states</span><span>Sydney</span><span>Melbourne</span></div>
+            </div>
+          </article>
+
+          <!-- 4. Pricing -->
+          <article class="tile tile-price reveal">
+            <div class="tile-copy">
+              <h3>The price you see is the price you pay</h3>
+              <p>Fees and GST are itemised before you pay. Checkout is processed securely by Stripe in Australian dollars.</p>
+            </div>
+            <dl class="receipt">
+              <div><dt>2 × General Admission</dt><dd>$178.00</dd></div>
+              <div><dt>Booking fee</dt><dd>$3.33</dd></div>
+              <div class="total"><dt>Total <small>incl. GST</small></dt><dd>$181.33</dd></div>
+            </dl>
+          </article>
+
+          <!-- 5. Share -->
+          <article class="tile tile-share reveal">
+            <div class="tile-copy">
+              <h3>Send a pass to a friend</h3>
+              <p>Booked for the group? Share each pass straight from the ticket screen — no forwarding PDFs.</p>
+            </div>
+            <div class="toast-card">
+              <span class="avatar">SJ</span>
+              <div><strong>Pass shared with Sam</strong><span>Seat A3 · Neon Coast</span></div>
+              <svg viewBox="0 0 24 24" class="toast-check"><path d="M5 13l4 4L19 7"/></svg>
+            </div>
+          </article>
+
+          <!-- 6. Account -->
+          <article class="tile tile-wide tile-account reveal">
+            <div class="tile-copy">
+              <h3>Orders and tax invoices, always on hand</h3>
+              <p>Your profile keeps every booking, receipt and GST tax invoice in one place. Your email is locked to your account, so your tickets can’t end up somewhere else.</p>
+            </div>
+            <ul class="order-list">
+              <li><span class="order-ico"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg></span><div><strong>Order MTX-20418</strong><span>Neon Coast · 2 tickets</span></div><em>Tax invoice</em></li>
+              <li><span class="order-ico"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg></span><div><strong>Order MTX-20377</strong><span>The Late Set · 1 ticket</span></div><em>Tax invoice</em></li>
             </ul>
-          </div>
+          </article>
 
         </div>
       </div>
     </section>
 
-    <!-- ==================== PROOF / USP METRICS CALLOUT ==================== -->
-    <section class="section bg-proof">
-      <div class="section-container">
-        <div class="proof-header text-center">
-          <p class="section-eyebrow accent-amber">Proof, Not Promises</p>
-          <h2 class="section-heading">Speed and security built into every ticket</h2>
-          <p class="section-subheading">
-            Engineered so you never have to worry about gate admission, counterfeits, or network drops again.
-          </p>
+    <!-- ==================== HOW IT WORKS ==================== -->
+    <section class="section section-alt" id="how-it-works">
+      <div class="container">
+        <header class="section-head">
+          <p class="eyebrow">How it works</p>
+          <h2 class="section-title">From browsing to the front row in three steps.</h2>
+        </header>
+
+        <ol class="steps">
+          <li class="step reveal">
+            <span class="step-num">01</span>
+            <h3>Find a show</h3>
+            <p>Browse featured events or search by artist, venue or city across Australia.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step-num">02</span>
+            <h3>Choose seats &amp; pay</h3>
+            <p>Pick your seats on the map, review the full price, and pay by card, wallet or Afterpay.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step-num">03</span>
+            <h3>Scan &amp; walk in</h3>
+            <p>Open My Tickets at the venue, show your QR code at the gate, and enjoy the show.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ==================== AT THE GATE (DARK) ==================== -->
+    <section class="section section-dark" id="at-the-gate">
+      <div class="container gate-grid">
+        <div class="gate-copy">
+          <p class="eyebrow on-dark">On the night</p>
+          <h2 class="section-title">Built for the moment you reach the door.</h2>
+          <p class="section-lead">Your pass is designed to be read in a second: big QR code, clear seat number, and a status badge that tells staff it’s good to go.</p>
+
+          <ul class="gate-list">
+            <li>
+              <span class="gate-ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></svg></span>
+              <div><strong>One code per ticket</strong><p>Every pass has its own QR code and pass ID, checked against the booking at entry.</p></div>
+            </li>
+            <li>
+              <span class="gate-ico"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg></span>
+              <div><strong>Backup in your inbox</strong><p>Your confirmation email includes your e-ticket, in case your phone has other plans.</p></div>
+            </li>
+            <li>
+              <span class="gate-ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+              <div><strong>Tickets tied to your account</strong><p>Bookings are linked to your verified email, so they’re always recoverable.</p></div>
+            </li>
+          </ul>
         </div>
 
-        <div class="proof-metrics-grid">
-          <div class="proof-card">
-            <span class="proof-stat">&lt; 0.8s</span>
-            <strong class="proof-title">Turnstile Scan Speed</strong>
-            <p class="proof-desc">High-speed hardware scanners verify pass signatures instantly. Just flash and walk through.</p>
-          </div>
-          <div class="proof-card">
-            <span class="proof-stat">0%</span>
-            <strong class="proof-title">Duplicate or Fake Passes</strong>
-            <p class="proof-desc">Dynamic animated QR refreshes every 15 seconds. Screenshots cannot be used or scalped.</p>
-          </div>
-          <div class="proof-card">
-            <span class="proof-stat">100%</span>
-            <strong class="proof-title">Offline Verification</strong>
-            <p class="proof-desc">Cryptographic keys are stored in the local app keychain for instant offline scanning.</p>
+        <div class="gate-visual" aria-hidden="true">
+          <div class="phone phone-dark">
+            <div class="phone-screen">
+              <img src="./images/screen-ticket.png" alt="Mytix ticket with entry QR code" class="phone-shot">
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ==================== DEEP DIVE FEATURES (ALTERNATING WITH PHONE MOCKUPS) ==================== -->
-    <section class="section bg-white" id="features-deepdive">
-      <div class="section-container">
-        
-        <div class="section-header text-center">
-          <p class="section-eyebrow">Interactive Features</p>
-          <h2 class="section-heading">Designed around how you actually experience a live show</h2>
-          <p class="section-subheading">
-            From discovering secret gigs to showing your pass at the turnstile gate with zero friction.
-          </p>
+    <!-- ==================== ORGANISERS ==================== -->
+    <section class="section" id="organisers">
+      <div class="container">
+        <div class="org-card reveal">
+          <div class="org-copy">
+            <p class="eyebrow">For organisers</p>
+            <h2 class="section-title">Running a show? Sell your tickets on Mytix.</h2>
+            <p class="section-lead">List your event, set up ticket tiers or reserved seating, and reach fans browsing for something to do this weekend.</p>
+            <div class="org-actions">
+              <a href="https://mytix-2.onrender.com/become-an-organiser" class="btn btn-dark">Become an organiser</a>
+              <a href="mailto:organisers@mytix.com.au" class="btn btn-ghost">organisers@mytix.com.au</a>
+            </div>
+          </div>
+          <ul class="org-points">
+            <li><strong>Reserved or general admission</strong><span>Sell by seat map or by tier — whatever suits the venue.</span></li>
+            <li><strong>Clear, upfront pricing</strong><span>Fans see fees and GST before they pay, which means fewer abandoned checkouts.</span></li>
+            <li><strong>Paperless entry</strong><span>Every ticket arrives as a QR pass, ready to scan at the door.</span></li>
+          </ul>
         </div>
-
-        <div class="feature-rows-wrapper">
-
-          <!-- Feature Row 01 -->
-          <div class="feature-row" id="feat-qr-pass">
-            <div class="feat-text-col">
-              <div class="feat-badge-label">
-                <span class="badge-num">01</span>
-                <span>My Tickets</span>
-              </div>
-              <h3 class="feat-row-title">Digital passes and entry QR codes</h3>
-              <p class="feat-row-desc">
-                Every ticket booked on Mytix lives securely in your "My Tickets" dashboard. Passes come equipped with live turnstile QR codes, verified seating details (<strong>VALID • SEAT A2</strong>), venue coordinates (<strong>Forum Melbourne</strong>), and attendee credentials (<strong>Pass ID: 1DF8EF8D</strong>).
-              </p>
-              
-              <ul class="feat-checklist">
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span>Gate Turnstile Ready: Tap <strong>"Scan this code at the gate"</strong> for instant &lt;0.8s entry</span>
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span>Verified pass status: Real-time <strong>"VALID"</strong> badge with designated <strong>"SEAT A2"</strong></span>
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span>Direct venue info &amp; time: <strong>Forum Melbourne</strong> • Fri, 30 Oct 2026, 7:18 pm</span>
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span>1-Tap Pass Transfer: Tap <strong>"Share Pass with Friend"</strong> to send tickets securely</span>
-                </li>
-              </ul>
-            </div>
-
-            <!-- Phone Frame 01: Real Ticket Screenshot -->
-            <div class="feat-mockup-col">
-              <div class="phone-mockup-card">
-                <div class="phone-mockup mini-frame">
-                  <div class="phone-btn phone-btn-vol-up"></div>
-                  <div class="phone-btn phone-btn-vol-down"></div>
-                  <div class="phone-btn phone-btn-power"></div>
-                  <div class="phone-chassis">
-                    <img src="./images/screen-ticket.png" alt="Mytix Live Ticket Pass" class="phone-real-screen-img">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Feature Row 02 (Reverse Order) -->
-          <div class="feature-row reverse" id="feat-offline">
-            <div class="feat-text-col">
-              <div class="feat-badge-label">
-                <span class="badge-num">02</span>
-                <span>Explore Events</span>
-              </div>
-              <h3 class="feat-row-title">Discover live experiences across Australia</h3>
-              <p class="feat-row-desc">
-                Find what's happening near you with quick state and city filters. Toggle seamlessly between <strong>All States</strong>, <strong>Sydney</strong>, <strong>Venue</strong>, and <strong>VIC</strong> to discover concerts, standup comedy specials, and live shows at iconic venues like <strong>Forum Melbourne</strong>.
-              </p>
-              
-              <ul class="feat-checklist">
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span>Universal Search: <strong>"Search events, artists, venues..."</strong> with instant results</span>
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span>State &amp; City Filters: 1-Tap toggle for <strong>All States, SYDNEY, VENUE &amp; VIC</strong></span>
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span>Multi-Genre Discovery: Curated <strong>Concerts</strong>, <strong>Comedy</strong> specials &amp; Live Shows</span>
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span>Real-time venue info, tour dates &amp; ticket status</span>
-                </li>
-              </ul>
-            </div>
-
-            <!-- Phone Frame 02: Real Explore Screenshot -->
-            <div class="feat-mockup-col">
-              <div class="phone-mockup-card">
-                <div class="phone-mockup mini-frame">
-                  <div class="phone-btn phone-btn-vol-up"></div>
-                  <div class="phone-btn phone-btn-vol-down"></div>
-                  <div class="phone-btn phone-btn-power"></div>
-                  <div class="phone-chassis">
-                    <img src="./images/screen-explore.png" alt="Mytix Explore Events Screen" class="phone-real-screen-img">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Feature Row 03 -->
-          <div class="feature-row" id="feat-discovery">
-            <div class="feat-text-col">
-              <div class="feat-badge-label">
-                <span class="badge-num">03</span>
-                <span>Account Profile</span>
-              </div>
-              <h3 class="feat-row-title">Manage your profile, tickets and security</h3>
-              <p class="feat-row-desc">
-                A centralized command center for your live event life. Update your <strong>Personal Information</strong>, access your active passes, download past receipts and GST tax invoices, and rely on locked email security to safeguard your bookings.
-              </p>
-              
-              <ul class="feat-checklist">
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span>Verified Profile Hub: Manage <strong>"Personal Information"</strong> &amp; user profile details</span>
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span>Locked Email Security: <em>"Email is locked because all tickets and invoices are tied to this address"</em></span>
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span><strong>"My Tickets &amp; Entry Passes"</strong>: 1-Tap shortcut to view all booked QR passes</span>
-                </li>
-                <li>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="check-ico"><path d="M5 13l4 4L19 7"/></svg>
-                  <span><strong>"Order History &amp; Invoices"</strong>: View past booking receipts, order numbers &amp; GST tax records</span>
-                </li>
-              </ul>
-            </div>
-
-            <!-- Phone Frame 03: Real Profile Screenshot -->
-            <div class="feat-mockup-col">
-              <div class="phone-mockup-card">
-                <div class="phone-mockup mini-frame">
-                  <div class="phone-btn phone-btn-vol-up"></div>
-                  <div class="phone-btn phone-btn-vol-down"></div>
-                  <div class="phone-btn phone-btn-power"></div>
-                  <div class="phone-chassis">
-                    <img src="./images/screen-profile.png" alt="Mytix Account Profile and Passes" class="phone-real-screen-img">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
       </div>
     </section>
 
-    <!-- ==================== HOW IT WORKS (4 STEPS) ==================== -->
-    <section class="section bg-light" id="how-it-works">
-      <div class="section-container">
-        
-        <div class="section-header text-center">
-          <p class="section-eyebrow">How It Works</p>
-          <h2 class="section-heading">From discovering an event to standing in the front row</h2>
-          <p class="section-subheading">
-            Four simple steps. Zero paper printing, zero gate hassles.
-          </p>
+    <!-- ==================== FAQ ==================== -->
+    <section class="section section-alt" id="faq">
+      <div class="container faq-grid">
+        <header class="section-head left">
+          <p class="eyebrow">FAQ</p>
+          <h2 class="section-title">Questions, answered.</h2>
+          <p class="section-lead">Can’t find what you need? Email <a href="mailto:support@mytix.com.au">support@mytix.com.au</a> and we’ll get back to you.</p>
+        </header>
+
+        <div class="faq-list">
+          <details class="faq" open>
+            <summary>How do I get my tickets after booking?</summary>
+            <p>All Mytix tickets are digital. Once payment is confirmed, your tickets appear in <strong>My Tickets</strong> in the app, and you’ll receive a confirmation email with your e-ticket and QR code.</p>
+          </details>
+          <details class="faq">
+            <summary>How does entry work at the venue?</summary>
+            <p>Open your ticket in the app (or your confirmation email) and tap <strong>Scan this code at the gate</strong>. Venue staff scan your QR code and you’re in — no printing needed.</p>
+          </details>
+          <details class="faq">
+            <summary>Can I transfer or cancel my tickets?</summary>
+            <p>Depending on the organiser’s policy for the event, you can share a pass with a friend from the ticket screen, or request a cancellation from your profile up to 24 hours before the event starts.</p>
+          </details>
+          <details class="faq">
+            <summary>What happens if an event is postponed or cancelled?</summary>
+            <p>If an event is rescheduled, your tickets stay valid for the new date. If it’s cancelled, or you can’t make the new date, a full refund goes back to your original payment method, usually within 5–7 business days.</p>
+          </details>
+          <details class="faq">
+            <summary>Which payment methods can I use?</summary>
+            <p>You can pay with Visa, Mastercard or American Express, with a digital wallet, or with Afterpay. Payments are processed securely by Stripe in Australian dollars.</p>
+          </details>
+          <details class="faq">
+            <summary>Are there any hidden fees?</summary>
+            <p>No. Booking fees and GST are shown line by line on the checkout screen before you pay, so the total you see is the total you’re charged.</p>
+          </details>
         </div>
-
-        <div class="timeline-wrapper">
-          <div class="timeline-line" aria-hidden="true"></div>
-
-          <!-- Step 1 -->
-          <div class="timeline-step">
-            <div class="step-num-bubble">1</div>
-            <div class="step-card">
-              <span class="step-pill">Step 01</span>
-              <h3 class="step-title">Discover Your Vibe</h3>
-              <p class="step-desc">
-                Open the Mytix app to see trending stadium concerts, comedy gigs, college festivals, and club nights handpicked for your city.
-              </p>
-            </div>
-          </div>
-
-          <!-- Step 2 -->
-          <div class="timeline-step">
-            <div class="step-num-bubble">2</div>
-            <div class="step-card">
-              <span class="step-pill">Step 02</span>
-              <h3 class="step-title">Lock Your Passes</h3>
-              <p class="step-desc">
-                Select your preferred tier — Fanpit, Gold, VIP or General Admission. See live availability without race-against-the-clock timer traps.
-              </p>
-            </div>
-          </div>
-
-          <!-- Step 3 -->
-          <div class="timeline-step">
-            <div class="step-num-bubble">3</div>
-            <div class="step-card">
-              <span class="step-pill">Step 03</span>
-              <h3 class="step-title">1-Click Express Digital Checkout</h3>
-              <p class="step-desc">
-                Pay in seconds using Apple Pay, Google Pay, or Credit/Debit Cards with bank-grade 256-bit SSL encryption and zero surprise fees.
-              </p>
-            </div>
-          </div>
-
-          <!-- Step 4 -->
-          <div class="timeline-step">
-            <div class="step-num-bubble">4</div>
-            <div class="step-card">
-              <span class="step-pill">Step 04</span>
-              <h3 class="step-title">Flash &amp; Walk Straight In</h3>
-              <p class="step-desc">
-                Arrive at the arena turnstiles, show your dynamic in-app pass, hear the verification chime in &lt;0.8s, and enjoy the show!
-              </p>
-            </div>
-          </div>
-
-        </div>
-
       </div>
     </section>
 
-    <!-- ==================== EVENT CATEGORIES (3 CARDS, 100% REAL SYSTEM) ==================== -->
-    <section class="section bg-white" id="for-everyone">
-      <div class="section-container">
-        
-        <div class="section-header text-center">
-          <p class="section-eyebrow">Event Categories</p>
-          <h2 class="section-heading">Curated live entertainment across Australia</h2>
-          <p class="section-subheading">
-            Browse events tailored to your vibe — with reserved seating, paperless passes, and turnstile verification.
-          </p>
-        </div>
-
-        <div class="audience-grid">
-          
-          <!-- Card 1: Live Concerts -->
-          <div class="audience-card">
-            <div class="audience-header">
-              <div class="audience-icon-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cat-svg">
-                  <path d="M9 18V5l12-2v13"/>
-                  <circle cx="6" cy="18" r="3"/>
-                  <circle cx="18" cy="16" r="3"/>
-                </svg>
-              </div>
-              <h3 class="audience-role">Live Concerts &amp; Tours</h3>
-              <p class="audience-subtitle">Stadium tours, festivals &amp; indie music</p>
-            </div>
-            <p class="audience-body">
-              Discover touring artists and major music festivals across Australia. Book assigned seating and access verified dynamic passes instantly.
-            </p>
-            <ul class="audience-checklist">
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>Reserved seating allocations (e.g. VALID • SEAT A2)</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>100% offline access in crowded stadium arenas</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>1-Tap "Share Pass with Friend" instant transfer</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>Real-time venue info for Forum Melbourne and major stages</span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Card 2: Comedy Specials -->
-          <div class="audience-card">
-            <div class="audience-header">
-              <div class="audience-icon-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cat-svg">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                  <line x1="12" y1="19" x2="12" y2="23"/>
-                  <line x1="8" y1="23" x2="16" y2="23"/>
-                </svg>
-              </div>
-              <h3 class="audience-role">Standup Comedy Specials</h3>
-              <p class="audience-subtitle">Comedy club nights, tours &amp; showcases</p>
-            </div>
-            <p class="audience-body">
-              Browse top comedy headliners and club specials. Transparent checkout with upfront pricing, no surprise fees, and instant mobile entry.
-            </p>
-            <ul class="audience-checklist">
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>City &amp; state filters: Sydney, Melbourne, Venue &amp; VIC</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>Transparent pricing with itemized GST upfront</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>High-speed &lt;0.8s turnstile gate scan verification</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>Digital booking confirmation &amp; tax invoice receipts</span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Card 3: Arena & Cinema Shows -->
-          <div class="audience-card">
-            <div class="audience-header">
-              <div class="audience-icon-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cat-svg">
-                  <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
-                  <line x1="7" y1="2" x2="7" y2="22"/>
-                  <line x1="17" y1="2" x2="17" y2="22"/>
-                  <line x1="2" y1="12" x2="22" y2="12"/>
-                  <line x1="2" y1="7" x2="7" y2="7"/>
-                  <line x1="2" y1="17" x2="7" y2="17"/>
-                  <line x1="17" y1="17" x2="22" y2="17"/>
-                  <line x1="17" y1="7" x2="22" y2="7"/>
-                </svg>
-              </div>
-              <h3 class="audience-role">Arena &amp; Special Shows</h3>
-              <p class="audience-subtitle">Premieres, cultural events &amp; arena spectacles</p>
-            </div>
-            <p class="audience-body">
-              Secure tickets to featured highlights like JAWAN and arena screenings with high-concurrency seat reservation and zero double-booking.
-            </p>
-            <ul class="audience-checklist">
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>Universal search across events, artists, and venues</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>Automated inventory hold pipeline during checkout</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>Instant QR pass rendered directly in "My Tickets"</span>
-              </li>
-              <li>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="mini-check"><path d="M5 13l4 4L19 7"/></svg>
-                <span>Order History &amp; downloadable invoices in Account Profile</span>
-              </li>
-            </ul>
-          </div>
-
-        </div>
-
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ==================== FAQ ACCORDION ==================== -->
-    <section class="section bg-light" id="faq">
-      <div class="section-container">
-        
-        <div class="section-header text-center">
-          <p class="section-eyebrow">Support &amp; Assistance</p>
-          <h2 class="section-heading">Help Center &amp; FAQs</h2>
-          <p class="section-subheading">
-            Australian ticketing assistance &amp; FAQs. Everything you need to know about your passes, entry verification, and payments.
-          </p>
-        </div>
-
-        <div class="faq-accordion-wrapper">
-          
-          <!-- FAQ Item 1 (From App Screenshot) -->
-          <div class="faq-item active">
-            <button class="faq-question" aria-expanded="true">
-              <span>How do I receive and access my tickets?</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chevron" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <div class="faq-answer">
-              <p>
-                All tickets on Mytix are 100% digital and paperless. Once your booking is confirmed, your verified pass is immediately accessible in your <strong>"My Tickets"</strong> tab. Passes feature live gate QR codes, assigned seating badges (<strong>VALID • SEAT A2</strong>), venue details (<strong>Forum Melbourne</strong>), and attendee credentials (<strong>Pass ID: 1DF8EF8D</strong>). You will also receive an email confirmation with tax invoice details.
-              </p>
-            </div>
-          </div>
-
-          <!-- FAQ Item 2 (From App Screenshot) -->
-          <div class="faq-item">
-            <button class="faq-question" aria-expanded="false">
-              <span>How does entry verification work at the gate?</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chevron" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <div class="faq-answer">
-              <p>
-                At the turnstile gate or arena entrance, open your pass in <strong>"My Tickets"</strong> and tap <strong>"Scan this code at the gate"</strong>. Hold your live QR pass up to the optical scanner or staff scanner. The dynamic QR code cryptographically authenticates in <strong>under 0.8 seconds</strong> for instant turnstile clearance.
-              </p>
-            </div>
-          </div>
-
-          <!-- FAQ Item 3 (From App Screenshot) -->
-          <div class="faq-item">
-            <button class="faq-question" aria-expanded="false">
-              <span>Can I transfer or cancel my tickets?</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chevron" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <div class="faq-answer">
-              <p>
-                Yes! From your ticket pass screen in the app, simply tap <strong>"Share Pass with Friend"</strong> to transfer an individual ticket directly to another registered attendee without messy screenshots or PDFs. If a show is cancelled or rescheduled, a 100% full refund is automatically initiated to your original payment method (Apple Pay/Cards) within 5–7 business days.
-              </p>
-            </div>
-          </div>
-
-          <!-- FAQ Item 4 (From App Screenshot) -->
-          <div class="faq-item">
-            <button class="faq-question" aria-expanded="false">
-              <span>What payment methods are supported?</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chevron" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <div class="faq-answer">
-              <p>
-                Mytix supports seamless, 1-click checkouts with <strong>Apple Pay</strong>, <strong>Google Pay</strong>, and all major Australian and international <strong>Credit &amp; Debit Cards</strong> (Visa, Mastercard, American Express). All transactions are encrypted with bank-grade 256-bit SSL protocols with zero surprise fees.
-              </p>
-            </div>
-          </div>
-
-          <!-- FAQ Item 5 (Offline Reliability) -->
-          <div class="faq-item">
-            <button class="faq-question" aria-expanded="false">
-              <span>What if there is no mobile internet or Wi-Fi at the concert venue?</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chevron" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <div class="faq-answer">
-              <p>
-                Mytix tickets are built with offline-first cryptography. As soon as you purchase your ticket, the cryptographic signature is cached locally inside the app. Even if your phone is completely in Airplane Mode or the stadium has zero mobile signal, your dynamic QR pass in "My Tickets" will open and verify seamlessly at turnstile scanners.
-              </p>
-            </div>
-          </div>
-
-          <!-- FAQ Item 6 (Counterfeit Protection) -->
-          <div class="faq-item">
-            <button class="faq-question" aria-expanded="false">
-              <span>Can someone steal or enter using a screenshot of my ticket QR?</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="faq-chevron" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <div class="faq-answer">
-              <p>
-                No! Mytix dynamic QR passes rotate their verification payload every few seconds and include animated live security watermarks. Static screenshots or photos forwarded over messaging apps will fail turnstile validation. Only the active pass inside the verified Mytix app will scan successfully.
-              </p>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ==================== FINAL CTA DOWNLOAD BANNER ==================== -->
+    <!-- ==================== DOWNLOAD CTA ==================== -->
     <section class="section cta-section" id="download">
-      <div class="section-container">
-        <div class="cta-banner-card">
-          <div class="cta-glow-mesh" aria-hidden="true"></div>
-          
-          <div class="cta-content-grid">
-            <div class="cta-text-side">
-              <div class="cta-badge">Official Mytix Mobile App</div>
-              <h2 class="cta-headline">Ready for your next live event?</h2>
-              <p class="cta-paragraph">
-                Download Mytix for iOS and Android. Discover live experiences across Australia, lock exclusive passes, and tap <strong>"Scan this code at the gate"</strong> for instant turnstile admission.
-              </p>
-
-              <div class="cta-buttons-wrap">
-                <!-- App Store -->
-                <a href="#" class="store-btn dark" aria-label="Download on Apple App Store">
-                  <svg viewBox="0 0 24 24" fill="currentColor" class="store-svg" aria-hidden="true">
-                    <path d="M16.36 12.72c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.83-.81-3-.79-1.55.02-2.98.9-3.77 2.28-1.61 2.79-.41 6.92 1.15 9.18.76 1.11 1.67 2.35 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.78.74 3 .72 1.24-.02 2.02-1.12 2.78-2.24.88-1.28 1.24-2.53 1.26-2.6-.03-.01-2.4-.92-2.41-3.68zM14.1 5.9c.63-.77 1.06-1.83.94-2.9-.91.04-2.01.61-2.67 1.37-.59.68-1.1 1.76-.96 2.8 1.01.08 2.05-.51 2.69-1.27z"/>
-                  </svg>
-                  <div class="store-btn-text">
-                    <span class="store-small">Download on the</span>
-                    <span class="store-name">App Store</span>
-                  </div>
-                </a>
-
-                <!-- Google Play -->
-                <a href="#" class="store-btn dark" aria-label="Get it on Google Play">
-                  <svg viewBox="0 0 24 24" class="store-svg" aria-hidden="true">
-                    <path d="M3.6 2.4a1.3 1.3 0 0 0-.6 1.1v17a1.3 1.3 0 0 0 .6 1.1l.1.06 9.5-9.6v-.12L3.7 2.34l-.1.06z" fill="#00D2FF"/>
-                    <path d="M16.4 15.4l-3.2-3.24v-.12l3.2-3.24.08.05 3.8 2.18c1.08.62 1.08 1.63 0 2.25l-3.8 2.17-.08.05z" fill="#FFCE00"/>
-                    <path d="M16.48 15.35L13.2 12.1 3.6 21.7a1.05 1.05 0 0 0 1.34.04l11.54-6.39z" fill="#FF3A44"/>
-                    <path d="M16.48 8.85L4.94 2.46A1.05 1.05 0 0 0 3.6 2.5l9.6 9.6 3.28-3.25z" fill="#00E676"/>
-                  </svg>
-                  <div class="store-btn-text">
-                    <span class="store-small">Get it on</span>
-                    <span class="store-name">Google Play</span>
-                  </div>
-                </a>
-              </div>
-
-              <div class="cta-meta-stats">
-                <span>Fast 24 MB</span>
-                <span>•</span>
-                <span>iOS 14+ &amp; Android 9+</span>
-                <span>•</span>
-                <span>4.9 / 5 Average Rating</span>
-              </div>
+      <div class="container">
+        <div class="cta-card">
+          <div class="cta-copy">
+            <img src="./images/app-icon.png" alt="" class="cta-icon" width="64" height="64">
+            <h2>Your next night out starts here.</h2>
+            <p>Get Mytix on iPhone or Android, or book straight from your browser.</p>
+            <div class="store-row">
+              <!-- TODO: replace href="#" with the live App Store / Google Play listing URLs -->
+              <a href="#" class="store-btn store-btn-light" aria-label="Download on the App Store">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.36 12.72c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.83-.81-3-.79-1.55.02-2.98.9-3.77 2.28-1.61 2.79-.41 6.92 1.15 9.18.76 1.11 1.67 2.35 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.78.74 3 .72 1.24-.02 2.02-1.12 2.78-2.24.88-1.28 1.24-2.53 1.26-2.6-.03-.01-2.4-.92-2.41-3.68zM14.1 5.9c.63-.77 1.06-1.83.94-2.9-.91.04-2.01.61-2.67 1.37-.59.68-1.1 1.76-.96 2.8 1.01.08 2.05-.51 2.69-1.27z"/></svg>
+                <span><small>Download on the</small>App Store</span>
+              </a>
+              <a href="#" class="store-btn store-btn-light" aria-label="Get it on Google Play">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.6 2.4a1.3 1.3 0 0 0-.6 1.1v17a1.3 1.3 0 0 0 .6 1.1l.1.06 9.5-9.6v-.12L3.7 2.34l-.1.06z" fill="#00D2FF"/><path d="M16.4 15.4l-3.2-3.24v-.12l3.2-3.24.08.05 3.8 2.18c1.08.62 1.08 1.63 0 2.25l-3.8 2.17-.08.05z" fill="#FFCE00"/><path d="M16.48 15.35L13.2 12.1 3.6 21.7a1.05 1.05 0 0 0 1.34.04l11.54-6.39z" fill="#FF3A44"/><path d="M16.48 8.85L4.94 2.46A1.05 1.05 0 0 0 3.6 2.5l9.6 9.6 3.28-3.25z" fill="#00E676"/></svg>
+                <span><small>Get it on</small>Google Play</span>
+              </a>
+              <a href="https://mytix-2.onrender.com" class="btn btn-outline-dark">Book on the web</a>
             </div>
-
-            <!-- QR Code Scan Box -->
-            <div class="cta-qr-side">
-              <div class="qr-scan-card">
-                <div class="qr-frame">
-                  <svg viewBox="0 0 100 100" class="qr-svg-mockup">
-                    <rect width="32" height="32" x="4" y="4" fill="#0F172A"/>
-                    <rect width="20" height="20" x="10" y="10" fill="#fff"/>
-                    <rect width="12" height="12" x="14" y="14" fill="#F59E0B"/>
-                    <rect width="32" height="32" x="64" y="4" fill="#0F172A"/>
-                    <rect width="20" height="20" x="70" y="10" fill="#fff"/>
-                    <rect width="12" height="12" x="74" y="14" fill="#F59E0B"/>
-                    <rect width="32" height="32" x="4" y="64" fill="#0F172A"/>
-                    <rect width="20" height="20" x="10" y="70" fill="#fff"/>
-                    <rect width="12" height="12" x="14" y="74" fill="#F59E0B"/>
-                    <rect x="42" y="8" width="6" height="6" fill="#0F172A"/>
-                    <rect x="52" y="18" width="6" height="6" fill="#0F172A"/>
-                    <rect x="42" y="42" width="16" height="16" rx="3" fill="#F59E0B"/>
-                    <rect x="64" y="42" width="6" height="6" fill="#0F172A"/>
-                    <rect x="74" y="52" width="6" height="6" fill="#0F172A"/>
-                    <rect x="84" y="64" width="6" height="6" fill="#0F172A"/>
-                    <rect x="64" y="74" width="6" height="6" fill="#0F172A"/>
-                    <rect x="42" y="64" width="6" height="6" fill="#0F172A"/>
-                    <rect x="52" y="74" width="6" height="6" fill="#0F172A"/>
-                    <rect x="18" y="42" width="6" height="6" fill="#0F172A"/>
-                  </svg>
-                </div>
-                <p class="qr-caption">Scan with Phone Camera to Install Mytix App</p>
-              </div>
-            </div>
-
+          </div>
+          <div class="cta-art" aria-hidden="true">
+            <div class="cta-ticket t1"><span>Concert</span><strong>Harbour Lights</strong><em>Sydney · Dec 6</em></div>
+            <div class="cta-ticket t2"><span>Comedy</span><strong>The Late Set</strong><em>Newtown · Nov 22</em></div>
+            <div class="cta-ticket t3"><span>Live show</span><strong>Neon Coast</strong><em>Melbourne · Nov 14</em></div>
           </div>
         </div>
       </div>
@@ -962,86 +376,45 @@
 
   <!-- ==================== FOOTER ==================== -->
   <footer class="footer">
-    <div class="section-container">
+    <div class="container">
       <div class="footer-grid">
-        
-        <!-- Col 1: Brand -->
-        <div class="footer-brand-col">
-          <a href="#" class="brand-logo footer-logo" aria-label="Mytix Home">
-            <img src="./images/logo.png" alt="Mytix Logo" class="logo-img" onerror="this.style.display='none'">
-            <span class="logo-fallback">
-              <span class="logo-name">My<span class="logo-accent">tix</span></span>
-            </span>
-          </a>
-          <p class="footer-tagline">
-            The modern, fraud-proof live event ticketing app. Instant paperless entry, transparent pricing, and 100% offline access.
-          </p>
-          <div class="footer-social-links">
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="social-ico"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-            </a>
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="social-ico"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
-            </a>
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="social-ico"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
-            </a>
-            <a href="mailto:support@mytix.app" aria-label="Email Support">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="social-ico"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            </a>
-          </div>
+        <div class="footer-brand">
+          <img src="./images/logo-white.png" alt="Mytix" width="94" height="36" class="footer-logo">
+          <p>Live event tickets across Australia. Find a show, pick your seat, scan in at the gate.</p>
         </div>
 
-        <!-- Col 2: Navigation -->
-        <div class="footer-links-col">
-          <h4 class="footer-title">Navigation</h4>
-          <ul class="footer-links">
-            <li><a href="#hero">Home</a></li>
-            <li><a href="#features">Core Features</a></li>
-            <li><a href="#problem">The Problem</a></li>
-            <li><a href="#how-it-works">How It Works</a></li>
-            <li><a href="#for-everyone">For Everyone</a></li>
+        <div class="footer-col">
+          <h3>Product</h3>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#how-it-works">How it works</a></li>
             <li><a href="#faq">FAQ</a></li>
+            <li><a href="https://mytix-2.onrender.com">Browse events</a></li>
           </ul>
         </div>
 
-        <!-- Col 3: Legal & Support -->
-        <div class="footer-links-col">
-          <h4 class="footer-title">Legal &amp; Trust</h4>
-          <ul class="footer-links">
-            <li><a href="https://mytix.in/terms" target="_blank">Terms of Service</a></li>
-            <li><a href="https://mytix.in/terms#privacy" target="_blank">Privacy Policy</a></li>
-            <li><a href="https://mytix.in/terms#refund" target="_blank">Refund &amp; Cancellation</a></li>
-            <li><a href="https://mytix.in/contact" target="_blank">Help &amp; Support</a></li>
-            <li><a href="https://mytix.in/become-an-organiser" target="_blank">Organize an Event</a></li>
+        <div class="footer-col">
+          <h3>Company</h3>
+          <ul>
+            <li><a href="https://mytix-2.onrender.com/become-an-organiser">For organisers</a></li>
+            <li><a href="https://mytix-2.onrender.com/contact">Contact</a></li>
+            <li><a href="mailto:support@mytix.com.au">support@mytix.com.au</a></li>
           </ul>
         </div>
 
-        <!-- Col 4: Store Download -->
-        <div class="footer-links-col">
-          <h4 class="footer-title">Get Mytix Mobile</h4>
-          <p class="footer-subtext">Available on iPhone, iPad, and all Android devices.</p>
-          <div class="footer-store-col">
-            <a href="#download" class="store-btn dark small">
-              <svg viewBox="0 0 24 24" fill="currentColor" class="store-svg"><path d="M16.36 12.72c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.83-.81-3-.79-1.55.02-2.98.9-3.77 2.28-1.61 2.79-.41 6.92 1.15 9.18.76 1.11 1.67 2.35 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.78.74 3 .72 1.24-.02 2.02-1.12 2.78-2.24.88-1.28 1.24-2.53 1.26-2.6-.03-.01-2.4-.92-2.41-3.68zM14.1 5.9c.63-.77 1.06-1.83.94-2.9-.91.04-2.01.61-2.67 1.37-.59.68-1.1 1.76-.96 2.8 1.01.08 2.05-.51 2.69-1.27z"/></svg>
-              <div class="store-btn-text">
-                <span class="store-small">App Store</span>
-              </div>
-            </a>
-            <a href="#download" class="store-btn dark small">
-              <svg viewBox="0 0 24 24" class="store-svg"><path d="M3.6 2.4a1.3 1.3 0 0 0-.6 1.1v17a1.3 1.3 0 0 0 .6 1.1l.1.06 9.5-9.6v-.12L3.7 2.34l-.1.06z" fill="#00D2FF"/><path d="M16.4 15.4l-3.2-3.24v-.12l3.2-3.24.08.05 3.8 2.18c1.08.62 1.08 1.63 0 2.25l-3.8 2.17-.08.05z" fill="#FFCE00"/><path d="M16.48 15.35L13.2 12.1 3.6 21.7a1.05 1.05 0 0 0 1.34.04l11.54-6.39z" fill="#FF3A44"/><path d="M16.48 8.85L4.94 2.46A1.05 1.05 0 0 0 3.6 2.5l9.6 9.6 3.28-3.25z" fill="#00E676"/></svg>
-              <div class="store-btn-text">
-                <span class="store-small">Google Play</span>
-              </div>
-            </a>
-          </div>
+        <div class="footer-col">
+          <h3>Legal</h3>
+          <ul>
+            <li><a href="https://mytix-2.onrender.com/terms">Terms of service</a></li>
+            <li><a href="https://mytix-2.onrender.com/terms#privacy">Privacy policy</a></li>
+            <li><a href="https://mytix-2.onrender.com/terms#refund">Refunds &amp; cancellations</a></li>
+          </ul>
         </div>
-
       </div>
 
       <div class="footer-bottom">
-        <p>© 2026 Mytix Technologies Inc. All rights reserved.</p>
-        <p class="footer-crafted">Crafted with precision for live event lovers.</p>
+        <p>© <span id="year">2026</span> Mytix. All rights reserved.</p>
+        <p>Prices shown in AUD and include GST.</p>
       </div>
     </div>
   </footer>

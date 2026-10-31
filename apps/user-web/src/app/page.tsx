@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, Menu, ChevronLeft, ChevronRight, MapPin, Calendar, Star, Mic, Music, Radio, Headphones, Guitar, Tag, User, ArrowRight, Laugh, Flame, Trophy, Drama, Palette, Sparkles, Clock, Ticket, HelpCircle, MessageCircle, Globe, Mail } from 'lucide-react';
-import { toast } from 'sonner';
+import { ChevronLeft, ChevronRight, MapPin, Mic, ArrowRight, Laugh, Flame, Trophy, Drama, Palette, Sparkles, Ticket, MessageCircle, Plus, Receipt, ShieldCheck, LifeBuoy } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { BannerSkeleton, EventCardSkeleton, EventListRowSkeleton } from '@/components/ui/Skeleton';
 import { useLocationStore } from '@/store/useLocationStore';
 import SafeImage from '@/components/SafeImage';
+import EventCard from '@/components/ui/EventCard';
+import SectionHeader from '@/components/ui/SectionHeader';
+import { formatPrice, formatShortDate, formatTime, formatVenue, getEventStatus } from '@/lib/event';
 
 import { API_BASE } from '@/config/api';
 
@@ -31,7 +33,7 @@ const FAQS = [
   },
   {
     question: "What payment methods are supported on Mytix?",
-    answer: "We support all major payment options: UPI (Google Pay, PhonePe, Paytm), Credit & Debit cards (Visa, Mastercard, RuPay, American Express), and Net Banking via safe, bank-grade 256-bit SSL encrypted gateways with instant payment confirmation."
+    answer: "You can pay with Visa, Mastercard or American Express, with a digital wallet such as Apple Pay or Google Pay, or with Afterpay. All payments are processed securely by Stripe in Australian dollars."
   },
   {
     question: "Are there any hidden charges or unexpected fees at checkout?",
@@ -272,9 +274,6 @@ export default function Home() {
   const [homeData, setHomeData] = useState<HomeData | null>(null);
   const [banners, setBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{events: any[], artists: any[], venues: any[]} | null>(null);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [categories, setCategories] = useState<any[]>(['Concert', 'Comedy', 'Festival', 'Sports', 'Theatre', 'Workshop']);
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('All');
   const [comingUpFilter, setComingUpFilter] = useState<'All' | 'Weekend' | 'Month'>('All');
@@ -285,7 +284,7 @@ export default function Home() {
     items: FAQS
   });
   
-  const { selectedCity, setSelectedCity, setAvailableCities, availableCities } = useLocationStore();
+  const { selectedCity, setSelectedCity, setAvailableCities } = useLocationStore();
 
   useEffect(() => {
     async function loadFaq() {
@@ -391,23 +390,6 @@ export default function Home() {
   }, []);
 
 
-
-  useEffect(() => {
-    if (searchQuery.trim().length < 2) {
-      setSearchResults(null);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(searchQuery)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setSearchResults(data);
-        }
-      } catch (e) { console.warn('Search error:', e); }
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   const nextSlide = () => setCurrentSlide((prev) => prev + 1);
   const prevSlide = () => setCurrentSlide((prev) => prev - 1);
@@ -520,8 +502,6 @@ export default function Home() {
     return unique;
   }, [homeData, allTrending, trendingList, selectedCity]);
 
-  const artists = homeData?.upcomingArtists || [];
-
   // Dynamically build category tabs from backend/admin categories
   const categoryTabList = React.useMemo(() => {
     const list = [
@@ -603,63 +583,74 @@ export default function Home() {
     return list;
   }, [trending, comingUpFilter]);
 
+  const cityQuery = selectedCity && selectedCity !== 'All Cities' ? `?city=${encodeURIComponent(selectedCity)}` : '';
+  const inCity = selectedCity && selectedCity !== 'All Cities' ? ` in ${selectedCity}` : '';
+
+  // Three lowest-priced upcoming events for the "Best value" band
+  const bestValue = React.useMemo(() => {
+    return trending
+      .map((item: any) => ({ item, status: getEventStatus(item) }))
+      .filter(({ status }) => status.priceFrom > 0 && status.isBookable)
+      .sort((a, b) => a.status.priceFrom - b.status.priceFrom)
+      .slice(0, 3);
+  }, [trending]);
+
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans pb-20">
+    <div className="relative isolate min-h-screen bg-white pb-8 text-slate-800">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px] bg-linear-to-b from-brand-100/70 via-brand-50/40 to-transparent" />
 
-
-
-      {/* Hero Carousel (Infinite Center Mode like BookMyShow) */}
-      <div className="relative w-full h-44 sm:h-60 md:h-76 lg:h-85 xl:h-95 overflow-hidden bg-neutral-100/80 py-2 sm:py-3 my-2">
+      {/* Hero carousel (centre mode with peeking neighbours) */}
+      <section aria-label="Featured banners" className="relative w-full h-44 sm:h-60 md:h-76 lg:h-85 xl:h-95 overflow-hidden mt-4 sm:mt-6">
         {loading ? (
           <BannerSkeleton />
         ) : banners.length > 0 ? (
           <div className="relative w-full h-full">
             {displayBanners.map((slide, index) => {
               const total = displayBanners.length;
-              let diff = index - (currentSlide % total);
+              const diff = index - (currentSlide % total);
               let offset = diff % total;
               if (offset < -Math.floor(total / 2)) offset += total;
               if (offset > Math.floor(total / 2)) offset -= total;
 
               const isVisible = Math.abs(offset) <= 1;
-              const transformStyle = offset === 0 
-                ? 'translateX(-50%)' 
-                : offset === 1 
-                  ? 'translateX(calc(50% + 14px))' 
-                  : offset === -1 
-                    ? 'translateX(calc(-150% - 14px))' 
+              const transformStyle = offset === 0
+                ? 'translateX(-50%)'
+                : offset === 1
+                  ? 'translateX(calc(50% + 14px))'
+                  : offset === -1
+                    ? 'translateX(calc(-150% - 14px))'
                     : `translateX(calc(-50% + ${offset * 100}%))`;
 
               return (
-                <div 
+                <div
                   key={`${slide.id}-${index}`}
                   onClick={() => {
                     if (offset === -1) prevSlide();
                     if (offset === 1) nextSlide();
                   }}
                   className="absolute left-1/2 top-0 w-[84%] sm:w-[80%] md:w-[78%] lg:w-[76%] max-w-300 h-full transition-all duration-500 ease-out cursor-pointer"
-                  style={{ 
+                  style={{
                     transform: transformStyle,
                     zIndex: offset === 0 ? 20 : 10,
                     opacity: isVisible ? 1 : 0,
                     pointerEvents: isVisible ? 'auto' : 'none'
                   }}
                 >
-                  <div className="relative w-full h-full rounded-2xl md:rounded-3xl overflow-hidden shadow-xl border border-slate-200/90 transition-all hover:shadow-2xl">
+                  <div className="relative w-full h-full rounded-2xl md:rounded-3xl overflow-hidden bg-slate-100 ring-1 ring-inset ring-slate-900/5">
                     {slide.targetUrl && offset === 0 ? (
                       <Link href={slide.targetUrl} className="block w-full h-full relative">
-                        <Image 
-                          src={slide.imageUrl || '/banner/placeholder.avif'} 
-                          alt={slide.title || 'Banner'} 
+                        <Image
+                          src={slide.imageUrl || '/banner/placeholder.avif'}
+                          alt={slide.title || 'Banner'}
                           fill
                           priority={index === 0 || index === 1}
                           className="object-cover"
                         />
                       </Link>
                     ) : (
-                      <Image 
-                        src={slide.imageUrl || '/banner/placeholder.avif'} 
-                        alt={slide.title || 'Banner'} 
+                      <Image
+                        src={slide.imageUrl || '/banner/placeholder.avif'}
+                        alt={slide.title || 'Banner'}
                         fill
                         priority={index === 0 || index === 1}
                         className="object-cover"
@@ -670,34 +661,33 @@ export default function Home() {
               );
             })}
 
-            {/* Navigation Arrows (BookMyShow style) */}
-            <button 
+            <button
               onClick={prevSlide}
               aria-label="Previous banner"
-              className="absolute left-1.5 sm:left-3 md:left-5 lg:left-7 top-1/2 -translate-y-1/2 z-30 w-8 h-12 md:w-9 md:h-14 bg-black/40 hover:bg-black/70 backdrop-blur-sm text-white flex items-center justify-center rounded-lg md:rounded-xl opacity-90 hover:opacity-100 transition-all cursor-pointer shadow-lg border border-white/10"
+              className="absolute left-3 md:left-[9%] lg:left-[10%] top-1/2 -translate-y-1/2 z-30 hidden sm:flex w-10 h-10 md:w-11 md:h-11 items-center justify-center rounded-full bg-white/95 text-ink shadow-pop hover:bg-white transition cursor-pointer"
             >
-              <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
-            <button 
+            <button
               onClick={nextSlide}
               aria-label="Next banner"
-              className="absolute right-1.5 sm:right-3 md:right-5 lg:right-7 top-1/2 -translate-y-1/2 z-30 w-8 h-12 md:w-9 md:h-14 bg-black/40 hover:bg-black/70 backdrop-blur-sm text-white flex items-center justify-center rounded-lg md:rounded-xl opacity-90 hover:opacity-100 transition-all cursor-pointer shadow-lg border border-white/10"
+              className="absolute right-3 md:right-[9%] lg:right-[10%] top-1/2 -translate-y-1/2 z-30 hidden sm:flex w-10 h-10 md:w-11 md:h-11 items-center justify-center rounded-full bg-white/95 text-ink shadow-pop hover:bg-white transition cursor-pointer"
             >
-              <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+              <ChevronRight className="w-5 h-5" />
             </button>
 
-            {/* Indicators (Inside Banner bottom center) */}
-            <div className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 pointer-events-auto">
+            <div className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 rounded-full bg-black/25 px-2 py-1.5 backdrop-blur-sm">
               {banners.map((_, index) => {
-                let activeDot = ((currentSlide % banners.length) + banners.length) % banners.length;
+                const activeDot = ((currentSlide % banners.length) + banners.length) % banners.length;
                 const isActive = index === activeDot;
                 return (
-                  <button 
+                  <button
                     key={index}
                     onClick={() => setCurrentSlide(index)}
                     aria-label={`Go to slide ${index + 1}`}
-                    className={`h-1.5 rounded-full transition-all cursor-pointer shadow-xs ${
-                      isActive ? 'w-5 bg-amber-400' : 'w-1.5 bg-white/70 hover:bg-white'
+                    aria-current={isActive}
+                    className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                      isActive ? 'w-5 bg-brand-400' : 'w-1.5 bg-white/70 hover:bg-white'
                     }`}
                   />
                 );
@@ -705,290 +695,103 @@ export default function Home() {
             </div>
           </div>
         ) : null}
-      </div>
+      </section>
 
       {/* Trending events */}
-      <div className="max-w-7xl mx-auto px-4 mt-14 mb-14">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6 sm:mb-8">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                Trending events
-              </h2>
-              {selectedCity && selectedCity !== 'All Cities' && (
-                <span className="text-xs md:text-sm font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-300 whitespace-nowrap">
-                  in {selectedCity}
-                </span>
-              )}
-            </div>
-            <p className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">
-              {selectedCity && selectedCity !== 'All Cities' 
-                ? `Showing events taking place in ${selectedCity}` 
-                : "Top selling events across Australia right now"}
-            </p>
-          </div>
-          <Link href={`/events${selectedCity && selectedCity !== 'All Cities' ? `?city=${encodeURIComponent(selectedCity)}` : ''}`} className="text-xs sm:text-sm font-bold text-amber-600 hover:text-amber-700 inline-flex items-center group shrink-0 whitespace-nowrap self-start sm:self-auto">
-            <span>See all</span> <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+      <section className="container-page mt-12 sm:mt-16">
+        <SectionHeader
+          eyebrow="Hot right now"
+          title={`Trending${inCity}`}
+          description={inCity ? `The most-booked shows in ${selectedCity} right now.` : 'The most-booked shows across Australia right now.'}
+          action={{ href: `/events${cityQuery}`, label: 'See all' }}
+        />
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6">
           {loading ? (
             Array(4).fill(0).map((_, i) => <EventCardSkeleton key={i} />)
           ) : trendingList.length === 0 ? (
-            <div className="col-span-full bg-white/90 rounded-3xl p-10 border border-slate-200 text-center shadow-lg">
-              <MapPin className="w-12 h-12 text-amber-500 mx-auto mb-3 opacity-80" />
-              <h3 className="text-xl font-black text-slate-900">No events currently listed in {selectedCity}</h3>
+            <div className="col-span-full rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
+              <MapPin className="w-8 h-8 text-brand-600 mx-auto mb-3" />
+              <h3 className="text-lg font-bold">No events in {selectedCity} right now</h3>
               <p className="text-sm text-slate-500 max-w-md mx-auto mt-1 mb-6">
-                We don&apos;t have any live shows in {selectedCity} right now, but there are great events happening across Australia!
+                There&apos;s plenty happening elsewhere in Australia — take a look.
               </p>
-              <button 
+              <button
                 onClick={() => setSelectedCity('All Cities')}
-                className="px-6 py-2.5 bg-linear-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 rounded-full text-xs font-black transition shadow-md shadow-amber-400/25 cursor-pointer"
+                className="px-5 py-2.5 bg-brand-400 hover:bg-brand-300 text-ink rounded-full text-sm font-semibold transition cursor-pointer"
               >
-                Explore All Cities
+                Show all of Australia
               </button>
             </div>
-          ) : trendingList.slice(0, 4).map((item: any) => {
-            const title = item.title;
-            const sub = `${item.venue?.city || 'Location'} • ${item.venue?.name || 'Venue'}`;
-            const totalAvailable = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
-            const totalQuantity = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.quantity ?? 0), 0) ?? 0;
-            const minPrice = item.ticketTypes?.length 
-              ? Math.min(...item.ticketTypes.map((t: any) => t.priceCents || 0)) / 100 
-              : 0;
-            const now = new Date();
-            const startsAt = item.startsAt ? new Date(item.startsAt) : null;
-            const isBookingClosed = startsAt ? now >= new Date(startsAt.getTime() - 60 * 60 * 1000) : false;
-            const isSoldOut = totalAvailable <= 0;
-
+          ) : trendingList.slice(0, 4).map((item: any, i: number) => {
+            const rank = item.trendingMetrics?.rank;
+            const sellingFast = item.trendingMetrics?.recentSalesCount >= 10;
             return (
-              <div key={`trending-${item.id || item.slug}`} className="flex flex-col">
-                <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-4/5 rounded-2xl overflow-hidden mb-3 shadow-sm block border border-slate-200/90 bg-slate-100">
-                  <SafeImage src={item.posterPath} alt={title} fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover" />
-                  <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start pointer-events-none">
-                    {item.trendingMetrics?.rank ? (
-                      <div className={`text-[10px] uppercase font-black px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1 ${
-                        item.trendingMetrics.rank === 1
-                          ? 'bg-amber-400 text-slate-950 ring-1 ring-amber-500/50'
-                          : 'bg-slate-900/90 text-white backdrop-blur-xs'
-                      }`}>
-                        {item.trendingMetrics.rank === 1 && <Flame className="w-3 h-3 text-amber-950 fill-amber-950" />}
-                        <span>#{item.trendingMetrics.rank} Trending</span>
-                      </div>
-                    ) : (
-                      <div className="bg-amber-400 text-slate-950 text-[10px] uppercase font-black px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1">
-                        <Flame className="w-3 h-3 text-slate-950 fill-slate-950" />
-                        <span>Trending</span>
-                      </div>
-                    )}
-                    {item.trendingMetrics?.recentSalesCount >= 10 && (
-                      <div className="bg-rose-600 text-white text-[9px] uppercase font-black px-2 py-0.5 rounded-md shadow-xs">
-                        Selling Fast
-                      </div>
-                    )}
-                  </div>
-                  {/* Seats / Status badge on poster */}
-                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none gap-1">
-                    {isBookingClosed ? (
-                      <span className="bg-slate-900/90 backdrop-blur-sm text-slate-300 border border-slate-700 text-[11px] font-extrabold uppercase px-2 py-1 rounded-lg shadow">
-                        Booking Closed
-                      </span>
-                    ) : isSoldOut ? (
-                      <span className="bg-red-600/95 backdrop-blur-sm text-white text-[11px] font-extrabold uppercase px-2 py-1 rounded-lg shadow">
-                        Sold Out
-                      </span>
-                    ) : (
-                      <span className="bg-black/75 backdrop-blur-sm text-white text-[11px] font-semibold px-2 py-1 rounded-lg shadow flex items-center gap-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full ${totalAvailable <= 10 ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`}></span>
-                        {totalAvailable} / {totalQuantity || 100} Seats
-                      </span>
-                    )}
-                    {minPrice > 0 && !isBookingClosed && !isSoldOut && (
-                      <span className="bg-amber-400 text-slate-950 text-[11px] font-black px-2.5 py-1 rounded-lg shadow-sm">
-                        ${minPrice}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-                <div className="flex flex-col flex-1">
-                  <p className="text-xs text-slate-500 font-semibold mb-1 truncate flex items-center gap-1"><MapPin className="w-3 h-3 text-amber-500"/> {sub}</p>
-                  <Link href={`/events/${item.slug}`} className="font-bold text-slate-900 leading-tight mb-2 line-clamp-2">
-                    {title}
-                  </Link>
-                  <div className="mt-auto pt-2 flex items-center justify-between border-t border-slate-100">
-                    <span className="text-xs font-bold text-slate-500">
-                      {item.startsAt ? new Date(item.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Upcoming'}
-                    </span>
-                    {isBookingClosed ? (
-                      <span className="text-xs font-bold text-slate-400 cursor-not-allowed">
-                        Closed
-                      </span>
-                    ) : isSoldOut ? (
-                      <span className="text-xs font-bold text-red-500 cursor-not-allowed">
-                        Sold Out
-                      </span>
-                    ) : (
-                      <Link href={`/events/${item.slug}`} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center">
-                        Get tickets <ChevronRight className="w-3 h-3 ml-0.5" />
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <EventCard
+                key={`trending-${item.id || item.slug}`}
+                event={item}
+                badge={rank ? `#${rank} Trending` : sellingFast ? 'Selling fast' : 'Trending'}
+                badgeHighlight={rank === 1 || sellingFast}
+                priority={i < 2}
+              />
             );
           })}
         </div>
-      </div>
+      </section>
 
       {/* Featured events */}
       {(loading || featuredList.length > 0) && (
-        <div className="max-w-7xl mx-auto px-4 mb-16">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6 sm:mb-8">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                  Featured events
-                </h2>
-                {selectedCity && selectedCity !== 'All Cities' && (
-                  <span className="text-xs md:text-sm font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-300 whitespace-nowrap">
-                    in {selectedCity}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">
-                {selectedCity && selectedCity !== 'All Cities' 
-                  ? `Showing featured events taking place in ${selectedCity}` 
-                  : "Don't miss these top events across Australia"}
-              </p>
-            </div>
-            <Link href={`/events${selectedCity && selectedCity !== 'All Cities' ? `?city=${encodeURIComponent(selectedCity)}` : ''}`} className="text-xs sm:text-sm font-bold text-amber-600 hover:text-amber-700 inline-flex items-center group shrink-0 whitespace-nowrap self-start sm:self-auto">
-              <span>See all</span> <ChevronRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
-            </Link>
+        <section className="mt-16 sm:mt-20 bg-brand-50/70 border-y border-brand-100 py-12 sm:py-16">
+          <div className="container-page">
+          <SectionHeader
+            eyebrow="Editor's picks"
+            title={`Featured${inCity}`}
+            description="Hand-picked shows we think you'll love."
+            action={{ href: `/events${cityQuery}`, label: 'See all' }}
+          />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6">
+            {loading
+              ? Array(4).fill(0).map((_, i) => <EventCardSkeleton key={i} />)
+              : featuredList.slice(0, 4).map((item: any) => (
+                  <EventCard key={`featured-${item.id || item.slug}`} event={item} badge="Featured" badgeHighlight />
+                ))}
           </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
-            {loading ? (
-              Array(4).fill(0).map((_, i) => <EventCardSkeleton key={i} />)
-            ) : featuredList.slice(0, 4).map((item: any) => {
-              const title = item.title;
-              const sub = `${item.venue?.city || 'Location'} • ${item.venue?.name || 'Venue'}`;
-              const totalAvailable = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
-              const totalQuantity = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.quantity ?? 0), 0) ?? 0;
-              const minPrice = item.ticketTypes?.length 
-                ? Math.min(...item.ticketTypes.map((t: any) => t.priceCents || 0)) / 100 
-                : 0;
-              const now = new Date();
-              const startsAt = item.startsAt ? new Date(item.startsAt) : null;
-              const isBookingClosed = startsAt ? now >= new Date(startsAt.getTime() - 60 * 60 * 1000) : false;
-              const isSoldOut = totalAvailable <= 0;
-
-              return (
-                <div key={`featured-${item.id || item.slug}`} className="flex flex-col">
-                  <Link href={`/events/${item.slug}`} className="relative aspect-square md:aspect-4/5 rounded-2xl overflow-hidden mb-3 shadow-sm block border border-slate-200/90 bg-slate-100">
-                    <SafeImage src={item.posterPath} alt={title} fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover" />
-                    <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start pointer-events-none">
-                      <div className="bg-amber-400 text-slate-950 text-[10px] uppercase font-black px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-slate-950" />
-                        <span>Featured</span>
-                      </div>
-                    </div>
-                    {/* Seats / Status badge on poster */}
-                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none gap-1">
-                      {isBookingClosed ? (
-                        <span className="bg-slate-900/90 backdrop-blur-sm text-slate-300 border border-slate-700 text-[11px] font-extrabold uppercase px-2 py-1 rounded-lg shadow">
-                          Booking Closed
-                        </span>
-                      ) : isSoldOut ? (
-                        <span className="bg-red-600/95 backdrop-blur-sm text-white text-[11px] font-extrabold uppercase px-2 py-1 rounded-lg shadow">
-                          Sold Out
-                        </span>
-                      ) : (
-                        <span className="bg-black/75 backdrop-blur-sm text-white text-[11px] font-semibold px-2 py-1 rounded-lg shadow flex items-center gap-1.5">
-                          <span className={`w-1.5 h-1.5 rounded-full ${totalAvailable <= 10 ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`}></span>
-                          {totalAvailable} / {totalQuantity || 100} Seats
-                        </span>
-                      )}
-                      {minPrice > 0 && !isBookingClosed && !isSoldOut && (
-                        <span className="bg-amber-400 text-slate-950 text-[11px] font-black px-2.5 py-1 rounded-lg shadow-sm">
-                          ${minPrice}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                  <div className="flex flex-col flex-1">
-                    <p className="text-xs text-slate-500 font-semibold mb-1 truncate flex items-center gap-1"><MapPin className="w-3 h-3 text-amber-500"/> {sub}</p>
-                    <Link href={`/events/${item.slug}`} className="font-bold text-slate-900 leading-tight mb-2 line-clamp-2">
-                      {title}
-                    </Link>
-                    <div className="mt-auto pt-2 flex items-center justify-between border-t border-slate-100">
-                      <span className="text-xs font-bold text-slate-500">
-                        {item.startsAt ? new Date(item.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Upcoming'}
-                      </span>
-                      {isBookingClosed ? (
-                        <span className="text-xs font-bold text-slate-400 cursor-not-allowed">
-                          Closed
-                        </span>
-                      ) : isSoldOut ? (
-                        <span className="text-xs font-bold text-red-500 cursor-not-allowed">
-                          Sold Out
-                        </span>
-                      ) : (
-                        <Link href={`/events/${item.slug}`} className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center">
-                          Get tickets <ChevronRight className="w-3 h-3 ml-0.5" />
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Browse by Category - Authentic Live Ticketing Shelf (BookMyShow / Eventbrite Style) */}
-      <div className="max-w-7xl mx-auto px-4 mb-20">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 text-xs font-black uppercase tracking-wider mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Book By Category
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Explore Live Shows & Events
-            </h2>
-            <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">
-              Select a genre to instantly view and book tickets for upcoming live performances
-            </p>
-          </div>
-          <Link 
-            href={`/events${selectedCategoryTab !== 'All' ? `?category=${encodeURIComponent(selectedCategoryTab)}` : ''}`}
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-700 hover:text-black bg-slate-100 hover:bg-amber-400 px-5 py-2.5 rounded-full transition-all shrink-0 border border-slate-200 shadow-2xs group"
-          >
-            <span>View all {selectedCategoryTab !== 'All' ? selectedCategoryTab : ''} shows</span>
-            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
+      {/* Browse by category */}
+      <section className="container-page mt-16 sm:mt-20">
+        <SectionHeader
+          eyebrow="Find your vibe"
+          title="Browse by category"
+          description="Pick a genre to see what's coming up."
+          action={{
+            href: `/events${selectedCategoryTab !== 'All' ? `?category=${encodeURIComponent(selectedCategoryTab)}` : ''}`,
+            label: selectedCategoryTab !== 'All' ? `All ${selectedCategoryTab} shows` : 'All shows',
+          }}
+        />
 
-        {/* Quick Category Strip / Interactive Pill Tabs (BookMyShow / Paytm Insider Style) */}
-        <div className="flex items-center gap-2.5 overflow-x-auto pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+        <div role="tablist" aria-label="Event categories" className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar">
           {categoryTabList.map((tab) => {
             const Icon = tab.icon;
             const isActive = selectedCategoryTab.toLowerCase() === tab.id.toLowerCase();
             return (
               <button
                 key={tab.id}
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setSelectedCategoryTab(tab.id)}
-                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer border ${
+                className={`inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold transition-colors shrink-0 cursor-pointer border ${
                   isActive
-                    ? 'bg-slate-950 text-amber-400 border-slate-900 shadow-md shadow-slate-950/20 scale-102'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                    ? 'bg-brand-400 text-ink border-brand-400 shadow-sm shadow-brand-400/30'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-brand-300 hover:bg-brand-50'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-amber-400' : 'text-slate-500'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-ink' : 'text-brand-600'}`} />
                 <span>{tab.name}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
-                  isActive ? 'bg-amber-400 text-slate-950' : 'bg-slate-100 text-slate-600'
+                <span className={`min-w-5 text-center text-[11px] px-1.5 py-0.5 rounded-full font-semibold tabular-nums ${
+                  isActive ? 'bg-ink/10 text-ink' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {tab.count}
                 </span>
@@ -997,272 +800,79 @@ export default function Home() {
           })}
         </div>
 
-        {/* Dynamic Live Ticket Booking Cards Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mt-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 mt-6">
           {loading ? (
             Array(4).fill(0).map((_, i) => <EventCardSkeleton key={`cat-skeleton-${i}`} />)
           ) : displayCategoryEvents.length === 0 ? (
-            <div className="col-span-full bg-slate-50 rounded-3xl p-10 border border-slate-200 text-center">
-              <MapPin className="w-10 h-10 text-amber-500 mx-auto mb-2 opacity-80" />
-              <h3 className="text-lg font-bold text-slate-900">No {selectedCategoryTab} shows listed right now</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-5">
-                Check back soon or explore all live shows happening across the country.
+            <div className="col-span-full rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
+              <h3 className="text-lg font-bold">No {selectedCategoryTab} shows listed right now</h3>
+              <p className="text-sm text-slate-500 max-w-sm mx-auto mt-1 mb-5">
+                Check back soon, or browse everything that&apos;s on.
               </p>
-              <button 
+              <button
                 onClick={() => setSelectedCategoryTab('All')}
-                className="px-5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-full text-xs font-bold transition shadow-sm cursor-pointer"
+                className="px-5 py-2.5 bg-brand-400 hover:bg-brand-300 text-ink rounded-full text-sm font-semibold transition cursor-pointer"
               >
-                Show All Events
+                Show all events
               </button>
             </div>
           ) : (
-            displayCategoryEvents.slice(0, 8).map((item: any) => {
-              const title = item.title;
-              const sub = `${item.venue?.city || 'Location'} • ${item.venue?.name || 'Venue'}`;
-              const img = item.posterPath || '/banner/placeholder.avif';
-              const totalAvailable = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
-              const minPrice = item.ticketTypes?.length 
-                ? Math.min(...item.ticketTypes.map((t: any) => t.priceCents || 0)) / 100 
-                : 0;
-              const dateStr = item.startsAt 
-                ? new Date(item.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                : 'Upcoming';
-
-              const now = new Date();
-              const startsAt = item.startsAt ? new Date(item.startsAt) : null;
-              const isBookingClosed = startsAt ? now >= new Date(startsAt.getTime() - 60 * 60 * 1000) : false;
-              const isSoldOut = totalAvailable <= 0;
-
-              return (
-                <div key={`cat-${item.id || item.slug}`} className="flex flex-col bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-3 shadow-xs">
-                  {/* Poster Link */}
-                  <Link href={`/events/${item.slug}`} className="relative aspect-4/5 rounded-xl sm:rounded-2xl overflow-hidden bg-slate-100 block mb-3">
-                    <SafeImage 
-                      src={item.posterPath} 
-                      alt={title} 
-                      fill 
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" 
-                      className="object-cover" 
-                    />
-                    
-                    {/* Top Badges */}
-                    <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-                      <span className="bg-slate-950/80 backdrop-blur-md text-amber-300 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-white/10 shadow-sm">
-                        {item.category || selectedCategoryTab || 'Event'}
-                      </span>
-                      {minPrice > 0 && !isBookingClosed && !isSoldOut && (
-                        <span className="bg-amber-400 text-slate-950 text-[11px] font-black px-2 py-0.5 rounded-md shadow-sm">
-                          From ${minPrice}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Bottom Status on Poster */}
-                    <div className="absolute bottom-2 left-2 right-2 pointer-events-none">
-                      {isBookingClosed ? (
-                        <span className="inline-block bg-slate-900/90 backdrop-blur-sm text-slate-300 border border-slate-700 text-[10px] font-black uppercase px-2 py-1 rounded-md shadow">
-                          Booking Closed
-                        </span>
-                      ) : isSoldOut ? (
-                        <span className="inline-block bg-red-600/95 backdrop-blur-sm text-white text-[10px] font-black uppercase px-2 py-1 rounded-md shadow">
-                          Sold Out
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 bg-black/75 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-1 rounded-md shadow">
-                          <span className={`w-1.5 h-1.5 rounded-full ${totalAvailable <= 10 ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
-                          {totalAvailable} Seats Left
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-
-                  {/* Details & Direct Booking Action */}
-                  <div className="flex flex-col flex-1 px-1">
-                    <p className="text-[11px] text-slate-500 font-bold mb-1 truncate flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-amber-500 shrink-0" />
-                      {sub}
-                    </p>
-
-                    <Link href={`/events/${item.slug}`} className="font-extrabold text-slate-900 text-base leading-snug line-clamp-2 mb-2">
-                      {title}
-                    </Link>
-
-                    <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">Date</span>
-                        <span className="text-xs font-bold text-slate-700">{dateStr}</span>
-                      </div>
-
-                      {isBookingClosed ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-100 text-slate-400 text-xs font-bold cursor-not-allowed">
-                          Closed
-                        </span>
-                      ) : isSoldOut ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-50 text-red-600 border border-red-200 text-xs font-bold cursor-not-allowed">
-                          Sold Out
-                        </span>
-                      ) : (
-                        <Link 
-                          href={`/events/${item.slug}`}
-                          className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-black shadow-xs cursor-pointer"
-                        >
-                          <span>Book</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
+            displayCategoryEvents.slice(0, 8).map((item: any) => (
+              <EventCard key={`cat-${item.id || item.slug}`} event={item} />
+            ))
           )}
         </div>
-      </div>
+      </section>
 
-      {/* On sale now - Luxury Dark Showcase Banner */}
-      <div className="max-w-7xl mx-auto px-4 mb-20">
-        <div className="relative rounded-3xl md:rounded-[36px] overflow-hidden bg-linear-to-r from-[#070b13] via-[#0d131f] to-[#080c14] border border-amber-500/25 p-7 md:p-10 lg:p-12 shadow-2xl shadow-black/40">
-          
-          {/* Ambient Amber Glows */}
-          <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-amber-500/20 rounded-full blur-[90px] pointer-events-none" />
-          <div className="absolute top-0 right-10 w-72 h-72 bg-amber-400/10 rounded-full blur-[100px] pointer-events-none" />
-          
-          {/* Abstract Golden Wave Vector Wireframes (matches user design) */}
-          <svg className="absolute -left-10 -bottom-14 w-125 h-90 pointer-events-none opacity-45 overflow-visible" viewBox="0 0 500 360" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="goldCurve" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.9" />
-                <stop offset="60%" stopColor="#fbbf24" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="#d97706" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <path d="M-30 350 C 50 330, 80 260, 130 230 C 190 190, 250 240, 310 200 C 360 170, 410 110, 470 70" stroke="url(#goldCurve)" strokeWidth="1.6" />
-            <path d="M-30 365 C 60 345, 90 275, 140 245 C 200 205, 260 255, 320 215 C 370 185, 420 125, 480 85" stroke="url(#goldCurve)" strokeWidth="1.3" />
-            <path d="M-30 335 C 40 315, 70 245, 120 215 C 180 175, 240 225, 300 185 C 350 155, 400 95, 460 55" stroke="url(#goldCurve)" strokeWidth="1.2" />
-            <path d="M-30 320 C 30 295, 60 230, 110 200 C 170 160, 230 210, 290 170 C 340 140, 390 80, 450 40" stroke="url(#goldCurve)" strokeWidth="0.9" opacity="0.75" />
-            <path d="M-30 300 C 20 275, 50 215, 100 185 C 160 145, 220 195, 280 155 C 330 125, 380 65, 440 25" stroke="url(#goldCurve)" strokeWidth="0.7" opacity="0.55" />
-            {/* Glowing Accent Ribbon */}
-            <path d="M-50 390 C 30 370, 80 310, 130 290 C 180 270, 220 310, 270 280" stroke="#f59e0b" strokeWidth="6" strokeLinecap="round" filter="blur(7px)" opacity="0.5" />
-          </svg>
+      {/* Best value — lowest-priced shows on sale */}
+      {(loading || bestValue.length > 0) && (
+        <section className="container-page mt-16 sm:mt-20">
+          <div className="relative overflow-hidden rounded-3xl bg-ink px-6 py-8 ring-1 ring-brand-400/20 sm:px-10 sm:py-12">
+            <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-brand-400/25 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-brand-400/10 blur-3xl" />
+            <div className="relative grid gap-8 lg:grid-cols-[280px_1fr] lg:items-center">
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-brand-400">On sale now</p>
+                <h2 className="text-3xl font-extrabold text-white sm:text-4xl">Great nights, great prices.</h2>
+                <p className="mt-3 text-slate-400">The best-value tickets on Mytix this week.</p>
+                <Link
+                  href="/events"
+                  className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-brand-400 px-5 text-sm font-semibold text-ink transition hover:bg-brand-300"
+                >
+                  Explore all events
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
 
-          <div className="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-8 lg:gap-10">
-            
-            {/* Left Header & CTA */}
-            <div className="xl:w-80 shrink-0">
-              <span className="inline-block text-[11px] font-black tracking-widest uppercase text-amber-400 mb-2">
-                TRENDING NOW
-              </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-                On sale now
-              </h2>
-              <p className="text-gray-300 text-sm sm:text-base font-medium mt-3 mb-8">
-                Grab your tickets before they&apos;re gone.
-              </p>
-              <Link
-                href="/events"
-                className="inline-flex items-center gap-2.5 bg-white text-slate-950 font-extrabold px-7 py-3.5 rounded-full hover:bg-amber-400 hover:scale-105 active:scale-95 transition-all text-sm shadow-xl shadow-black/30 group"
-              >
-                <span>Explore all</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {loading
+                  ? Array(3).fill(0).map((_, i) => (
+                      <div key={i} className="h-28 animate-pulse rounded-2xl bg-white/5 sm:h-64" />
+                    ))
+                  : bestValue.map(({ item, status }) => (
+                      <Link
+                        key={`value-${item.id || item.slug}`}
+                        href={`/events/${item.slug}`}
+                        className="group flex gap-3 rounded-2xl bg-white/5 p-2.5 ring-1 ring-inset ring-white/10 transition hover:bg-white/10 sm:flex-col"
+                      >
+                        <div className="relative aspect-4/5 w-20 shrink-0 overflow-hidden rounded-xl bg-white/5 sm:aspect-16/10 sm:w-full">
+                          <SafeImage src={item.posterPath} alt={item.title} fill sizes="(max-width: 640px) 80px, 25vw" className="object-cover" />
+                        </div>
+                        <div className="flex min-w-0 flex-1 flex-col justify-center sm:px-1 sm:pb-1">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            {formatShortDate(status.startsAt)}
+                          </p>
+                          <h3 className="mt-0.5 truncate text-base font-bold text-white group-hover:text-brand-300">{item.title}</h3>
+                          <p className="truncate text-sm text-slate-400">{formatVenue(item)}</p>
+                          <p className="mt-1.5 text-sm font-semibold text-brand-400">From {formatPrice(status.priceFrom)}</p>
+                        </div>
+                      </Link>
+                    ))}
+              </div>
             </div>
-
-            {/* Right Cards Showcase (3 sleek cards) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 flex-1 w-full">
-              {loading ? (
-                Array(3).fill(0).map((_, i) => (
-                  <div key={i} className="rounded-2xl overflow-hidden bg-[#121724]/90 border border-white/10 p-3 flex flex-col gap-3">
-                    <div className="w-full aspect-16/11 bg-slate-800 animate-pulse rounded-xl" />
-                    <div className="h-5 bg-slate-800 animate-pulse rounded w-3/4" />
-                    <div className="h-4 bg-slate-800 animate-pulse rounded w-1/2" />
-                  </div>
-                ))
-              ) : (() => {
-                // Task 1: Show top 3 events with the lowest ticket prices
-                const eventsWithPrice = (trending || []).map((item: any, i: number) => {
-                  const prices = (item.ticketTypes || [])
-                    .map((t: any) => t.priceCents || 0)
-                    .filter((p: number) => p > 0);
-                  const minPrice = prices.length > 0 ? Math.min(...prices) / 100 : 0;
-                  return { item, minPrice, index: i };
-                });
-
-                // Sort by lowest price first (items with prices > 0 first, then lowest price)
-                const sortedByLowestPrice = [...eventsWithPrice].sort((a, b) => {
-                  if (a.minPrice > 0 && b.minPrice > 0) return a.minPrice - b.minPrice;
-                  if (a.minPrice > 0) return -1;
-                  if (b.minPrice > 0) return 1;
-                  return 0;
-                }).slice(0, 3);
-
-                const liveCards = sortedByLowestPrice.map(({ item, minPrice, index }) => ({
-                  id: item.id || `live-${index}`,
-                  title: item.title,
-                  subtitle: `${item.venue?.city || 'Melbourne'}${item.venue?.name ? ` • ${item.venue.name}` : ''}`,
-                  category: item.category || 'Event',
-                  date: item.startsAt ? new Date(item.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Upcoming',
-                  price: minPrice > 0 ? `$${minPrice}+` : '',
-                  image: item.posterPath || '/banner/placeholder.avif',
-                  link: `/events/${item.slug}`
-                }));
-
-                if (liveCards.length === 0) {
-                  return (
-                    <div className="col-span-full py-8 text-center text-gray-400 text-sm">
-                      No featured shows right now.
-                    </div>
-                  );
-                }
-
-                return liveCards.map((card, idx) => (
-                  <Link
-                    key={card.id || idx}
-                    href={card.link}
-                    className="relative rounded-2xl overflow-hidden bg-[#121724]/90 border border-white/10 flex flex-col"
-                  >
-                    {/* Top Poster Image */}
-                    <div className="relative aspect-16/11 w-full overflow-hidden bg-slate-900">
-                      <Image
-                        src={card.image}
-                        alt={card.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-cover"
-                      />
-                      {/* Category Badge Pill */}
-                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md text-slate-900 text-[11px] font-extrabold px-3 py-1 rounded-full shadow-md">
-                        {card.category}
-                      </div>
-                    </div>
-
-                    {/* Bottom Card Info */}
-                    <div className="p-4.5 flex flex-col flex-1 justify-between bg-linear-to-b from-[#121724] to-[#0a0e16]">
-                      <div>
-                        <h3 className="text-white font-bold text-base md:text-lg leading-tight line-clamp-1">
-                          {card.title}
-                        </h3>
-                        <p className="text-gray-400 text-xs font-medium truncate mt-1">
-                          {card.subtitle}
-                        </p>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
-                        <span className="text-xs text-gray-400 font-medium">
-                          {card.date}
-                        </span>
-                        <span className="text-base md:text-lg font-black text-amber-400">
-                          {card.price}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                ));
-              })()}
-            </div>
-
           </div>
-        </div>
-      </div>
+        </section>
+      )}
 
       {/* =========================================================================
           BROWSE BY CITY (Temporarily commented out - preserved for future use)
@@ -1366,363 +976,222 @@ export default function Home() {
       )}
       */}
 
-      {/* Coming up list - High-End Luxury Live Tour Dates */}
-      <div className="max-w-7xl mx-auto px-4 mb-20">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 gap-4 border-b border-slate-200/80 pb-6">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs font-semibold tracking-wide mb-2">
-              <Calendar className="w-3.5 h-3.5 text-amber-600" /> Tour Calendar & Gigs
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              Upcoming Tour Dates & Shows
-            </h2>
-            <p className="text-xs sm:text-sm font-normal text-slate-500 mt-1">
-              Discover live gigs, stadium tours, and comedy specials with instant ticket booking
-            </p>
+      {/* Upcoming dates */}
+      <section className="container-page mt-16 sm:mt-20">
+        <SectionHeader
+          eyebrow="Calendar"
+          title="Coming up"
+          description="Every upcoming show, soonest first."
+          action={{ href: '/events', label: 'View all' }}
+        >
+          <div role="tablist" aria-label="Date range" className="flex items-center gap-1 rounded-full bg-brand-50 p-1 ring-1 ring-inset ring-brand-100">
+            {[
+              { id: 'All', label: 'All dates' },
+              { id: 'Weekend', label: 'Weekend' },
+              { id: 'Month', label: 'Next 30 days' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={comingUpFilter === tab.id}
+                onClick={() => setComingUpFilter(tab.id as 'All' | 'Weekend' | 'Month')}
+                className={`h-8 px-3.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                  comingUpFilter === tab.id
+                    ? 'bg-brand-400 text-ink shadow-sm'
+                    : 'text-slate-600 hover:text-ink'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
-          
-          <div className="flex items-center gap-3">
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-full border border-slate-200/80">
-              {[
-                { id: 'All', label: 'All Dates' },
-                { id: 'Weekend', label: 'This Weekend' },
-                { id: 'Month', label: 'Next 30 Days' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setComingUpFilter(tab.id as any)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                    comingUpFilter === tab.id
-                      ? 'bg-slate-950 text-amber-400 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+        </SectionHeader>
 
-            <Link href="/events" className="hidden md:inline-flex items-center gap-1 text-sm font-semibold text-amber-600 hover:text-amber-700 group pl-2">
-              <span>View all</span>
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3">
+        <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200">
           {loading ? (
-            Array(5).fill(0).map((_, i) => <EventListRowSkeleton key={`coming-skeleton-${i}`} />)
+            Array(4).fill(0).map((_, i) => (
+              <div key={`coming-skeleton-${i}`} className="p-3 sm:p-4"><EventListRowSkeleton /></div>
+            ))
           ) : comingUpEvents.length === 0 ? (
-            <div className="bg-slate-50 rounded-2xl p-10 border border-slate-200 text-center">
-              <Calendar className="w-10 h-10 text-amber-500 mx-auto mb-2 opacity-80" />
-              <h3 className="text-lg font-semibold text-slate-900">No shows found for this filter</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
-                Try selecting &quot;All Dates&quot; to see all upcoming live performances.
-              </p>
+            <div className="px-6 py-12 text-center">
+              <h3 className="text-lg font-bold">Nothing in this date range</h3>
+              <p className="text-sm text-slate-500 mt-1 mb-5">Try &quot;All dates&quot; to see every upcoming show.</p>
               <button
                 onClick={() => setComingUpFilter('All')}
-                className="px-5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-full text-xs font-semibold transition shadow-sm cursor-pointer"
+                className="px-5 py-2.5 bg-brand-400 hover:bg-brand-300 text-ink rounded-full text-sm font-semibold transition cursor-pointer"
               >
-                Reset Filter
+                Show all dates
               </button>
             </div>
           ) : (
             comingUpEvents.slice(0, 8).map((item: any) => {
-              const dateObj = new Date(item.startsAt || item.startDate || Date.now());
-              const month = dateObj.toLocaleDateString('en-US', { month: 'short' });
-              const day = dateObj.toLocaleDateString('en-US', { day: '2-digit' });
-              const weekday = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-              const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-              const totalAvailable = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.available ?? 0), 0) ?? 0;
-              const totalQuantity = item.ticketTypes?.reduce((acc: number, t: any) => acc + (t.quantity ?? 0), 0) ?? 0;
-              const minPrice = item.ticketTypes?.length 
-                ? Math.min(...item.ticketTypes.map((t: any) => t.priceCents || 0)) / 100 
-                : 0;
-
-              const now = new Date();
-              const startsAt = item.startsAt ? new Date(item.startsAt) : null;
-              const isBookingClosed = startsAt ? now >= new Date(startsAt.getTime() - 60 * 60 * 1000) : false;
-              const isSoldOut = totalAvailable <= 0 && item.ticketTypes && item.ticketTypes.length > 0;
+              const status = getEventStatus(item);
+              const dateObj = status.startsAt || new Date();
+              const month = dateObj.toLocaleDateString('en-AU', { month: 'short' });
+              const day = dateObj.toLocaleDateString('en-AU', { day: '2-digit' });
+              const weekday = dateObj.toLocaleDateString('en-AU', { weekday: 'short' });
+              const venue = formatVenue(item);
 
               return (
-                <div 
-                  key={`coming-${item.id || item.slug}`} 
-                  className="relative flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white border border-slate-200/80 shadow-2xs gap-4"
+                <Link
+                  key={`coming-${item.id || item.slug}`}
+                  href={`/events/${item.slug}`}
+                  className="group flex items-center gap-3 p-3 transition-colors first:rounded-t-2xl last:rounded-b-2xl hover:bg-brand-50/60 sm:gap-5 sm:p-4"
                 >
-                  {/* Left Block: Date Badge + Thumbnail + Details */}
-                  <div className="flex items-center gap-3.5 sm:gap-4 flex-1 min-w-0">
-                    
-                    {/* High-Contrast Calendar Date Tile */}
-                    <div className="flex flex-col items-center justify-center shrink-0 w-14 h-14 sm:w-16 sm:h-18 rounded-xl bg-linear-to-b from-slate-950 to-slate-900 border border-slate-800 text-white p-1 sm:p-1.5 shadow-2xs">
-                      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-400 leading-tight">
-                        {month}
-                      </span>
-                      <span className="text-lg sm:text-2xl font-bold text-white tracking-tight leading-none my-0.5">
-                        {day}
-                      </span>
-                      <span className="text-[9px] sm:text-[10px] font-medium uppercase text-slate-400 tracking-wide leading-tight">
-                        {weekday}
-                      </span>
-                    </div>
-
-                    {/* Poster Thumbnail */}
-                    <Link 
-                      href={`/events/${item.slug}`} 
-                      className="relative w-18 h-18 sm:w-22 sm:h-18 md:w-26 md:h-18 rounded-lg sm:rounded-xl overflow-hidden shrink-0 bg-slate-100 border border-slate-200/80 shadow-2xs block"
-                    >
-                      <SafeImage 
-                        src={item.posterPath} 
-                        alt={item.title} 
-                        fill 
-                        sizes="(max-width: 640px) 100vw, 150px" 
-                        className="object-cover" 
-                      />
-                      {item.category && (
-                        <div className="absolute top-1 left-1 bg-slate-950/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[9px] font-medium uppercase text-amber-300 border border-white/10 hidden sm:block">
-                          {item.category}
-                        </div>
-                      )}
-                    </Link>
-
-                    {/* Event Info Details */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      {/* Status / Category Badges */}
-                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/70">
-                          <Mic className="w-2.5 h-2.5 text-amber-500" />
-                          {item.category || 'Live Event'}
-                        </span>
-
-                        {isBookingClosed ? (
-                          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
-                            Booking Closed
-                          </span>
-                        ) : isSoldOut ? (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
-                            Sold Out
-                          </span>
-                        ) : totalAvailable <= 15 && totalAvailable > 0 ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                            <Flame className="w-2.5 h-2.5 text-amber-500" />
-                            {totalAvailable} Left
-                          </span>
-                        ) : totalAvailable > 0 ? (
-                          <span className="items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full hidden sm:inline-flex">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            {totalAvailable} Seats Left
-                          </span>
-                        ) : null}
-                      </div>
-
-                      {/* Title */}
-                      <Link 
-                        href={`/events/${item.slug}`} 
-                        className="font-semibold text-slate-900 text-base sm:text-lg leading-snug tracking-tight truncate block"
-                      >
-                        {item.title}
-                      </Link>
-
-                      {/* Venue & Time Meta */}
-                      <div className="flex items-center gap-3 text-xs font-normal text-slate-500 mt-1 truncate">
-                        {item.venue?.name && (
-                          <span className="flex items-center gap-1 truncate">
-                            <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                            <span className="truncate">{item.venue.name}{item.venue.city ? `, ${item.venue.city}` : ''}</span>
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1 shrink-0">
-                          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{timeStr}</span>
-                        </span>
-                      </div>
-                    </div>
-
+                  <div className="flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-brand-50 ring-1 ring-inset ring-brand-200 sm:w-16">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-brand-700">{month}</span>
+                    <span className="font-display text-2xl font-extrabold leading-none text-ink">{day}</span>
+                    <span className="text-[10px] font-medium uppercase text-slate-400">{weekday}</span>
                   </div>
 
-                  {/* Right Block: Price + CTA Action */}
-                  <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 sm:pl-5 sm:border-l sm:border-slate-100 pt-2.5 sm:pt-0 border-t border-slate-100 sm:border-t-0">
-                    <div className="flex flex-col sm:items-end">
-                      <span className="text-[10px] font-medium uppercase tracking-wider text-slate-400">Tickets From</span>
-                      <span className="text-base sm:text-lg font-semibold text-slate-900">
-                        {minPrice > 0 ? `$${minPrice}` : '$499+'}
-                      </span>
-                    </div>
+                  <div className="relative hidden h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:block">
+                    <SafeImage src={item.posterPath} alt="" fill sizes="96px" className="object-cover" />
+                  </div>
 
-                    {isBookingClosed ? (
-                      <span className="px-4 py-2 rounded-full bg-slate-100 text-slate-400 text-xs font-medium cursor-not-allowed">
-                        Closed
-                      </span>
-                    ) : isSoldOut ? (
-                      <span className="px-4 py-2 rounded-full bg-red-50 text-red-600 border border-red-200 text-xs font-semibold cursor-not-allowed">
-                        Sold Out
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-0.5 flex items-center gap-2">
+                      {item.category && (
+                        <span className="text-xs font-semibold text-slate-500">{item.category}</span>
+                      )}
+                      {status.isClosed ? (
+                        <span className="text-xs font-semibold text-slate-400">· Booking closed</span>
+                      ) : status.isSoldOut ? (
+                        <span className="text-xs font-semibold text-red-600">· Sold out</span>
+                      ) : status.isLowStock ? (
+                        <span className="text-xs font-semibold text-brand-700">· Only {status.available} left</span>
+                      ) : null}
+                    </div>
+                    <h3 className="truncate text-base font-bold group-hover:text-brand-700 sm:text-lg">{item.title}</h3>
+                    <p className="truncate text-sm text-slate-500">
+                      {[venue, formatTime(status.startsAt)].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-4">
+                    {status.priceFrom > 0 && (
+                      <div className="hidden text-right sm:block">
+                        <p className="text-xs text-slate-500">From</p>
+                        <p className="text-base font-bold text-ink">{formatPrice(status.priceFrom)}</p>
+                      </div>
+                    )}
+                    {status.isBookable ? (
+                      <span className="inline-flex h-10 items-center gap-1.5 rounded-full bg-brand-400 px-4 text-sm font-semibold text-ink transition group-hover:bg-brand-300">
+                        <span className="hidden sm:inline">Get tickets</span>
+                        <Ticket className="h-4 w-4" />
                       </span>
                     ) : (
-                      <Link 
-                        href={`/events/${item.slug}`} 
-                        className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-linear-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 text-xs sm:text-sm font-semibold shadow-2xs cursor-pointer"
-                      >
-                        <span>Get tickets</span>
-                        <Ticket className="w-4 h-4" />
-                      </Link>
+                      <span className="inline-flex h-10 items-center rounded-full bg-slate-100 px-4 text-sm font-semibold text-slate-400">
+                        {status.isSoldOut ? 'Sold out' : 'Closed'}
+                      </span>
                     )}
                   </div>
-                </div>
+                </Link>
               );
             })
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Frequently Asked Questions (FAQ Accordion) */}
-      <div className="max-w-4xl mx-auto px-4 mb-24">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs font-semibold tracking-wide mb-3">
-            <HelpCircle className="w-3.5 h-3.5 text-amber-600" /> Got Questions? We&apos;ve Got Answers
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            {faqData.heading || "Frequently Asked Questions"}
-          </h2>
-          <p className="text-sm sm:text-base font-normal text-slate-500 mt-2 max-w-xl mx-auto">
-            {faqData.subheading || "Everything you need to know about booking, instant digital QR tickets, venue gate entry, and refunds."}
-          </p>
-        </div>
-
-        <div className="space-y-3.5">
-          {faqData.items.map((faq, index) => {
-            const isOpen = openFaq === index;
-            return (
-              <div 
-                key={index}
-                className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
-                  isOpen 
-                    ? 'bg-white border-amber-400/80 shadow-md ring-1 ring-amber-400/20' 
-                    : 'bg-white border-slate-200/90 shadow-2xs'
-                }`}
-              >
-                <button
-                  onClick={() => setOpenFaq(isOpen ? null : index)}
-                  className="w-full px-6 py-5 flex items-center justify-between text-left gap-4 cursor-pointer"
-                  aria-expanded={isOpen}
-                >
-                  <span className={`text-base sm:text-lg font-bold transition-colors ${
-                    isOpen ? 'text-amber-600' : 'text-slate-900'
-                  }`}>
-                    {faq.question}
-                  </span>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform duration-300 ${
-                    isOpen ? 'bg-amber-100 text-amber-700 rotate-180' : 'bg-slate-100 text-slate-500'
-                  }`}>
-                    <ChevronDown className="w-4 h-4" />
-                  </div>
-                </button>
-
-                <div 
-                  className={`grid transition-all duration-300 ease-in-out px-6 ${
-                    isOpen ? 'grid-rows-[1fr] opacity-100 pb-5' : 'grid-rows-[0fr] opacity-0 pb-0'
-                  }`}
-                >
-                  <div className="overflow-hidden">
-                    <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal pt-2 border-t border-slate-100">
-                      {faq.answer}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Still have questions help box */}
-        <div className="mt-8 p-6 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-              <MessageCircle className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="font-bold text-slate-900 text-sm">Still have questions or need assistance?</h4>
-              <p className="text-xs text-slate-500">Our customer support team is available 24/7 to help you with booking & tickets.</p>
-            </div>
-          </div>
-          <Link 
-            href="#" 
-            className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-xs shrink-0 cursor-pointer"
-          >
-            Contact Support
-          </Link>
-        </div>
-      </div>
-
-      {/* Footer Features */}
-      <div className="max-w-7xl mx-auto px-4 mb-8">
-        <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight mb-8">Simple, and handled by real people</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+      {/* Why Mytix */}
+      <section className="container-page mt-16 sm:mt-24">
+        <div className="grid gap-px overflow-hidden rounded-3xl border border-slate-200 bg-slate-200 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { title: "No hidden fees", desc: "What you see is what you pay. No surprises at checkout." },
-            { title: "Secure booking", desc: "Your data is protected with the highest security standards." },
-            { title: "24/7 Support", desc: "Our local team is always ready to help you with anything." },
-            { title: "Refund guarantee", desc: "Changed your mind? Cancel for a full refund up to 24h before." }
-          ].map((feat, i) => (
-             <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
-                <div className="w-10 h-10 rounded-full bg-amber-100 border border-amber-300 text-amber-600 flex items-center justify-center mb-4">
-                   <Star className="w-5 h-5 fill-amber-500 text-amber-500" />
-                </div>
-                <h3 className="font-bold text-slate-900 mb-2">{feat.title}</h3>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed">{feat.desc}</p>
-             </div>
+            { icon: Receipt, title: 'No hidden fees', desc: 'Fees and GST are shown before you pay. What you see is what you pay.' },
+            { icon: ShieldCheck, title: 'Secure checkout', desc: 'Payments are processed by Stripe and never stored on our servers.' },
+            { icon: Ticket, title: 'Instant QR tickets', desc: 'Your tickets land in My Tickets and your inbox the moment you book.' },
+            { icon: LifeBuoy, title: 'Real support', desc: 'A local team ready to help with bookings, changes and refunds.' },
+          ].map((feat) => (
+            <div key={feat.title} className="bg-white p-6 sm:p-7">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-400 text-ink shadow-sm shadow-brand-400/30">
+                <feat.icon className="h-5 w-5" />
+              </div>
+              <h3 className="text-base font-bold">{feat.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{feat.desc}</p>
+            </div>
           ))}
         </div>
+      </section>
 
-        {/* Let's Talk CTA - Styled matching the On Sale Now luxury showcase banner */}
-        <div className="relative rounded-3xl md:rounded-[36px] overflow-hidden bg-linear-to-r from-[#070b13] via-[#0d131f] to-[#080c14] border border-amber-500/25 p-8 md:p-12 lg:p-14 text-white shadow-2xl shadow-black/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-          
-          {/* Ambient Amber Glows */}
-          <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-amber-500/20 rounded-full blur-[90px] pointer-events-none" />
-          <div className="absolute top-0 right-10 w-72 h-72 bg-amber-400/10 rounded-full blur-[100px] pointer-events-none" />
-          
-          {/* Abstract Golden Wave Vector Wireframes (matches On sale now banner) */}
-          <svg className="absolute -left-10 -bottom-14 w-150 h-75 pointer-events-none opacity-45 overflow-visible" viewBox="0 0 600 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="goldCurveCTA" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.9" />
-                <stop offset="60%" stopColor="#fbbf24" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="#d97706" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <path d="M-30 290 C 70 270, 110 200, 170 170 C 240 135, 310 185, 380 145 C 440 120, 500 70, 580 30" stroke="url(#goldCurveCTA)" strokeWidth="1.6" />
-            <path d="M-30 305 C 80 285, 120 215, 180 185 C 250 150, 320 200, 390 160 C 450 135, 510 85, 590 45" stroke="url(#goldCurveCTA)" strokeWidth="1.3" />
-            <path d="M-30 275 C 60 255, 100 185, 160 155 C 230 120, 300 170, 370 130 C 430 105, 490 55, 570 15" stroke="url(#goldCurveCTA)" strokeWidth="1.2" />
-            <path d="M-30 260 C 50 235, 90 170, 150 140 C 220 105, 290 155, 360 115 C 420 90, 480 40, 560 0" stroke="url(#goldCurveCTA)" strokeWidth="0.9" opacity="0.75" />
-            <path d="M-30 240 C 40 215, 80 155, 140 125 C 210 90, 280 140, 350 100 C 410 75, 470 25, 550 -15" stroke="url(#goldCurveCTA)" strokeWidth="0.7" opacity="0.55" />
-            {/* Glowing Accent Ribbon */}
-            <path d="M-50 330 C 50 310, 110 240, 170 220 C 230 200, 280 240, 340 210" stroke="#f59e0b" strokeWidth="6" strokeLinecap="round" filter="blur(7px)" opacity="0.45" />
-          </svg>
-
-          <div className="relative z-10 max-w-xl">
-             <span className="inline-block text-[11px] font-black tracking-widest uppercase text-amber-400 mb-3">
-               FOR ORGANISERS & CREATORS
-             </span>
-             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight mb-4">
-               Putting on a show? Let&apos;s talk.
-             </h2>
-             <p className="text-gray-300 text-sm sm:text-base font-medium leading-relaxed">
-               Join thousands of creators using our platform to sell tickets, manage events, and grow their audience.
-             </p>
+      {/* FAQ */}
+      <section className="container-page mt-16 sm:mt-24">
+        <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr] lg:gap-16">
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-brand-700">FAQ</p>
+            <h2 className="text-3xl font-extrabold sm:text-4xl">{faqData.heading || 'Frequently asked questions'}</h2>
+            <p className="mt-3 text-slate-500">
+              {faqData.subheading || 'Everything you need to know about booking, QR tickets, entry and refunds.'}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href="/contact" className="inline-flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-sm font-semibold text-white transition hover:bg-ink-soft">
+                <MessageCircle className="h-4 w-4" />
+                Contact support
+              </Link>
+              <Link href="/faq" className="inline-flex h-11 items-center rounded-full border border-slate-200 px-5 text-sm font-semibold text-ink transition hover:border-slate-400">
+                All FAQs
+              </Link>
+            </div>
           </div>
 
-          <div className="relative z-10 flex items-center w-full md:w-auto shrink-0">
-             <Link 
-               href="/become-an-organiser" 
-               className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-8 py-4 rounded-full transition-all text-sm sm:text-base shadow-xl shadow-amber-400/20 hover:scale-105 active:scale-95 group cursor-pointer"
-             >
-               <span>Contact Details & Requirements</span>
-               <ArrowRight className="w-5 h-5 text-slate-950 transition-transform group-hover:translate-x-1" />
-             </Link>
+          <div className="divide-y divide-slate-200 border-y border-slate-200">
+            {faqData.items.map((faq, index) => {
+              const isOpen = openFaq === index;
+              return (
+                <div key={index} className={`-mx-4 px-4 transition-colors ${isOpen ? 'bg-brand-50/70 rounded-2xl' : ''}`}>
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? null : index)}
+                    className="flex w-full items-center justify-between gap-6 py-5 text-left cursor-pointer"
+                    aria-expanded={isOpen}
+                  >
+                    <span className="font-display text-base font-bold text-ink sm:text-lg">{faq.question}</span>
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition ${
+                      isOpen ? 'rotate-45 bg-brand-400 text-ink' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      <Plus className="h-4 w-4" />
+                    </span>
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                    <div className="overflow-hidden">
+                      <p className="pb-5 pr-12 leading-relaxed text-slate-600">{faq.answer}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
-      
+      </section>
+
+      {/* Organiser CTA */}
+      <section className="container-page mt-16 sm:mt-24">
+        <div className="relative overflow-hidden rounded-3xl bg-brand-400 px-6 py-10 sm:px-12 sm:py-14">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-40"
+            style={{
+              backgroundImage: 'radial-gradient(rgb(14 21 37 / 0.18) 1.2px, transparent 1.2px)',
+              backgroundSize: '18px 18px',
+              maskImage: 'linear-gradient(90deg, transparent 35%, #000)',
+              WebkitMaskImage: 'linear-gradient(90deg, transparent 35%, #000)',
+            }}
+          />
+          <div className="relative flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
+            <div className="max-w-xl">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-brand-800">For organisers</p>
+              <h2 className="text-3xl font-extrabold sm:text-4xl">Putting on a show? Sell tickets on Mytix.</h2>
+              <p className="mt-3 text-brand-800">
+                List your event, set up ticket tiers or reserved seating, and reach fans looking for their next night out.
+              </p>
+            </div>
+            <Link
+              href="/become-an-organiser"
+              className="group inline-flex h-12 shrink-0 items-center gap-2 rounded-full bg-ink px-6 text-sm font-semibold text-white transition hover:bg-ink-soft"
+            >
+              Become an organiser
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }

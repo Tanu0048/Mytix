@@ -14,16 +14,11 @@ export const Skeleton = ({ className = "" }: { className?: string }) => {
 export const EventCardSkeleton = () => {
   return (
     <div className="flex flex-col">
-      <Skeleton className="w-full aspect-square md:aspect-4/5 rounded-xl mb-3" />
-      <div className="flex flex-col flex-1">
-        <Skeleton className="h-4 w-1/2 mb-2" />
-        <Skeleton className="h-5 w-3/4 mb-1" />
-        <Skeleton className="h-5 w-2/3 mb-3" />
-        <div className="mt-auto pt-2 flex items-center justify-between border-t border-gray-100">
-          <Skeleton className="h-4 w-1/4" />
-          <Skeleton className="h-4 w-1/4" />
-        </div>
-      </div>
+      <Skeleton className="w-full aspect-4/5 rounded-2xl mb-3" />
+      <Skeleton className="h-3 w-2/5 mb-2" />
+      <Skeleton className="h-5 w-4/5 mb-1.5" />
+      <Skeleton className="h-4 w-3/5 mb-2.5" />
+      <Skeleton className="h-4 w-1/4" />
     </div>
   );
 };
@@ -84,7 +79,7 @@ export const BannerSkeleton = () => {
 
 export const EventListRowSkeleton = () => {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-2xl md:rounded-3xl border border-slate-100 bg-white gap-4 shadow-xs">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
         {/* Date block */}
         <Skeleton className="w-16 h-18 sm:w-20 sm:h-20 rounded-2xl shrink-0" />

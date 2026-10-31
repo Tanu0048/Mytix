@@ -1,118 +1,126 @@
 /**
- * Mytix Mobile App Showcase - Static Landing Page JavaScript
- * Handles navbar interactions, mobile menu, FAQ accordion, and scroll spies
+ * Mytix landing page
+ * Navbar state, mobile menu, decorative QR codes, seat map, scroll reveal.
  */
 
+document.documentElement.classList.add('js');
+
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Sticky Navbar shadow on scroll
-  const navbar = document.getElementById('navbar');
-  const handleScroll = () => {
-    if (window.scrollY > 20) {
-      navbar.classList.add('scrolled');
-    } else {
-      navbar.classList.remove('scrolled');
-    }
+  // 1. Navbar border once the page scrolls
+  const nav = document.getElementById('nav');
+  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // 2. Mobile menu
+  const toggle = document.getElementById('nav-toggle');
+  const menu = document.getElementById('nav-menu');
+
+  const setMenu = (open) => {
+    menu.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
   };
-  window.addEventListener('scroll', handleScroll, { passive: true });
-  handleScroll();
 
-  // 2. Mobile Menu Toggle
-  const mobileToggle = document.getElementById('mobile-toggle');
-  const navMenu = document.getElementById('nav-menu');
+  toggle.addEventListener('click', () => setMenu(!menu.classList.contains('open')));
+  menu.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => setMenu(false)));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
 
-  if (mobileToggle && navMenu) {
-    mobileToggle.addEventListener('click', () => {
-      const isOpen = navMenu.classList.toggle('open');
-      mobileToggle.classList.toggle('active', isOpen);
-      mobileToggle.setAttribute('aria-expanded', String(isOpen));
-    });
+  // 3. Decorative QR codes (seeded so they render the same every load)
+  const SIZE = 25;
 
-    // Close menu when clicking any nav link
-    const navLinks = navMenu.querySelectorAll('.nav-link, .btn');
-    navLinks.forEach(link => {
-      link.addEventListener('click', () => {
-        navMenu.classList.remove('open');
-        mobileToggle.classList.remove('active');
-        mobileToggle.setAttribute('aria-expanded', 'false');
-      });
-    });
-  }
+  const seededRandom = (seed) => () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
 
-  // 3. Interactive FAQ Accordion
-  const faqItems = document.querySelectorAll('.faq-item');
-  faqItems.forEach(item => {
-    const questionBtn = item.querySelector('.faq-question');
-    if (questionBtn) {
-      questionBtn.addEventListener('click', () => {
-        const isActive = item.classList.contains('active');
+  const isFinder = (x, y) => {
+    const inBox = (bx, by) => x >= bx && x < bx + 7 && y >= by && y < by + 7;
+    return inBox(0, 0) || inBox(SIZE - 7, 0) || inBox(0, SIZE - 7);
+  };
 
-        // Optional: Close other open FAQs
-        faqItems.forEach(otherItem => {
-          if (otherItem !== item) {
-            otherItem.classList.remove('active');
-            const otherBtn = otherItem.querySelector('.faq-question');
-            if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
-          }
-        });
+  const finderCell = (x, y) => {
+    const fx = x >= SIZE - 7 ? x - (SIZE - 7) : x;
+    const fy = y >= SIZE - 7 ? y - (SIZE - 7) : y;
+    const ring = Math.min(fx, fy, 6 - fx, 6 - fy);
+    return ring !== 1;
+  };
 
-        // Toggle current item
-        item.classList.toggle('active', !isActive);
-        questionBtn.setAttribute('aria-expanded', String(!isActive));
-      });
+  document.querySelectorAll('svg.qr').forEach((svg) => {
+    const rand = seededRandom(Number(svg.dataset.seed) || 1);
+    const ns = 'http://www.w3.org/2000/svg';
+    svg.setAttribute('viewBox', `0 0 ${SIZE} ${SIZE}`);
+
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        const nearFinder = isFinder(x, y) ||
+          (x === 7 && (y < 8 || y >= SIZE - 8)) || (y === 7 && (x < 8 || x >= SIZE - 8)) ||
+          (x === SIZE - 8 && y < 8) || (y === SIZE - 8 && x < 8);
+        const on = isFinder(x, y) ? finderCell(x, y) : !nearFinder && rand() > 0.52;
+        if (!on) continue;
+        const r = document.createElementNS(ns, 'rect');
+        r.setAttribute('x', x);
+        r.setAttribute('y', y);
+        r.setAttribute('width', 1);
+        r.setAttribute('height', 1);
+        svg.appendChild(r);
+      }
     }
   });
 
-  // 4. Hero Phone Mockup Screen Switcher
-  const screenTabs = document.querySelectorAll('.mockup-tab-btn');
-  const heroScreenImg = document.getElementById('hero-screen-img');
+  // 4. Seat map (feature tile)
+  const seatGrid = document.getElementById('seat-grid');
+  if (seatGrid) {
+    const rows = 6;
+    const cols = 10;
+    const taken = new Set(['0-1', '0-2', '0-7', '1-0', '1-4', '1-5', '1-8', '2-1', '2-9', '3-2', '3-3', '3-6', '4-0', '4-7', '4-8', '5-4', '5-5']);
+    const picked = new Set(['2-4', '2-5']);
+    const frag = document.createDocumentFragment();
 
-  if (screenTabs.length > 0 && heroScreenImg) {
-    screenTabs.forEach((tab) => {
-      tab.addEventListener('click', () => {
-        screenTabs.forEach((t) => {
-          t.classList.remove('active');
-          t.setAttribute('aria-selected', 'false');
-        });
-        tab.classList.add('active');
-        tab.setAttribute('aria-selected', 'true');
-
-        const targetSrc = tab.getAttribute('data-screen');
-        if (targetSrc && heroScreenImg.getAttribute('src') !== targetSrc) {
-          heroScreenImg.classList.add('fade-out');
-          setTimeout(() => {
-            heroScreenImg.src = targetSrc;
-            heroScreenImg.onload = () => {
-              heroScreenImg.classList.remove('fade-out');
-            };
-          }, 150);
-        }
-      });
-    });
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const seat = document.createElement('i');
+        const key = `${r}-${c}`;
+        if (taken.has(key)) seat.className = 'taken';
+        if (picked.has(key)) seat.className = 'pick';
+        frag.appendChild(seat);
+      }
+    }
+    seatGrid.appendChild(frag);
   }
 
-  // 5. Active Navbar Link on Scroll (Intersection Observer)
-  const sections = document.querySelectorAll('section[id]');
-  const navLinkElements = document.querySelectorAll('.nav-link[href^="#"]');
-
+  // 5. Reveal on scroll
+  const revealEls = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const currentId = entry.target.getAttribute('id');
-          navLinkElements.forEach(link => {
-            const href = link.getAttribute('href');
-            if (href === `#${currentId}`) {
-              link.classList.add('active');
-            } else {
-              link.classList.remove('active');
-            }
-          });
-        }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
       });
-    }, {
-      rootMargin: '-20% 0px -70% 0px'
+    }, { rootMargin: '0px 0px -10% 0px' });
+    revealEls.forEach((el, i) => {
+      el.style.transitionDelay = `${(i % 3) * 70}ms`;
+      io.observe(el);
     });
-
-    sections.forEach(sec => observer.observe(sec));
+  } else {
+    revealEls.forEach((el) => el.classList.add('in'));
   }
+
+  // 6. Active nav link for the section in view
+  const links = document.querySelectorAll('.nav-links a[href^="#"]');
+  if ('IntersectionObserver' in window) {
+    const spy = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const id = `#${entry.target.id}`;
+        links.forEach((link) => link.classList.toggle('active', link.getAttribute('href') === id));
+      });
+    }, { rootMargin: '-40% 0px -55% 0px' });
+    document.querySelectorAll('main section[id]').forEach((sec) => spy.observe(sec));
+  }
+
+  // 7. Footer year
+  const year = document.getElementById('year');
+  if (year) year.textContent = new Date().getFullYear();
 });
