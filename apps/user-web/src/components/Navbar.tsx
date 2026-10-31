@@ -134,7 +134,16 @@ export default function Navbar() {
   if (pathname === '/auth') return null;
 
   // Only show cities that actually have concerts/venues
-  const allUniqueCities = Array.from(new Set(availableCities || [])).filter(Boolean);
+  // De-dupe case-insensitively ("sydney" + "Sydney" → one entry), title-case and sort A–Z.
+  // City filtering elsewhere compares lowercase, so the display spelling is safe to normalise.
+  const toTitleCase = (s: string) => s.trim().toLowerCase().replace(/\b\w/g, (ch) => ch.toUpperCase());
+  const allUniqueCities = Array.from(
+    new Map(
+      (availableCities || [])
+        .filter((c): c is string => typeof c === 'string' && c.trim() !== '')
+        .map((c) => [c.trim().toLowerCase(), toTitleCase(c)] as const)
+    ).values()
+  ).sort((a, b) => a.localeCompare(b));
   const filteredCities = citySearch.trim()
     ? allUniqueCities.filter(c => c.toLowerCase().includes(citySearch.toLowerCase()))
     : allUniqueCities;
@@ -182,72 +191,89 @@ export default function Navbar() {
 
               {/* Desktop In-Place Dropdown Menu */}
               {isLocationOpen && (
-                <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-pop border border-slate-200 z-50 overflow-hidden">
-                  {/* Search inside Dropdown */}
-                  <div className="p-2.5 border-b border-slate-100 bg-slate-50/80">
+                <div
+                  role="listbox"
+                  aria-label="Choose location"
+                  onKeyDown={(e) => { if (e.key === 'Escape') setIsLocationOpen(false); }}
+                  className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-pop border border-slate-200 z-50 overflow-hidden"
+                >
+                  {/* Header + search */}
+                  <div className="px-3 pt-3 pb-2.5 border-b border-slate-100">
+                    <p className="px-1 mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      Choose location
+                    </p>
                     <div className="relative flex items-center">
-                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
                       <input
                         type="text"
-                        placeholder="Search city..."
+                        placeholder="Search city"
+                        aria-label="Search city"
                         value={citySearch}
                         onChange={(e) => setCitySearch(e.target.value)}
                         autoFocus
-                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg outline-none focus:border-ink focus:ring-1 focus:ring-ink font-medium text-slate-800 placeholder:text-slate-400"
+                        className="w-full h-9 pl-9 pr-3 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none transition-colors focus:bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-400/25 text-slate-800 placeholder:text-slate-400"
                       />
                     </div>
                   </div>
 
                   {/* Cities List */}
-                  <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
+                  <div className="max-h-72 overflow-y-auto p-1.5">
                     {!citySearch && (
-                      <button
-                        onClick={() => handleSelectCity('All Cities')}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                          selectedCity === 'All Cities'
-                            ? 'bg-brand-400 text-ink font-bold'
-                            : 'text-slate-700 hover:bg-slate-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Globe className="w-3.5 h-3.5 text-slate-600" />
-                          <span>All of Australia</span>
-                        </div>
-                        {selectedCity === 'All Cities' && <Check className="w-3.5 h-3.5 text-slate-950" />}
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={selectedCity === 'All Cities'}
+                          onClick={() => handleSelectCity('All Cities')}
+                          className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
+                            selectedCity === 'All Cities'
+                              ? 'bg-brand-50 text-ink font-semibold'
+                              : 'text-slate-700 font-medium hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${selectedCity === 'All Cities' ? 'bg-brand-400 text-ink' : 'bg-slate-100 text-slate-500'}`}>
+                            <Globe className="w-3.5 h-3.5" />
+                          </span>
+                          <span className="flex-1 text-left">All of Australia</span>
+                          {selectedCity === 'All Cities' && <Check className="w-4 h-4 text-brand-600" />}
+                        </button>
+                        {allUniqueCities.length > 0 && (
+                          <p className="px-2.5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                            Cities
+                          </p>
+                        )}
+                      </>
                     )}
 
                     {filteredCities.map((city) => {
                       const isSelected = selectedCity.toLowerCase() === city.toLowerCase();
-                      const hasLiveEvents = (availableCities || []).some(
-                        (ac) => ac.toLowerCase() === city.toLowerCase()
-                      );
-
                       return (
                         <button
+                          type="button"
+                          role="option"
+                          aria-selected={isSelected}
                           key={city}
                           onClick={() => handleSelectCity(city)}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                          className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
                             isSelected
-                              ? 'bg-brand-400 text-ink font-bold'
-                              : 'text-slate-700 hover:bg-slate-100'
+                              ? 'bg-brand-50 text-ink font-semibold'
+                              : 'text-slate-700 font-medium hover:bg-slate-50'
                           }`}
                         >
-                          <div className="flex items-center gap-2">
-                            <MapPin className={`w-3.5 h-3.5 ${isSelected ? 'text-slate-950' : 'text-slate-400'}`} />
-                            <span>{city}</span>
-                            {hasLiveEvents && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="Live shows available" />
-                            )}
-                          </div>
-                          {isSelected && <Check className="w-3.5 h-3.5 text-slate-950" />}
+                          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${isSelected ? 'bg-brand-400 text-ink' : 'bg-slate-100 text-slate-500'}`}>
+                            <MapPin className="w-3.5 h-3.5" />
+                          </span>
+                          <span className="flex-1 text-left truncate">{city}</span>
+                          {isSelected && <Check className="w-4 h-4 text-brand-600" />}
                         </button>
                       );
                     })}
 
                     {filteredCities.length === 0 && (
-                      <div className="py-4 text-center text-xs text-slate-400">
-                        No city matching &quot;{citySearch}&quot;
+                      <div className="px-4 py-6 text-center">
+                        <MapPin className="w-5 h-5 mx-auto mb-2 text-slate-300" />
+                        <p className="text-sm font-medium text-slate-600">No cities found</p>
+                        <p className="text-xs text-slate-400 mt-0.5">Try a different spelling</p>
                       </div>
                     )}
                   </div>
@@ -379,28 +405,28 @@ export default function Navbar() {
 
             {isLocationOpen && (
               <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-pop border border-slate-200 z-50 overflow-hidden">
-                <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
-                  <button
-                    onClick={() => handleSelectCity('All Cities')}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
-                      selectedCity === 'All Cities' ? 'bg-brand-400 text-ink font-bold' : 'text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>All of Australia</span>
-                    {selectedCity === 'All Cities' && <Check className="w-3.5 h-3.5 text-slate-950" />}
-                  </button>
-                  {allUniqueCities.map((city) => {
+                <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Choose location
+                </p>
+                <div className="max-h-72 overflow-y-auto p-1.5">
+                  {['All Cities', ...allUniqueCities].map((city) => {
+                    const isAll = city === 'All Cities';
                     const isSelected = selectedCity.toLowerCase() === city.toLowerCase();
+                    const Icon = isAll ? Globe : MapPin;
                     return (
                       <button
+                        type="button"
                         key={`m-${city}`}
                         onClick={() => handleSelectCity(city)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
-                          isSelected ? 'bg-brand-400 text-ink font-bold' : 'text-slate-700 hover:bg-slate-100'
+                        className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm cursor-pointer transition-colors ${
+                          isSelected ? 'bg-brand-50 text-ink font-semibold' : 'text-slate-700 font-medium hover:bg-slate-50'
                         }`}
                       >
-                        <span>{city}</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-slate-950" />}
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${isSelected ? 'bg-brand-400 text-ink' : 'bg-slate-100 text-slate-500'}`}>
+                          <Icon className="w-3.5 h-3.5" />
+                        </span>
+                        <span className="flex-1 text-left truncate">{isAll ? 'All of Australia' : city}</span>
+                        {isSelected && <Check className="w-4 h-4 text-brand-600" />}
                       </button>
                     );
                   })}
