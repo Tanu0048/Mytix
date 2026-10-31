@@ -409,6 +409,9 @@ export default function BecomeOrganiserPage() {
 
             </div>
 
+            {/* =========================================================================
+                ORGANISER PORTAL LOGIN (Temporarily commented out - preserved for future use)
+            =========================================================================
             <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-xs text-slate-400 text-center sm:text-left">
                 Already an approved organiser? Access your live dashboard:
@@ -423,6 +426,7 @@ export default function BecomeOrganiserPage() {
                 <ArrowRight className="w-4 h-4" />
               </a>
             </div>
+            ========================================================================= */}
 
           </div>
 
