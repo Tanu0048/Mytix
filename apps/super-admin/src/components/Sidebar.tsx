@@ -33,9 +33,9 @@ export default function Sidebar() {
   const logout = useAuthStore((state) => state.logout);
   const { isCollapsed, toggleSidebar } = useSidebarStore();
 
-  const handleLogout = async () => {
-    await logout();
-    router.push("/login");
+  const handleLogout = () => {
+    window.location.replace("/login");
+    logout();
   };
 
   const adminNavItems = [
@@ -64,7 +64,7 @@ export default function Sidebar() {
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
-  const navItems = user?.role === "ADMIN" ? adminNavItems : organiserNavItems;
+  const navItems = user?.role === "ADMIN" ? adminNavItems : user?.role === "ORGANISER" ? organiserNavItems : [];
 
   return (
     <aside
