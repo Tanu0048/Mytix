@@ -84,10 +84,14 @@ export default function Home() {
     loadData();
   }, [user]);
 
+  if (!user) {
+    return null;
+  }
+
   // ==========================================
   // ORGANISER VIEW
   // ==========================================
-  if (user?.role === "ORGANISER" || !user?.role || user?.role !== "ADMIN") {
+  if (user.role === "ORGANISER") {
     const totalSales = dashboardStats?.totalSalesCents !== undefined
       ? dashboardStats.totalSalesCents / 100
       : events.reduce((sum, e) => {
@@ -104,7 +108,7 @@ export default function Home() {
 
     const currentTime = Date.now();
     const liveEvents = events.filter((e) => e.status === "PUBLISHED" && e.startsAt && new Date(e.startsAt).getTime() > currentTime).length;
-    const firstName = user?.name?.split(" ")[0] || "Aman";
+    const firstName = user?.name?.split(" ")[0] || "Organiser";
 
     // Filtering & Pagination for Organiser Events
     const filteredOrgEvents = events.filter((e) => {
