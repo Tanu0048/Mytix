@@ -26,6 +26,8 @@ router.get("/events/:id/sales", authorize("ORGANISER", "ADMIN"), checkEventOwner
 router.get("/events/:id/attendees/export", authorize("ORGANISER", "ADMIN"), checkEventOwnership, organiserController.exportAttendees);
 router.post("/events/:id/complimentary-tickets", authorize("ORGANISER", "ADMIN"), checkEventOwnership, validate(issueComplimentaryTicketsSchema), organiserController.issueComplimentary);
 
+router.get("/stats", authorize("ORGANISER", "ADMIN"), organiserController.getStats);
+
 // Orders
 router.get("/orders", authorize("ORGANISER", "ADMIN"), organiserController.getOrders);
 

@@ -423,3 +423,16 @@ export async function getTrendingEvents(req, res, next) {
     next(error);
   }
 }
+
+
+export async function getStats(req, res, next) {
+  try {
+    const data = await adminService.getPlatformStats();
+    res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    next(error);
+  }
+}

@@ -438,14 +438,22 @@ export async function getEventSalesStats(eventId) {
     throw new AppError("NOT_FOUND", 404, "Event not found.");
   }
 
-  let totalRevenueCents = 0;
-  let totalSold = 0;
-  let totalCapacity = 0;
+  const [paidSales, validTicketsCount] = await Promise.all([
+    prisma.order.aggregate({
+      where: { eventId, status: "PAID" },
+      _sum: { ticketTotalCents: true }
+    }),
+    prisma.ticket.count({
+      where: {
+        order: { eventId, status: "PAID" },
+        status: { not: "CANCELLED" }
+      }
+    })
+  ]);
 
+  let totalCapacity = 0;
   for (const tier of event.ticketTypes) {
-    totalSold += tier.sold;
     totalCapacity += tier.quantity;
-    totalRevenueCents += tier.sold * tier.priceCents;
   }
 
   return {
@@ -453,8 +461,8 @@ export async function getEventSalesStats(eventId) {
     eventTitle: event.title,
     eventStatus: event.status,
     totalCapacity,
-    totalSold,
-    totalRevenueCents,
+    totalSold: validTicketsCount,
+    totalRevenueCents: paidSales._sum.ticketTotalCents || 0,
     ticketTiers: event.ticketTypes
   };
 }
@@ -903,3 +911,53 @@ export async function deleteOrganiserStaff(userId, userRole, id) {
   return { success: true, message: "Staff member deleted." };
 }
 
+
+
+export async function getOrganiserStats(userId) {
+  const organiser = await prisma.organiser.findUnique({
+    where: { userId }
+  });
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const isAdmin = user?.role === "ADMIN";
+
+  if (!organiser && !isAdmin) {
+    throw new AppError("FORBIDDEN", 403, "Organiser profile not found.");
+  }
+
+  const orderWhere = organiser
+    ? { event: { organiserId: organiser.id }, status: "PAID" }
+    : { status: "PAID" };
+
+  const eventWhere = organiser
+    ? { organiserId: organiser.id, status: "PUBLISHED" }
+    : { status: "PUBLISHED" };
+
+  const [salesAgg, ticketsCount, activeEventsCount] = await Promise.all([
+    prisma.order.aggregate({
+      where: orderWhere,
+      _sum: {
+        ticketTotalCents: true,
+        totalCents: true
+      },
+      _count: { id: true }
+    }),
+    prisma.ticket.count({
+      where: {
+        order: orderWhere,
+        status: { not: "CANCELLED" }
+      }
+    }),
+    prisma.event.count({
+      where: eventWhere
+    })
+  ]);
+
+  return {
+    totalSalesCents: salesAgg._sum.ticketTotalCents || 0,
+    totalGrossCents: salesAgg._sum.totalCents || 0,
+    totalTicketsSold: ticketsCount || 0,
+    paidOrdersCount: salesAgg._count.id || 0,
+    activeEventsCount: activeEventsCount || 0
+  };
+}
