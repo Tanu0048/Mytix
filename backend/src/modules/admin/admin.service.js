@@ -160,7 +160,16 @@ export async function listOrganisers(query) {
     cursor: cursor ? { id: cursor } : undefined,
     skip: cursor ? 1 : 0,
     orderBy: { createdAt: "desc" },
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      businessName: true,
+      abn: true,
+      contactEmail: true,
+      contactPhone: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
       user: {
         select: {
           id: true,
