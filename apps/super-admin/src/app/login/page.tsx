@@ -20,26 +20,19 @@ import {
 
 export default function LoginPage() {
   const [loginType, setLoginType] = useState<"ADMIN" | "ORGANISER" | "STAFF">("ADMIN");
-  const [email, setEmail] = useState("admin@mytix.example.com");
+  const [email, setEmail] = useState("");
   const [staffId, setStaffId] = useState("");
-  const [password, setPassword] = useState("AdminSecurePassword123!");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { login, staffLogin, isLoading, error } = useAuthStore();
   const router = useRouter();
 
-  // Reset fields & demo presets on role change
+  // Reset fields on role change
   useEffect(() => {
     useAuthStore.setState({ error: null });
-    if (loginType === "ADMIN") {
-      setEmail("admin@mytix.example.com");
-      setPassword("AdminSecurePassword123!");
-    } else if (loginType === "ORGANISER") {
-      setEmail("aman8447607490@gmail.com");
-      setPassword("OrganiserPass123!");
-    } else {
-      setStaffId("");
-      setPassword("");
-    }
+    setEmail("");
+    setStaffId("");
+    setPassword("");
   }, [loginType]);
 
   const handleLogin = async (e: React.FormEvent) => {
