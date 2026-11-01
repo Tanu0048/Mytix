@@ -111,3 +111,12 @@ export const deleteStaff = asyncHandler(async (req, res) => {
   res.status(200).json(result);
 });
 
+
+
+export const getStats = asyncHandler(async (req, res) => {
+  const result = await organiserService.getOrganiserStats(req.user.id);
+  res.status(200).json({
+    success: true,
+    data: result
+  });
+});

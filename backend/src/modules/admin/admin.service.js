@@ -1671,3 +1671,38 @@ export async function getTrendingEventsDiagnostics(limit = 20) {
   const { getTrendingDiagnostics } = await import("../catalog/trending.service.js");
   return getTrendingDiagnostics({ limit });
 }
+
+
+export async function getPlatformStats() {
+  const [revenueAgg, ticketsCount, activeOrganisersCount, paidOrdersCount] = await Promise.all([
+    prisma.order.aggregate({
+      where: { status: "PAID" },
+      _sum: {
+        totalCents: true,
+        ticketTotalCents: true,
+        buyerFeeCents: true
+      }
+    }),
+    prisma.ticket.count({
+      where: {
+        order: { status: "PAID" },
+        status: { not: "CANCELLED" }
+      }
+    }),
+    prisma.organiser.count({
+      where: { status: "APPROVED" }
+    }),
+    prisma.order.count({
+      where: { status: "PAID" }
+    })
+  ]);
+
+  return {
+    totalGrossRevenueCents: revenueAgg._sum.totalCents || 0,
+    totalTicketRevenueCents: revenueAgg._sum.ticketTotalCents || 0,
+    totalBuyerFeeCents: revenueAgg._sum.buyerFeeCents || 0,
+    totalTicketsSold: ticketsCount || 0,
+    activeOrganisersCount: activeOrganisersCount || 0,
+    totalPaidOrdersCount: paidOrdersCount || 0
+  };
+}

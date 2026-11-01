@@ -25,15 +25,20 @@ export default function AnalyticsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [statsData, setStatsData] = useState<any | null>(null);
 
   const user = useAuthStore((state) => state.user);
 
   const fetchData = async () => {
     setIsRefreshing(true);
     try {
-      const [eventsRes, ordersRes] = await Promise.allSettled([
+      const ordersEndpoint = user?.role === "ADMIN" ? "/admin/orders" : "/organiser/orders";
+      const statsEndpoint = user?.role === "ADMIN" ? "/admin/stats" : "/organiser/stats";
+
+      const [eventsRes, ordersRes, statsRes] = await Promise.allSettled([
         api.get("/organiser/events"),
-        api.get("/organiser/orders").catch(() => api.get("/admin/orders"))
+        api.get(ordersEndpoint).catch(() => api.get("/admin/orders")),
+        api.get(statsEndpoint)
       ]);
 
       if (eventsRes.status === "fulfilled") {
@@ -41,6 +46,9 @@ export default function AnalyticsPage() {
       }
       if (ordersRes.status === "fulfilled") {
         setOrders(ordersRes.value.data.data || []);
+      }
+      if (statsRes.status === "fulfilled") {
+        setStatsData(statsRes.value.data.data || null);
       }
     } catch (err) {
       console.error("Failed to load analytics data", err);
@@ -54,8 +62,11 @@ export default function AnalyticsPage() {
     fetchData();
   }, [user]);
 
-  // Computed Metrics from real data
+  // Computed Metrics from real data (Aggregates with fallback)
   const totalRevenue = useMemo(() => {
+    if (statsData?.totalGrossRevenueCents !== undefined) return statsData.totalGrossRevenueCents / 100;
+    if (statsData?.totalSalesCents !== undefined) return statsData.totalSalesCents / 100;
+
     const ordersRev = orders
       .filter((o) => o.status === "PAID")
       .reduce((sum, o) => sum + (o.totalCents || 0) / 100, 0);
@@ -67,9 +78,11 @@ export default function AnalyticsPage() {
       const eRev = e.ticketTypes?.reduce((s: number, t: any) => s + ((t.sold || 0) * (t.priceCents || 0) / 100), 0) || 0;
       return sum + eRev;
     }, 0);
-  }, [orders, events]);
+  }, [orders, events, statsData]);
 
   const totalTicketsSold = useMemo(() => {
+    if (statsData?.totalTicketsSold !== undefined) return statsData.totalTicketsSold;
+
     const ordersTix = orders
       .filter((o) => o.status === "PAID")
       .reduce((sum, o) => sum + (o._count?.tickets || o.tickets?.length || 1), 0);
@@ -80,7 +93,7 @@ export default function AnalyticsPage() {
       const eTix = e.ticketTypes?.reduce((s: number, t: any) => s + (t.sold || 0), 0) || 0;
       return sum + eTix;
     }, 0);
-  }, [orders, events]);
+  }, [orders, events, statsData]);
 
   const averageOrderValue = useMemo(() => {
     const paidOrders = orders.filter((o) => o.status === "PAID");

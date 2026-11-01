@@ -32,6 +32,7 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [statsData, setStatsData] = useState<any | null>(null);
 
   // Pagination Controls (Frontend Hygiene)
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,17 +43,20 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     try {
       setIsRefreshing(true);
-      let res;
-      try {
-        res = await api.get("/organiser/orders");
-      } catch (err: any) {
-        if (err.response?.status === 404 || err.response?.status === 403) {
-          res = await api.get("/admin/orders");
-        } else {
-          throw err;
-        }
+      const ordersEndpoint = user?.role === "ADMIN" ? "/admin/orders" : "/organiser/orders";
+      const statsEndpoint = user?.role === "ADMIN" ? "/admin/stats" : "/organiser/stats";
+
+      const [ordersRes, statsRes] = await Promise.allSettled([
+        api.get(ordersEndpoint).catch(() => api.get("/admin/orders")),
+        api.get(statsEndpoint)
+      ]);
+
+      if (ordersRes.status === "fulfilled") {
+        setOrders(ordersRes.value.data?.data || []);
       }
-      setOrders(res?.data?.data || []);
+      if (statsRes.status === "fulfilled") {
+        setStatsData(statsRes.value.data?.data || null);
+      }
     } catch (err) {
       console.error("Failed to fetch orders", err);
     } finally {
@@ -94,20 +98,23 @@ export default function OrdersPage() {
     return filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   }, [filteredOrders, currentPage, pageSize]);
 
-  // Derived Metrics
-  const totalOrdersCount = orders.length;
+  // Derived Metrics (Aggregates with fallback)
+  const totalOrdersCount = statsData?.totalPaidOrdersCount ?? statsData?.paidOrdersCount ?? orders.length;
   
   const totalRevenueCents = useMemo(() => {
+    if (statsData?.totalGrossRevenueCents !== undefined) return statsData.totalGrossRevenueCents;
+    if (statsData?.totalSalesCents !== undefined) return statsData.totalSalesCents;
     return orders
       .filter((o) => o.status === "PAID")
       .reduce((sum, o) => sum + (o.totalCents || 0), 0);
-  }, [orders]);
+  }, [orders, statsData]);
 
   const totalTicketsSold = useMemo(() => {
+    if (statsData?.totalTicketsSold !== undefined) return statsData.totalTicketsSold;
     return orders
       .filter((o) => o.status === "PAID")
       .reduce((sum, o) => sum + (o._count?.tickets || o.tickets?.length || 1), 0);
-  }, [orders]);
+  }, [orders, statsData]);
 
   const paidOrdersCount = useMemo(() => {
     return orders.filter((o) => o.status === "PAID").length;
