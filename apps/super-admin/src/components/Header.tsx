@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
-import { ChevronDown, Menu, PanelLeft } from "lucide-react";
+import { Menu, PanelLeft } from "lucide-react";
 
 export default function Header() {
   const user = useAuthStore((state) => state.user);
@@ -18,20 +18,20 @@ export default function Header() {
     : "MY";
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100/80 px-4 sm:px-8 py-4 flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 py-3 flex items-center justify-between">
       
       {/* Left side: Toggle button and Mobile Brand Logo */}
       <div className="flex items-center gap-3">
         <button
           onClick={toggleSidebar}
-          className="hidden lg:flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200/80 bg-white hover:bg-amber-50 text-slate-500 hover:text-amber-700 transition-colors cursor-pointer shadow-2xs shrink-0"
+          className="hidden lg:flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <PanelLeft className="w-4 h-4" />
         </button>
         <button
           onClick={() => setMobileOpen(true)}
-          className="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200/80 bg-white text-slate-600 cursor-pointer shrink-0"
+          className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-600 cursor-pointer shrink-0"
           aria-label="Open menu"
         >
           <Menu className="w-4 h-4" />
@@ -51,19 +51,18 @@ export default function Header() {
       {/* Right Controls: User Profile Pill */}
       <div className="flex items-center gap-4">
         {/* User Profile Pill */}
-        <div className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-2xl hover:bg-slate-50 transition-colors cursor-pointer group">
-          <div className="w-9 h-9 rounded-full bg-linear-to-tr from-amber-400 to-amber-200 text-slate-900 font-extrabold text-sm flex items-center justify-center shadow-xs border border-amber-300">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-900 font-semibold text-sm flex items-center justify-center border border-amber-200">
             {initials}
           </div>
           <div className="text-left hidden sm:block">
-            <p className="text-sm font-extrabold text-slate-900 leading-tight group-hover:text-amber-700 transition-colors">
+            <p className="text-sm font-semibold text-slate-900 leading-tight">
               {displayName}
             </p>
-            <p className="text-[10px] font-semibold text-slate-400 leading-none mt-0.5 capitalize">
+            <p className="text-xs text-slate-500 leading-none mt-0.5 capitalize">
               {displayRole}
             </p>
           </div>
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5 group-hover:text-slate-600" />
         </div>
       </div>
     </header>

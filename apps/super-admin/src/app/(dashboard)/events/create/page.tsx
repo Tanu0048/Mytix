@@ -209,9 +209,7 @@ export default function CreateEventPage() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 max-w-5xl pb-24 relative">
-      {/* Decorative ambient glow in top-right */}
-      <div className="absolute -top-12 -right-12 w-72 h-72 bg-amber-200/20 rounded-full blur-3xl pointer-events-none -z-10" />
+    <div className=" max-w-5xl pb-24 relative">
 
       {/* Top Header with Back Link & Decorative Script */}
       <header className="mb-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative">
@@ -219,32 +217,22 @@ export default function CreateEventPage() {
           <button 
             type="button"
             onClick={() => router.back()}
-            className="flex items-center text-sm font-bold text-slate-400 hover:text-slate-900 transition-colors mb-2.5"
+            className="flex items-center text-sm text-slate-500 hover:text-slate-900 transition-colors mb-2.5"
           >
             <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back to Events
           </button>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Create New Event
           </h1>
-          <p className="mt-1 text-sm font-semibold text-slate-400">
+          <p className="mt-1 text-sm text-slate-500">
             Set up your event details and ticketing tiers.
           </p>
         </div>
 
-        {/* Decorative Slogan */}
-        <div className="hidden sm:block text-right select-none transform -rotate-2">
-          <span className="text-slate-400/80 font-bold italic text-base tracking-wide block font-serif">
-            Great Events
-          </span>
-          <span className="text-slate-400 font-extrabold italic text-sm tracking-wider block font-serif -mt-0.5">
-            Start Here
-          </span>
-          <div className="w-16 h-1 bg-amber-300/40 rounded-full ml-auto mt-0.5"></div>
-        </div>
       </header>
 
       {error && (
-        <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200/80 text-red-600 font-bold text-sm">
+        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200/80 text-red-600 font-semibold text-sm">
           {error}
         </div>
       )}
@@ -252,16 +240,16 @@ export default function CreateEventPage() {
       <form onSubmit={handleSubmit} className="space-y-7">
         
         {/* ===== CARD 1: BASIC DETAILS ===== */}
-        <div className="rounded-3xl bg-white p-7 sm:p-9 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-100">
+        <div className="rounded-xl bg-white p-6 sm:p-7 shadow-xs border border-slate-200/80">
           
           {/* Section Header */}
           <div className="flex items-start gap-3.5 mb-7">
-            <div className="w-11 h-11 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
               <Calendar className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-900 leading-tight">Basic Details</h2>
-              <p className="text-sm font-semibold text-slate-400 mt-0.5">
+              <h2 className="text-base font-semibold text-slate-900 leading-tight">Basic Details</h2>
+              <p className="text-sm text-slate-500 mt-0.5">
                 Tell us about your event. This will help attendees discover and know your event better.
               </p>
             </div>
@@ -274,7 +262,7 @@ export default function CreateEventPage() {
               
               {/* Event Title */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Event Title <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -286,17 +274,17 @@ export default function CreateEventPage() {
                     value={formData.title} 
                     onChange={handleChange} 
                     placeholder="e.g. Summer Music Festival" 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
+                    className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
                   />
                 </div>
               </div>
 
               {/* Poster Image Upload Box */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Poster Image <span className="text-slate-400 font-medium">(Required)</span> <span className="text-red-500">*</span>
                 </label>
-                <div className="rounded-2xl border-2 border-dashed border-slate-200/90 bg-slate-50/40 p-3.5 flex flex-col justify-center relative hover:bg-slate-50 transition-colors">
+                <div className="rounded-xl border-2 border-dashed border-slate-200/90 bg-slate-50/40 p-3.5 flex flex-col justify-center relative hover:bg-slate-50 transition-colors">
                   <div className="flex items-center justify-between w-full px-2 gap-3">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-8 h-8 rounded-xl bg-white border border-slate-200/70 flex items-center justify-center text-slate-400 shadow-2xs shrink-0">
@@ -329,7 +317,7 @@ export default function CreateEventPage() {
                             setIsUploadingImage(false);
                           }
                         }}
-                        className="text-sm text-slate-500 font-medium file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-slate-200/80 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer min-w-0 truncate"
+                        className="text-sm text-slate-500 font-medium file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[13px] file:font-semibold file:bg-slate-200/80 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer min-w-0 truncate"
                       />
                     </div>
 
@@ -364,18 +352,18 @@ export default function CreateEventPage() {
                     )}
                   </div>
                   
-                  <p className="text-[10px] font-semibold text-slate-400 mt-2 text-center">
+                  <p className="text-xs text-slate-500 mt-2 text-center">
                     Supported formats: JPG, PNG, WEBP, AVIF
                   </p>
 
                   {isUploadingImage && (
-                    <div className="mt-1 text-[11px] font-bold text-amber-600 flex items-center justify-center gap-1.5">
+                    <div className="mt-1 text-[13px] font-semibold text-amber-600 flex items-center justify-center gap-1.5">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading image...
                     </div>
                   )}
 
                   {!isUploadingImage && formData.posterPath && (
-                    <div className="mt-1 text-[11px] font-bold text-emerald-600 flex items-center justify-center gap-1">
+                    <div className="mt-1 text-[13px] font-semibold text-emerald-600 flex items-center justify-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Image Uploaded Successfully
                     </div>
                   )}
@@ -386,7 +374,7 @@ export default function CreateEventPage() {
             {/* Description */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-bold text-slate-800">
+                <label className="block text-sm font-semibold text-slate-800">
                   Description <span className="text-red-500">*</span>
                 </label>
               </div>
@@ -399,9 +387,9 @@ export default function CreateEventPage() {
                   maxLength={1000}
                   placeholder="Tell your audience about the event..." 
                   rows={4} 
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all resize-none" 
+                  className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all resize-none" 
                 />
-                <span className="absolute bottom-3 right-4 text-[10px] font-bold text-slate-400 pointer-events-none">
+                <span className="absolute bottom-3 right-4 text-xs text-slate-500 pointer-events-none">
                   {formData.description.length}/1000
                 </span>
               </div>
@@ -412,7 +400,7 @@ export default function CreateEventPage() {
               
               {/* Category */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Category <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -423,7 +411,7 @@ export default function CreateEventPage() {
                     value={formData.category}
                     onChange={handleChange}
                     disabled={categoriesLoading}
-                    className={`w-full appearance-none rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-10 text-sm font-semibold outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all cursor-pointer disabled:cursor-wait ${formData.category ? "text-slate-900" : "text-slate-400"}`}
+                    className={`w-full appearance-none rounded-xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-10 text-sm font-semibold outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all cursor-pointer disabled:cursor-wait ${formData.category ? "text-slate-900" : "text-slate-400"}`}
                   >
                     <option value="" disabled>
                       {categoriesLoading ? "Loading categories…" : "Select a category"}
@@ -435,7 +423,7 @@ export default function CreateEventPage() {
                   <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
                 {!categoriesLoading && categories.length === 0 && (
-                  <p className="mt-1.5 text-xs font-medium text-red-500">
+                  <p className="mt-1.5 text-[13px] font-medium text-red-500">
                     No categories available. An admin needs to add them on the Categories page.
                   </p>
                 )}
@@ -443,7 +431,7 @@ export default function CreateEventPage() {
 
               {/* Venue */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Venue <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -456,7 +444,7 @@ export default function CreateEventPage() {
                       value={formData.venueName} 
                       onChange={handleChange} 
                       placeholder="Venue Name (e.g. Arena)"
-                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 py-3 pl-10 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
                     />
                   </div>
                   <div className="relative">
@@ -467,7 +455,7 @@ export default function CreateEventPage() {
                       value={formData.venueCity} 
                       onChange={handleChange} 
                       placeholder="City (e.g. Sydney)"
-                      className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+                      className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
                     />
                   </div>
                 </div>
@@ -479,7 +467,7 @@ export default function CreateEventPage() {
               
               {/* Starts At */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Starts At <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -489,7 +477,7 @@ export default function CreateEventPage() {
                     name="startsAt" 
                     value={formData.startsAt} 
                     onChange={handleChange} 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
+                    className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
                   />
                   <Calendar className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
@@ -497,7 +485,7 @@ export default function CreateEventPage() {
 
               {/* Doors Open At */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Doors Open At <span className="text-slate-400 font-medium">(Optional)</span>
                 </label>
                 <div className="relative">
@@ -506,7 +494,7 @@ export default function CreateEventPage() {
                     name="doorsOpenAt" 
                     value={formData.doorsOpenAt} 
                     onChange={handleChange} 
-                    className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
+                    className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 py-3 pl-4 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all" 
                   />
                   <Clock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
@@ -517,14 +505,14 @@ export default function CreateEventPage() {
         </div>
 
         {/* ===== CARD 2: SEATING & LAYOUT ===== */}
-        <div className="rounded-3xl bg-white p-7 sm:p-9 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-100">
+        <div className="rounded-xl bg-white p-6 sm:p-7 shadow-xs border border-slate-200/80">
           <div className="flex items-start gap-3.5 mb-6">
-            <div className="w-11 h-11 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
               <Armchair className="w-5 h-5 text-amber-600" />
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-900 leading-tight">Seating & Layout</h2>
-              <p className="text-sm font-semibold text-slate-400 mt-0.5">
+              <h2 className="text-base font-semibold text-slate-900 leading-tight">Seating & Layout</h2>
+              <p className="text-sm text-slate-500 mt-0.5">
                 Choose how people attend. For seats or tables, build the map and we count the tickets for you.
               </p>
             </div>
@@ -541,17 +529,17 @@ export default function CreateEventPage() {
         </div>
 
         {/* ===== CARD 3: TICKET CATEGORIES ===== */}
-        <div className="rounded-3xl bg-white p-7 sm:p-9 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-100">
+        <div className="rounded-xl bg-white p-6 sm:p-7 shadow-xs border border-slate-200/80">
           
           {/* Section Header */}
           <div className="flex items-center justify-between mb-7">
             <div className="flex items-start gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
+              <div className="w-11 h-11 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
                 <Ticket className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <h2 className="text-base font-black text-slate-900 leading-tight">Ticket Categories</h2>
-                <p className="text-sm font-semibold text-slate-400 mt-0.5">
+                <h2 className="text-base font-semibold text-slate-900 leading-tight">Ticket Categories</h2>
+                <p className="text-sm text-slate-500 mt-0.5">
                   Set a name and price for each category (e.g. VIP, Standard, Student). Seated categories get their ticket count from the seat map.
                 </p>
               </div>
@@ -561,7 +549,7 @@ export default function CreateEventPage() {
             <button 
               type="button" 
               onClick={addTicketType} 
-              className="flex items-center gap-1.5 text-sm font-extrabold text-amber-900 bg-[#FFF9EB] hover:bg-amber-100/70 border border-amber-200/80 px-4 py-2.5 rounded-2xl transition-all shadow-2xs cursor-pointer"
+              className="flex items-center gap-1.5 text-sm font-semibold text-amber-900 bg-[#FFF9EB] hover:bg-amber-100/70 border border-amber-200/80 px-4 py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-3" /> Add Category
             </button>
@@ -572,7 +560,7 @@ export default function CreateEventPage() {
             {ticketTypes.map((ticket, index) => (
               <div 
                 key={index} 
-                className="p-5 sm:p-6 rounded-2xl border border-slate-200/80 bg-white relative space-y-4"
+                className="p-5 sm:p-6 rounded-xl border border-slate-200/80 bg-white relative space-y-4"
               >
                 {/* Top Row: Number, Name, Price, Quantity, Delete */}
                 <div className="flex items-center gap-3.5">
@@ -580,7 +568,7 @@ export default function CreateEventPage() {
                   {/* Grip + Number Badge */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <GripVertical className="w-4 h-4 text-slate-300" />
-                    <span className="w-6 h-6 rounded-full bg-amber-100/90 border border-amber-200/70 text-amber-950 font-black text-sm flex items-center justify-center">
+                    <span className="w-6 h-6 rounded-full bg-amber-100/90 border border-amber-200/70 text-amber-950 font-semibold text-sm flex items-center justify-center">
                       {index + 1}
                     </span>
                   </div>
@@ -589,7 +577,7 @@ export default function CreateEventPage() {
                     
                     {/* Category Name */}
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                      <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                         Category Name (e.g. VIP) <span className="text-red-500">*</span>
                       </label>
                       <input 
@@ -604,7 +592,7 @@ export default function CreateEventPage() {
 
                     {/* Price in cents */}
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                      <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                         Price ($) <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -620,10 +608,10 @@ export default function CreateEventPage() {
 
                     {/* Quantity */}
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                      <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                         Total Tickets <span className="text-red-500">*</span>
                         {mappedQuantity(ticket.name) !== undefined && (
-                          <span className="ml-1 text-amber-700 font-bold">· from seat map</span>
+                          <span className="ml-1 text-amber-700 font-semibold">· from seat map</span>
                         )}
                       </label>
                       <input
@@ -654,7 +642,7 @@ export default function CreateEventPage() {
 
                 {/* Description Row */}
                 <div className="pl-0 lg:pl-11">
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
+                  <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                     Category Perks <span className="text-slate-400 font-medium">(Optional)</span>
                   </label>
                   <input 
@@ -676,7 +664,7 @@ export default function CreateEventPage() {
           <button 
             type="submit" 
             disabled={isLoading}
-            className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-9 py-4 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-9 py-4 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {isLoading ? (
               "Publishing Event..."

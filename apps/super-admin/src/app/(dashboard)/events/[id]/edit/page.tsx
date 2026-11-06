@@ -230,40 +230,40 @@ function EditEventForm() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl pb-20">
+    <div className=" max-w-4xl pb-20">
       <header className="mb-8">
         <button 
           onClick={() => router.back()}
-          className="flex items-center text-sm font-bold text-slate-400 hover:text-slate-900 transition-colors mb-3"
+          className="flex items-center text-sm text-slate-500 hover:text-slate-900 transition-colors mb-3"
         >
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to Events
         </button>
-        <h1 className="text-3xl font-black tracking-tight text-slate-900">
-          Edit <span className="text-amber-500">Event</span>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          Edit Event
         </h1>
-        <p className="mt-1 text-sm font-semibold text-slate-400">
+        <p className="mt-1 text-sm text-slate-500">
           Update event details, dates, and ticketing tiers.
         </p>
       </header>
 
       {error && (
-        <div className="mb-8 p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 font-bold text-sm">
+        <div className="mb-8 p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 font-semibold text-sm">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Basic Details Card */}
-        <div className="rounded-2xl bg-white p-8 shadow-[0_2px_14px_rgba(0,0,0,0.03)] border border-slate-100">
-          <h2 className="text-base font-extrabold text-slate-900 mb-6 border-b border-slate-100 pb-3">Basic Details</h2>
+        <div className="rounded-xl bg-white p-8 shadow-xs border border-slate-200/80">
+          <h2 className="text-base font-semibold text-slate-900 mb-6 border-b border-slate-100 pb-3">Basic Details</h2>
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Event Title</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Event Title</label>
                 <input required type="text" name="title" value={formData.title} onChange={handleChange} className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Poster Image</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Poster Image</label>
                 <div className="flex flex-col gap-2">
                   <input 
                     type="file" 
@@ -286,7 +286,7 @@ function EditEventForm() {
                     className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
                   />
                   {formData.posterPath && (
-                    <div className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                    <div className="text-[13px] font-semibold text-emerald-600 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Poster Image Attached
                     </div>
                   )}
@@ -295,13 +295,13 @@ function EditEventForm() {
             </div>
             
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Description</label>
               <textarea required name="description" value={formData.description} onChange={handleChange} rows={4} className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Category</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Category</label>
                 <select required name="category" value={formData.category} onChange={handleChange} disabled={categoriesLoading} className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white cursor-pointer disabled:cursor-wait">
                   <option value="" disabled>{categoriesLoading ? "Loading categories…" : "Select a category"}</option>
                   {/* Keep an older category that has since been removed, so saving doesn't silently change it */}
@@ -314,7 +314,7 @@ function EditEventForm() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Status</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Status</label>
                 <select name="status" value={formData.status} onChange={handleChange} className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white">
                   <option value="PUBLISHED">Published</option>
                   <option value="DRAFT">Draft</option>
@@ -326,11 +326,11 @@ function EditEventForm() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Starts At</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Starts At</label>
                 <input required type="datetime-local" name="startsAt" value={formData.startsAt} onChange={handleChange} className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Doors Open At (Optional)</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Doors Open At (Optional)</label>
                 <input type="datetime-local" name="doorsOpenAt" value={formData.doorsOpenAt} onChange={handleChange} className="w-full rounded-xl border border-slate-200 bg-slate-50/60 py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" />
               </div>
             </div>
@@ -338,12 +338,12 @@ function EditEventForm() {
         </div>
 
         {/* Seating & Layout Card */}
-        <div className="rounded-2xl bg-white p-8 shadow-[0_2px_14px_rgba(0,0,0,0.03)] border border-slate-100">
+        <div className="rounded-xl bg-white p-8 shadow-xs border border-slate-200/80">
           <div className="flex items-start gap-3 mb-6 border-b border-slate-100 pb-4">
             <Armchair className="w-5 h-5 text-amber-600 mt-0.5" />
             <div>
-              <h2 className="text-base font-extrabold text-slate-900">Seating & Layout</h2>
-              <p className="text-sm font-medium text-slate-400 mt-0.5">How people attend, and the seat map for seated events.</p>
+              <h2 className="text-base font-semibold text-slate-900">Seating & Layout</h2>
+              <p className="text-sm text-slate-500 mt-0.5">How people attend, and the seat map for seated events.</p>
             </div>
           </div>
           <SeatingBuilder
@@ -366,16 +366,16 @@ function EditEventForm() {
         </div>
 
         {/* Ticketing Tiers Card */}
-        <div className="rounded-2xl bg-white p-8 shadow-[0_2px_14px_rgba(0,0,0,0.03)] border border-slate-100">
+        <div className="rounded-xl bg-white p-8 shadow-xs border border-slate-200/80">
           <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
             <div>
-              <h2 className="text-base font-extrabold text-slate-900">Ticketing Tiers</h2>
-              <p className="text-sm font-medium text-slate-400 mt-0.5">Manage ticket types, pricing, and available seat inventory.</p>
+              <h2 className="text-base font-semibold text-slate-900">Ticketing Tiers</h2>
+              <p className="text-sm text-slate-500 mt-0.5">Manage ticket types, pricing, and available seat inventory.</p>
             </div>
             <button 
               type="button" 
               onClick={addTicketType} 
-              className="flex items-center gap-1.5 text-sm font-extrabold text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-2 rounded-xl transition-colors border border-amber-200/60"
+              className="flex items-center gap-1.5 text-sm font-semibold text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-2 rounded-xl transition-colors border border-amber-200/60"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" /> Add Tier
             </button>
@@ -383,7 +383,7 @@ function EditEventForm() {
 
           <div className="space-y-6">
             {ticketTypes.map((ticket, index) => (
-              <div key={ticket.id || index} className="p-6 rounded-2xl border border-slate-200/80 bg-slate-50/50 relative">
+              <div key={ticket.id || index} className="p-6 rounded-xl border border-slate-200/80 bg-slate-50/50 relative">
                 {ticketTypes.length > 1 && (
                   <button 
                     type="button" 
@@ -397,7 +397,7 @@ function EditEventForm() {
 
                 {/* Sold status info if existing */}
                 {ticket.sold !== undefined && ticket.sold > 0 && (
-                  <div className="mb-4 inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200/60 rounded-full text-[11px] font-bold text-blue-700">
+                  <div className="mb-4 inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200/60 rounded-full text-[13px] font-semibold text-blue-700">
                     <Ticket className="w-3.5 h-3.5" />
                     <span>{ticket.sold} tickets already sold • {ticket.available} remaining</span>
                   </div>
@@ -405,7 +405,7 @@ function EditEventForm() {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Tier Name</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Tier Name</label>
                     <input 
                       required 
                       type="text" 
@@ -416,7 +416,7 @@ function EditEventForm() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Price ($)</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">Price ($)</label>
                     <input
                       required
                       type="number"
@@ -428,9 +428,9 @@ function EditEventForm() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Total Quantity
-                      {mappedQuantity(ticket.name) !== undefined && <span className="ml-1 text-xs text-amber-700">· from seat map</span>}
+                      {mappedQuantity(ticket.name) !== undefined && <span className="ml-1 text-[13px] text-amber-700">· from seat map</span>}
                     </label>
                     <input
                       required
@@ -442,7 +442,7 @@ function EditEventForm() {
                       className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 disabled:bg-amber-50/60 disabled:text-amber-900"
                     />
                     {ticket.sold > 0 && (
-                      <span className="text-[10px] text-slate-400 mt-1 block">Min {ticket.sold} (already sold)</span>
+                      <span className="text-xs text-slate-400 mt-1 block">Min {ticket.sold} (already sold)</span>
                     )}
                   </div>
                 </div>
@@ -456,14 +456,14 @@ function EditEventForm() {
           <button 
             type="button"
             onClick={() => router.back()}
-            className="rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-extrabold text-slate-700 hover:bg-slate-50 transition-colors"
+            className="rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
           >
             Cancel
           </button>
           <button 
             type="submit" 
             disabled={isSaving}
-            className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-sm font-black text-slate-950 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01]"
+            className="flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-sm font-semibold text-slate-950 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01]"
           >
             {isSaving ? "Saving..." : <><Save className="w-4 h-4 stroke-[2.5]" /> Save Changes</>}
           </button>

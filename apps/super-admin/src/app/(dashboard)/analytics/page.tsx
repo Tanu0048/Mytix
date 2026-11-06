@@ -156,22 +156,15 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 pb-24 relative max-w-7xl">
-      {/* Ambient decorative glow */}
-      <div className="absolute -top-10 -right-10 w-80 h-80 bg-amber-200/20 rounded-full blur-3xl pointer-events-none -z-10" />
+    <div className=" pb-24 relative max-w-7xl">
 
       {/* ===== HEADER ===== */}
       <header className="mb-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-100/80 border border-amber-200/60 text-amber-900 text-[10px] font-extrabold uppercase tracking-wider">
-              Live Metrics
-            </span>
-          </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">
-            Performance & <span className="text-amber-500">Analytics</span>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            Performance & Analytics
           </h1>
-          <p className="mt-1 text-sm font-semibold text-slate-400">
+          <p className="mt-1 text-sm text-slate-500">
             Real-time insights aggregated directly from your event bookings and ticket sales.
           </p>
         </div>
@@ -181,7 +174,7 @@ export default function AnalyticsPage() {
           <button
             onClick={fetchData}
             disabled={isRefreshing}
-            className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white hover:bg-slate-50 px-5 py-3 text-sm font-bold text-slate-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
             title="Refresh analytics data"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin text-amber-600" : "text-slate-400"}`} />
@@ -194,82 +187,73 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         
         {/* Card 1: Gross Revenue */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
+        <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center">
               <DollarSign className="w-6 h-6 text-amber-600" />
             </div>
-            <span className="flex items-center text-[11px] font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
-              Verified
-            </span>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Gross Revenue</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">
+            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Gross Revenue</p>
+            <p className="text-3xl font-semibold text-slate-900 mt-1">
               {formatCurrency(totalRevenue)}
             </p>
-            <p className="text-[11px] font-semibold text-slate-400 mt-1.5">
+            <p className="text-[13px] text-slate-500 mt-1.5">
               Across all ticket orders
             </p>
           </div>
         </div>
 
         {/* Card 2: Tickets Issued */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
+        <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50/90 border border-emerald-200/60 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50/90 border border-emerald-200/60 flex items-center justify-center">
               <Ticket className="w-6 h-6 text-emerald-600" />
             </div>
-            <span className="flex items-center text-[11px] font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
-              Scannable
-            </span>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tickets Issued</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">
+            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Tickets Issued</p>
+            <p className="text-3xl font-semibold text-slate-900 mt-1">
               {totalTicketsSold}
             </p>
-            <p className="text-[11px] font-semibold text-slate-400 mt-1.5">
+            <p className="text-[13px] text-slate-500 mt-1.5">
               Live admission passes
             </p>
           </div>
         </div>
 
         {/* Card 3: Avg. Order Value */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
+        <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50/90 border border-blue-200/60 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-blue-50/90 border border-blue-200/60 flex items-center justify-center">
               <ShoppingBag className="w-6 h-6 text-blue-600" />
             </div>
-            <span className="flex items-center text-[11px] font-extrabold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200/60">
-              Avg Basket
-            </span>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Avg. Order Value</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">
+            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Avg. Order Value</p>
+            <p className="text-3xl font-semibold text-slate-900 mt-1">
               {formatCurrency(averageOrderValue)}
             </p>
-            <p className="text-[11px] font-semibold text-slate-400 mt-1.5">
+            <p className="text-[13px] text-slate-500 mt-1.5">
               Per ticket transaction
             </p>
           </div>
         </div>
 
         {/* Card 4: Active Events */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
+        <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center">
               <Calendar className="w-6 h-6 text-amber-600" />
             </div>
-            <span className="flex items-center text-[11px] font-extrabold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60">
+            <span className="flex items-center text-[13px] font-semibold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60">
               Live
             </span>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Events</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">{liveEventsCount}</p>
-            <p className="text-[11px] font-semibold text-slate-400 mt-1.5">
+            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Active Events</p>
+            <p className="text-3xl font-semibold text-slate-900 mt-1">{liveEventsCount}</p>
+            <p className="text-[13px] text-slate-500 mt-1.5">
               {events.length} total created
             </p>
           </div>
@@ -281,16 +265,16 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         
         {/* Top Events Leaderboard (2 cols) */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-7 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-white rounded-xl p-7 border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-base font-black text-slate-900">Top Performing Events</h2>
-                <p className="text-sm font-semibold text-slate-400 mt-0.5">
+                <h2 className="text-base font-semibold text-slate-900">Top Performing Events</h2>
+                <p className="text-sm text-slate-500 mt-0.5">
                   Ranked by live ticket sales volume and capacity utilization.
                 </p>
               </div>
-              <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
+              <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-[13px] font-semibold">
                 {events.length} Total Shows
               </span>
             </div>
@@ -310,15 +294,15 @@ export default function AnalyticsPage() {
                   return (
                     <div 
                       key={event.id}
-                      className="p-4 rounded-2xl border border-slate-100 bg-slate-50/40 hover:bg-[#FFF9EB]/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/40 hover:bg-[#FFF9EB]/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                     >
                       <div className="flex items-center gap-3.5">
-                        <div className="w-8 h-8 rounded-xl bg-amber-100/90 border border-amber-200/80 text-amber-950 font-black text-sm flex items-center justify-center shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-amber-100/90 border border-amber-200/80 text-amber-950 font-semibold text-sm flex items-center justify-center shrink-0">
                           #{idx + 1}
                         </div>
                         <div>
-                          <p className="text-sm font-black text-slate-900 line-clamp-1">{event.title}</p>
-                          <p className="text-[11px] font-semibold text-slate-400 flex items-center gap-1 mt-0.5">
+                          <p className="text-sm font-semibold text-slate-900 line-clamp-1">{event.title}</p>
+                          <p className="text-[13px] text-slate-500 flex items-center gap-1 mt-0.5">
                             <MapPin className="w-3 h-3 text-slate-400" />
                             {event.venue?.name || "Venue"} ({event.venue?.city || "City"})
                           </p>
@@ -327,12 +311,12 @@ export default function AnalyticsPage() {
 
                       <div className="flex items-center gap-6 shrink-0">
                         <div className="text-right">
-                          <span className="text-xs font-black text-slate-900 block">{formatCurrency(tierRev)}</span>
-                          <span className="text-[10px] text-slate-400 font-semibold">{sold} / {total} sold</span>
+                          <span className="text-[13px] font-semibold text-slate-900 block">{formatCurrency(tierRev)}</span>
+                          <span className="text-xs text-slate-400 font-semibold">{sold} / {total} sold</span>
                         </div>
 
                         <div className="w-24 space-y-1">
-                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                          <div className="flex items-center justify-between text-xs text-slate-500">
                             <span>{pct}%</span>
                           </div>
                           <div className="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden">
@@ -340,7 +324,7 @@ export default function AnalyticsPage() {
                           </div>
                         </div>
 
-                        <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider ${
+                        <span className={`px-2.5 py-1 rounded-xl text-xs font-semibold uppercase tracking-wider ${
                           event.status === "PUBLISHED" ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80" : "bg-slate-100 text-slate-700"
                         }`}>
                           {event.status}
@@ -355,13 +339,13 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Side Card: Real Ticket Tier Breakdown */}
-        <div className="bg-white rounded-3xl p-7 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-7 border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <h2 className="text-base font-black text-slate-900">Tier Distribution</h2>
+              <h2 className="text-base font-semibold text-slate-900">Tier Distribution</h2>
               <Layers className="w-4 h-4 text-slate-400" />
             </div>
-            <p className="text-sm font-semibold text-slate-400 mb-6">
+            <p className="text-sm text-slate-500 mb-6">
               Actual sales share by ticket category across all events.
             </p>
 
@@ -375,8 +359,8 @@ export default function AnalyticsPage() {
                 {tierDistribution.map((tier, idx) => (
                   <div key={idx} className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-bold text-slate-700">{tier.name}</span>
-                      <span className="font-black text-slate-900">{tier.count} tix ({tier.pct}%)</span>
+                      <span className="font-semibold text-slate-700">{tier.name}</span>
+                      <span className="font-semibold text-slate-900">{tier.count} tix ({tier.pct}%)</span>
                     </div>
                     <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden">
                       <div 
@@ -389,33 +373,19 @@ export default function AnalyticsPage() {
               </div>
             )}
           </div>
-
-          {/* Quick Notice */}
-          <div className="p-4 rounded-2xl bg-[#FFF9EB] border border-amber-200/70 mt-6">
-            <div className="flex items-start gap-2.5">
-              <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-bold text-amber-950">Dynamic Calculation</p>
-                <p className="text-[11px] font-medium text-amber-900/80 mt-0.5 leading-relaxed">
-                  These metrics reflect live purchases stored in your database.
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
-
       </div>
 
       {/* ===== ROW 3: RECENT COMPLETED ORDERS STREAM ===== */}
-      <div className="bg-white rounded-3xl p-7 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
+      <div className="bg-white rounded-xl p-7 border border-slate-200/80 shadow-xs">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-base font-black text-slate-900">Recent Completed Orders</h2>
-            <p className="text-sm font-semibold text-slate-400 mt-0.5">
+            <h2 className="text-base font-semibold text-slate-900">Recent Completed Orders</h2>
+            <p className="text-sm text-slate-500 mt-0.5">
               Live stream of verified attendee purchases from the booking gateway.
             </p>
           </div>
-          <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200/80">
+          <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[13px] font-semibold border border-emerald-200/80">
             {recentPaidOrders.length} Recent Paid
           </span>
         </div>
@@ -429,17 +399,17 @@ export default function AnalyticsPage() {
             recentPaidOrders.map((order) => (
               <div 
                 key={order.id}
-                className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-700 font-bold">
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-700 font-semibold">
                     <CreditCard className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-900">
+                    <p className="text-sm font-semibold text-slate-900">
                       {order.user?.name || order.guestName || "Customer"}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-[13px] text-slate-400">
                       {order.event?.title || "Event Booking"} &bull; {order.user?.email || order.guestEmail || ""}
                     </p>
                   </div>
@@ -447,14 +417,14 @@ export default function AnalyticsPage() {
 
                 <div className="flex items-center gap-6">
                   <div className="text-left sm:text-right">
-                    <p className="text-sm font-black text-slate-900">
+                    <p className="text-sm font-semibold text-slate-900">
                       {formatCurrency((order.totalCents || 0) / 100)}
                     </p>
-                    <p className="text-[11px] font-semibold text-slate-400">
+                    <p className="text-[13px] text-slate-500">
                       {new Date(order.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <span className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                  <span className="px-2.5 py-1 rounded-xl text-xs font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-800">
                     PAID
                   </span>
                 </div>

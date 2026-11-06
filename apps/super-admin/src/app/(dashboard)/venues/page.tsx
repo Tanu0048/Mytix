@@ -261,16 +261,16 @@ export default function VenuesAndCitiesPage() {
   const totalEventsCount = venues.reduce((sum, v) => sum + (v._count?.events || 0), 0);
 
   return (
-    <div className="space-y-7 animate-in fade-in duration-300">
+    <div className="space-y-7">
       
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight flex items-center gap-2.5">
             <MapPin className="w-7 h-7 text-amber-500" />
             Venues & Cities
           </h1>
-          <p className="text-sm font-semibold text-slate-400 mt-1">
+          <p className="text-sm text-slate-500 mt-1">
             Manage concert cities and venue locations for Australian tours.
           </p>
         </div>
@@ -284,7 +284,7 @@ export default function VenuesAndCitiesPage() {
               setCityImageEditVal(cityImages[initialCity.toLowerCase().trim()] || "");
               setIsCityModalOpen(true);
             }}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 px-5 py-3 text-sm font-bold text-slate-800 transition-all shadow-2xs cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-800 transition-all shadow-2xs cursor-pointer"
           >
             <ImageIcon className="w-4 h-4 text-amber-500" />
             <span>City Cover Photos</span>
@@ -292,7 +292,7 @@ export default function VenuesAndCitiesPage() {
 
           <button
             onClick={openCreateModal}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-black text-slate-950 transition-all shadow-sm hover:scale-[1.01] cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:scale-[1.01] cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-3" /> Add City & Venue
           </button>
@@ -301,66 +301,66 @@ export default function VenuesAndCitiesPage() {
 
       {/* Alert Banners */}
       {successMsg && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-bold flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-center gap-2">
           <Check className="w-4 h-4 text-emerald-600" /> {successMsg}
         </div>
       )}
       {error && (
-        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-red-600" /> {error}
         </div>
       )}
 
       {/* KPI Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
+        <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Cities</p>
-              <p className="text-2xl font-black text-slate-900 mt-1">{uniqueCities.length}</p>
+              <p className="text-[13px] text-slate-500 uppercase tracking-wider">Active Cities</p>
+              <p className="text-2xl font-semibold text-slate-900 mt-1">{uniqueCities.length}</p>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
+            <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
               <MapPin className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-xs text-slate-400 font-semibold mt-3">
+          <p className="text-[13px] text-slate-400 font-semibold mt-3">
             Available on website location filters
           </p>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
+        <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Venues</p>
-              <p className="text-2xl font-black text-slate-900 mt-1">{venues.length}</p>
+              <p className="text-[13px] text-slate-500 uppercase tracking-wider">Total Venues</p>
+              <p className="text-2xl font-semibold text-slate-900 mt-1">{venues.length}</p>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200/60 flex items-center justify-center text-blue-600">
+            <div className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-200/60 flex items-center justify-center text-blue-600">
               <Building2 className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-xs text-slate-400 font-semibold mt-3">
+          <p className="text-[13px] text-slate-400 font-semibold mt-3">
             Stadiums, arenas, and halls configured
           </p>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
+        <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Live & Past Shows</p>
-              <p className="text-2xl font-black text-slate-900 mt-1">{totalEventsCount}</p>
+              <p className="text-[13px] text-slate-500 uppercase tracking-wider">Live & Past Shows</p>
+              <p className="text-2xl font-semibold text-slate-900 mt-1">{totalEventsCount}</p>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-600">
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-600">
               <Calendar className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-xs text-slate-400 font-semibold mt-3">
+          <p className="text-[13px] text-slate-400 font-semibold mt-3">
             Concerts tied to these locations
           </p>
         </div>
       </div>
 
       {/* Main Content Box */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
         
         {/* Controls: Search + City Filter Tabs */}
         <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -381,7 +381,7 @@ export default function VenuesAndCitiesPage() {
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
             <button
               onClick={() => setSelectedCityFilter("ALL")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-[13px] font-semibold transition-all shrink-0 cursor-pointer ${
                 selectedCityFilter === "ALL"
                   ? "bg-slate-950 text-white shadow-2xs"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
@@ -393,7 +393,7 @@ export default function VenuesAndCitiesPage() {
               <button
                 key={city}
                 onClick={() => setSelectedCityFilter(city)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-[13px] font-semibold transition-all shrink-0 cursor-pointer ${
                   selectedCityFilter.toLowerCase() === city.toLowerCase()
                     ? "bg-amber-400 text-slate-950 shadow-2xs"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200/70"
@@ -413,16 +413,16 @@ export default function VenuesAndCitiesPage() {
           </div>
         ) : filteredVenues.length === 0 ? (
           <div className="p-16 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3">
+            <div className="w-14 h-14 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3">
               <MapPin className="w-7 h-7" />
             </div>
-            <h3 className="text-base font-extrabold text-slate-900">No venues or cities found</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            <h3 className="text-base font-semibold text-slate-900">No venues or cities found</h3>
+            <p className="text-[13px] text-slate-400 mt-1 max-w-sm mx-auto">
               Add your concert venues and cities so organisers can host events and fans can filter shows by location.
             </p>
             <button
               onClick={openCreateModal}
-              className="mt-4 px-4 py-2 bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 rounded-xl text-xs font-black transition-colors"
+              className="mt-4 px-4 py-2 bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 rounded-xl text-[13px] font-semibold transition-colors"
             >
               + Add First Venue
             </button>
@@ -430,7 +430,7 @@ export default function VenuesAndCitiesPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50/70 text-slate-400 text-[11px] font-black uppercase tracking-wider border-b border-slate-100">
+              <thead className="bg-slate-50/70 text-slate-400 text-xs font-medium uppercase tracking-wide border-b border-slate-100">
                 <tr>
                   <th className="py-4 px-6">Venue Name</th>
                   <th className="py-4 px-6">City & State</th>
@@ -454,8 +454,8 @@ export default function VenuesAndCitiesPage() {
                             <Building2 className="w-4 h-4" />
                           </div>
                           <div>
-                            <span className="font-bold text-slate-900 block leading-tight">{venue.name}</span>
-                            <span className="text-[11px] text-slate-400 font-mono mt-0.5 block">{venue.slug}</span>
+                            <span className="font-semibold text-slate-900 block leading-tight">{venue.name}</span>
+                            <span className="text-[13px] text-slate-400 font-mono mt-0.5 block">{venue.slug}</span>
                           </div>
                         </div>
                       </td>
@@ -463,20 +463,20 @@ export default function VenuesAndCitiesPage() {
                       {/* City & State */}
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-slate-900">{venue.city}</span>
-                          <span className="text-[10px] font-black uppercase bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full border border-slate-200">
+                          <span className="font-semibold text-slate-900">{venue.city}</span>
+                          <span className="text-xs font-semibold uppercase bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full border border-slate-200">
                             {venue.state || "AU"}
                           </span>
                         </div>
                       </td>
 
                       {/* Address */}
-                      <td className="py-4 px-6 text-slate-600 text-xs font-medium max-w-xs truncate">
+                      <td className="py-4 px-6 text-slate-600 text-[13px] font-medium max-w-xs truncate">
                         {venue.address || "TBD"}
                       </td>
 
                       {/* Capacity */}
-                      <td className="py-4 px-6 text-slate-900 font-semibold text-xs">
+                      <td className="py-4 px-6 text-slate-900 font-semibold text-[13px]">
                         <span className="flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5 text-slate-400" />
                           {venue.capacity ? venue.capacity.toLocaleString() : "TBD"}
@@ -485,7 +485,7 @@ export default function VenuesAndCitiesPage() {
 
                       {/* Events Count */}
                       <td className="py-4 px-6 text-center">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[13px] font-semibold ${
                           eventsCount > 0 
                             ? "bg-emerald-50 text-emerald-800 border border-emerald-200" 
                             : "bg-slate-100 text-slate-500"
@@ -525,16 +525,16 @@ export default function VenuesAndCitiesPage() {
 
       {/* Add / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200/80 w-full max-w-lg overflow-hidden">
             
             {/* Modal Header */}
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black text-slate-900 leading-tight">
+                <h3 className="text-lg font-semibold text-slate-900 leading-tight">
                   {editingVenue ? "Edit Venue & Location" : "Add City & Venue"}
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-[13px] text-slate-400 mt-0.5">
                   Venues added here will be available when creating concerts.
                 </p>
               </div>
@@ -552,7 +552,7 @@ export default function VenuesAndCitiesPage() {
               <div className="grid grid-cols-2 gap-4">
                 {/* City */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                     City Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -567,7 +567,7 @@ export default function VenuesAndCitiesPage() {
 
                 {/* State */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                     State / Region <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -583,7 +583,7 @@ export default function VenuesAndCitiesPage() {
 
               {/* Venue Name */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                   Venue Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -598,7 +598,7 @@ export default function VenuesAndCitiesPage() {
 
               {/* Address */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                   Street Address
                 </label>
                 <input
@@ -613,7 +613,7 @@ export default function VenuesAndCitiesPage() {
               <div className="grid grid-cols-2 gap-4">
                 {/* Capacity */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                     Max Capacity
                   </label>
                   <input
@@ -627,7 +627,7 @@ export default function VenuesAndCitiesPage() {
 
                 {/* Timezone */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                     Timezone
                   </label>
                   <select
@@ -646,14 +646,14 @@ export default function VenuesAndCitiesPage() {
 
               {/* City Cover Photo Input & Direct Upload */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                <label className="block text-[13px] font-semibold text-slate-700 flex items-center justify-between">
                   <span>City Cover Photo (Browse by City)</span>
-                  <span className="text-[11px] font-semibold text-slate-400">Optional</span>
+                  <span className="text-[13px] text-slate-500">Optional</span>
                 </label>
 
                 {/* Direct Upload Box */}
-                <div className="flex flex-col sm:flex-row items-center gap-2 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                  <label className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 transition cursor-pointer shadow-2xs shrink-0 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <label className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-[13px] font-semibold text-slate-800 transition cursor-pointer shadow-2xs shrink-0 w-full sm:w-auto">
                     {isUploadingCityImg ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
@@ -677,7 +677,7 @@ export default function VenuesAndCitiesPage() {
                     />
                   </label>
 
-                  <span className="text-xs text-slate-400 font-bold hidden sm:inline">OR</span>
+                  <span className="text-[13px] text-slate-400 font-semibold hidden sm:inline">OR</span>
 
                   {/* URL Input */}
                   <div className="flex-1 flex gap-1.5 w-full">
@@ -686,13 +686,13 @@ export default function VenuesAndCitiesPage() {
                       placeholder="Paste image URL (or upload from computer)..."
                       value={cityImageUrl}
                       onChange={(e) => setCityImageUrl(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-[13px] font-semibold text-slate-900 outline-none focus:border-amber-400"
                     />
                     {cityImageUrl && (
                       <button
                         type="button"
                         onClick={() => setCityImageUrl("")}
-                        className="px-2.5 rounded-xl bg-slate-200/80 text-slate-600 text-xs font-bold hover:bg-slate-300 cursor-pointer shrink-0"
+                        className="px-2.5 rounded-xl bg-slate-200/80 text-slate-600 text-[13px] font-semibold hover:bg-slate-300 cursor-pointer shrink-0"
                         title="Clear photo"
                       >
                         Reset
@@ -701,7 +701,7 @@ export default function VenuesAndCitiesPage() {
                   </div>
                 </div>
 
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[13px] text-slate-400">
                   Shown on user website under &quot;Browse by city&quot;. If left blank, default image is used.
                 </p>
               </div>
@@ -711,14 +711,14 @@ export default function VenuesAndCitiesPage() {
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 text-xs font-black transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 text-[13px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? "Saving..." : editingVenue ? "Update Venue" : "Save City & Venue"}
                 </button>
@@ -731,17 +731,17 @@ export default function VenuesAndCitiesPage() {
 
       {/* ===== MODAL: MANAGE CITY COVER PHOTOS ===== */}
       {isCityModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full border border-slate-100 shadow-2xl overflow-hidden animate-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs">
+          <div className="bg-white rounded-xl max-w-lg w-full border border-slate-200/80 shadow-2xl overflow-hidden">
             
             {/* Modal Header */}
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                   <ImageIcon className="w-5 h-5 text-amber-500" />
                   City Cover Photos
                 </h3>
-                <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                <p className="text-[13px] text-slate-500 mt-0.5">
                   Customize the photo for each destination in &quot;Browse by city&quot;.
                 </p>
               </div>
@@ -758,7 +758,7 @@ export default function VenuesAndCitiesPage() {
               
               {/* Select City */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                   Select Australian City
                 </label>
                 <select
@@ -780,13 +780,13 @@ export default function VenuesAndCitiesPage() {
 
               {/* Image Input & Direct Upload for City Studio Modal */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
+                <label className="block text-[13px] font-semibold text-slate-700 flex items-center justify-between">
                   <span>City Cover Photo</span>
                   {cityImageEditVal && (
                     <button
                       type="button"
                       onClick={() => setCityImageEditVal("")}
-                      className="text-[11px] font-bold text-amber-600 hover:underline cursor-pointer"
+                      className="text-[13px] font-semibold text-amber-600 hover:underline cursor-pointer"
                     >
                       Revert to Default
                     </button>
@@ -794,8 +794,8 @@ export default function VenuesAndCitiesPage() {
                 </label>
 
                 {/* Direct Upload Box */}
-                <div className="flex flex-col sm:flex-row items-center gap-2 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
-                  <label className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 transition cursor-pointer shadow-2xs shrink-0 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <label className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-[13px] font-semibold text-slate-800 transition cursor-pointer shadow-2xs shrink-0 w-full sm:w-auto">
                     {isUploadingModalImg ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
@@ -819,7 +819,7 @@ export default function VenuesAndCitiesPage() {
                     />
                   </label>
 
-                  <span className="text-xs text-slate-400 font-bold hidden sm:inline">OR</span>
+                  <span className="text-[13px] text-slate-400 font-semibold hidden sm:inline">OR</span>
 
                   {/* URL Input */}
                   <div className="flex-1 flex gap-1.5 w-full">
@@ -828,13 +828,13 @@ export default function VenuesAndCitiesPage() {
                       placeholder="Paste image URL (or upload from computer)..."
                       value={cityImageEditVal}
                       onChange={(e) => setCityImageEditVal(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-xs font-semibold text-slate-900 outline-none focus:border-amber-400"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-[13px] font-semibold text-slate-900 outline-none focus:border-amber-400"
                     />
                     {cityImageEditVal && (
                       <button
                         type="button"
                         onClick={() => setCityImageEditVal("")}
-                        className="px-2.5 rounded-xl bg-slate-200/80 text-slate-600 text-xs font-bold hover:bg-slate-300 cursor-pointer shrink-0"
+                        className="px-2.5 rounded-xl bg-slate-200/80 text-slate-600 text-[13px] font-semibold hover:bg-slate-300 cursor-pointer shrink-0"
                         title="Clear photo"
                       >
                         Reset
@@ -846,10 +846,10 @@ export default function VenuesAndCitiesPage() {
 
               {/* Live Preview Card (Dark Theme matching user site) */}
               <div>
-                <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                <span className="block text-[13px] text-slate-500 uppercase tracking-wider mb-2">
                   Live Card Preview (User Website)
                 </span>
-                <div className="relative overflow-hidden rounded-2xl h-36 flex flex-col justify-between p-4 border border-slate-700 shadow-md">
+                <div className="relative overflow-hidden rounded-xl h-36 flex flex-col justify-between p-4 border border-slate-700 shadow-md">
                   {/* Background Image */}
                   <img
                     src={cityImageEditVal.trim() || DEFAULT_CITY_IMAGE}
@@ -860,7 +860,7 @@ export default function VenuesAndCitiesPage() {
 
                   {/* Top Badge */}
                   <div className="relative z-10">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md text-white border border-white/20">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-white/20 backdrop-blur-md text-white border border-white/20">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       Live Shows
                     </span>
@@ -868,10 +868,10 @@ export default function VenuesAndCitiesPage() {
 
                   {/* Bottom Text */}
                   <div className="relative z-10">
-                    <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-300">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-amber-300">
                       Australia
                     </p>
-                    <h4 className="font-black text-white text-xl tracking-tight leading-tight">
+                    <h4 className="font-semibold text-white text-xl tracking-tight leading-tight">
                       {selectedCityForImage}
                     </h4>
                   </div>
@@ -883,14 +883,14 @@ export default function VenuesAndCitiesPage() {
                 <button
                   type="button"
                   onClick={() => setIsCityModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingCityImg}
-                  className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 text-xs font-black transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 text-[13px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {isSavingCityImg ? "Saving..." : "Save City Photo"}
                 </button>

@@ -58,7 +58,7 @@ export default function CategoriesPage() {
       
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Categories</h1>
+        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Categories</h1>
         <p className="mt-2 text-sm text-slate-500">
           Manage the event categories available for organisers on the platform.
         </p>
@@ -80,7 +80,7 @@ export default function CategoriesPage() {
           <button 
             type="submit"
             disabled={isSubmitting || !newCat.trim()}
-            className="h-10 px-6 rounded-full bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 text-sm font-extrabold transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center shrink-0 shadow-sm"
+            className="h-10 px-6 rounded-full bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center shrink-0 shadow-sm"
           >
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Category"}
           </button>
@@ -89,7 +89,7 @@ export default function CategoriesPage() {
 
       {/* Category List */}
       <div>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">
+        <h3 className="text-[13px] text-slate-500 uppercase tracking-widest mb-4">
           All Categories ({categories.length})
         </h3>
 
@@ -108,7 +108,7 @@ export default function CategoriesPage() {
                 key={cat.id} 
                 className="group flex items-center gap-2 pl-4 pr-1.5 py-1.5 rounded-full border border-slate-200 bg-white hover:border-amber-400 hover:bg-amber-50/30 transition-colors"
               >
-                <span className="text-sm font-bold text-slate-700 group-hover:text-amber-900">
+                <span className="text-sm font-semibold text-slate-700 group-hover:text-amber-900">
                   {cat.name}
                 </span>
                 

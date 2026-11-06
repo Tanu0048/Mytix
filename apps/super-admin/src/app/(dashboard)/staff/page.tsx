@@ -206,16 +206,16 @@ export default function StaffManagementPage() {
     <div className="space-y-6 max-w-6xl mx-auto pb-16">
       
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+          <div className="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
             <QrCode className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
               Gate Staff & Scanner Accounts
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500">
+            <p className="text-[13px] sm:text-sm text-slate-500">
               Create and manage mobile ticket scanner credentials for your venue door staff.
             </p>
           </div>
@@ -224,7 +224,7 @@ export default function StaffManagementPage() {
         <button
           type="button"
           onClick={handleOpenAddModal}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-black transition shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[13px] sm:text-sm font-semibold transition shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Add Staff Member
@@ -233,7 +233,7 @@ export default function StaffManagementPage() {
 
       {/* Alerts */}
       {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-center gap-2.5 animate-in fade-in">
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-center gap-2.5">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -259,7 +259,7 @@ export default function StaffManagementPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 w-full sm:w-auto justify-end">
+        <div className="flex items-center gap-2 text-[13px] font-semibold text-slate-500 w-full sm:w-auto justify-end">
           <span className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700">
             Total Staff: {staffList.length}
           </span>
@@ -274,16 +274,16 @@ export default function StaffManagementPage() {
         <div className="flex items-center justify-center min-h-[35vh]">
           <div className="flex flex-col items-center gap-2.5">
             <RefreshCw className="w-6 h-6 text-amber-500 animate-spin" />
-            <span className="text-xs font-bold text-slate-400">Loading Staff accounts...</span>
+            <span className="text-[13px] text-slate-500">Loading Staff accounts...</span>
           </div>
         </div>
       ) : filteredStaff.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-slate-100 shadow-2xs space-y-3">
+        <div className="bg-white rounded-xl p-12 text-center border border-slate-200/80 shadow-2xs space-y-3">
           <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
             <Users className="w-6 h-6" />
           </div>
-          <h3 className="font-extrabold text-slate-900 text-base">No Gate Staff Found</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <h3 className="font-semibold text-slate-900 text-base">No Gate Staff Found</h3>
+          <p className="text-[13px] text-slate-500 max-w-sm mx-auto">
             {searchQuery 
               ? "No staff matching your search filter." 
               : "You haven't created any gate scanner accounts yet. Click 'Add Staff Member' to get started."}
@@ -291,7 +291,7 @@ export default function StaffManagementPage() {
           {!searchQuery && (
             <button
               onClick={handleOpenAddModal}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer mt-2"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-800 transition cursor-pointer mt-2"
             >
               <Plus className="w-3.5 h-3.5" />
               Create First Staff Account
@@ -299,7 +299,7 @@ export default function StaffManagementPage() {
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
           
           {/* Mobile Card View (phones & small tablets) */}
           <div className="block md:hidden divide-y divide-slate-100">
@@ -307,21 +307,21 @@ export default function StaffManagementPage() {
               <div key={staff.id} className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-black text-xs shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-semibold text-[13px] shrink-0">
                       {staff.staffId.slice(0, 2)}
                     </div>
                     <div>
-                      <p className="font-extrabold text-slate-900 tracking-tight text-sm">
+                      <p className="font-semibold text-slate-900 tracking-tight text-sm">
                         {staff.staffId}
                       </p>
-                      <p className="text-xs text-slate-400 font-medium">{staff.name}</p>
+                      <p className="text-[13px] text-slate-400 font-medium">{staff.name}</p>
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => handleToggleStatus(staff)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition cursor-pointer active:scale-95 ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold transition cursor-pointer active:scale-95 ${
                       staff.isActive 
                         ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                         : "bg-rose-50 text-rose-700 border border-rose-200"
@@ -332,7 +332,7 @@ export default function StaffManagementPage() {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-50">
+                <div className="flex items-center justify-between text-[13px] text-slate-500 pt-1 border-t border-slate-50">
                   <div className="flex items-center gap-1">
                     <DoorOpen className="w-3.5 h-3.5 text-slate-400" />
                     <span>{staff.assignedGate || "Any Gate"}</span>
@@ -350,7 +350,7 @@ export default function StaffManagementPage() {
                       setNewPassword("");
                       setShowPasswordModal(true);
                     }}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 active:scale-95 cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-[13px] hover:bg-slate-100 active:scale-95 cursor-pointer"
                   >
                     <Key className="w-3.5 h-3.5 text-amber-600" />
                     <span>Change Password</span>
@@ -373,7 +373,7 @@ export default function StaffManagementPage() {
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                <tr className="border-b border-slate-100 bg-slate-50/70 text-xs font-medium uppercase tracking-wide text-slate-400">
                   <th className="py-3.5 px-5">Staff ID & Name</th>
                   <th className="py-3.5 px-5">Assigned Gate</th>
                   <th className="py-3.5 px-5">Assigned Event</th>
@@ -386,27 +386,27 @@ export default function StaffManagementPage() {
                   <tr key={staff.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="py-4 px-5">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-black text-xs shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-semibold text-[13px] shrink-0">
                           {staff.staffId.slice(0, 2)}
                         </div>
                         <div>
-                          <p className="font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+                          <p className="font-semibold text-slate-900 tracking-tight flex items-center gap-1.5">
                             {staff.staffId}
                           </p>
-                          <p className="text-xs text-slate-400 font-medium">{staff.name}</p>
+                          <p className="text-[13px] text-slate-400 font-medium">{staff.name}</p>
                         </div>
                       </div>
                     </td>
 
                     <td className="py-4 px-5">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-[13px] font-semibold">
                         <DoorOpen className="w-3 h-3 text-slate-400" />
                         {staff.assignedGate || "Any Gate"}
                       </span>
                     </td>
 
                     <td className="py-4 px-5">
-                      <span className="text-xs font-semibold text-slate-600">
+                      <span className="text-[13px] font-semibold text-slate-600">
                         {staff.assignedEvent?.title || "All Organiser Events"}
                       </span>
                     </td>
@@ -415,7 +415,7 @@ export default function StaffManagementPage() {
                       <button
                         type="button"
                         onClick={() => handleToggleStatus(staff)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition cursor-pointer ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[13px] font-semibold transition cursor-pointer ${
                           staff.isActive 
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                             : "bg-rose-50 text-rose-700 border border-rose-200"
@@ -462,17 +462,17 @@ export default function StaffManagementPage() {
 
       {/* ================= MODAL: ADD STAFF MEMBER ================= */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
+          <div className="w-full max-w-lg bg-white rounded-xl p-6 sm:p-8 border border-slate-200/80 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-lg font-black text-slate-900 tracking-tight">Add Gate Staff Member</h3>
-                <p className="text-xs text-slate-500">Create login credentials for turnstile scanning</p>
+                <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Add Gate Staff Member</h3>
+                <p className="text-[13px] text-slate-500">Create login credentials for turnstile scanning</p>
               </div>
               <button 
                 type="button" 
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 text-sm font-semibold p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -480,7 +480,7 @@ export default function StaffManagementPage() {
 
             <form onSubmit={handleCreateStaff} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1">
                   Staff Member Name
                 </label>
                 <input
@@ -496,11 +496,11 @@ export default function StaffManagementPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700">Staff ID (Login)</label>
+                    <label className="text-[13px] font-semibold text-slate-700">Staff ID (Login)</label>
                     <button
                       type="button"
                       onClick={() => setAddForm({ ...addForm, staffId: generateSuggestedId() })}
-                      className="text-[10px] font-bold text-amber-600 hover:underline cursor-pointer"
+                      className="text-xs font-semibold text-amber-600 hover:underline cursor-pointer"
                     >
                       Regenerate
                     </button>
@@ -511,12 +511,12 @@ export default function StaffManagementPage() {
                     value={addForm.staffId}
                     onChange={(e) => setAddForm({ ...addForm, staffId: e.target.value.toUpperCase() })}
                     placeholder="e.g. GATE1_ALEX"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold uppercase tracking-wider focus:ring-2 focus:ring-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold uppercase tracking-wider focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-[13px] font-semibold text-slate-700 mb-1">
                     Password
                   </label>
                   <input
@@ -532,7 +532,7 @@ export default function StaffManagementPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-[13px] font-semibold text-slate-700 mb-1">
                     Assigned Gate
                   </label>
                   <input
@@ -545,7 +545,7 @@ export default function StaffManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                  <label className="block text-[13px] font-semibold text-slate-700 mb-1">
                     Assigned Event
                   </label>
                   <select
@@ -561,8 +561,8 @@ export default function StaffManagementPage() {
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs">
-                <p className="font-bold">Staff ID & Password are ready:</p>
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-[13px]">
+                <p className="font-semibold">Staff ID & Password are ready:</p>
                 <p className="mt-0.5 text-slate-600">Give these credentials to the staff member so they can log in at the gate scanner.</p>
               </div>
 
@@ -570,14 +570,14 @@ export default function StaffManagementPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 text-xs font-bold cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 text-[13px] font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingAdd}
-                  className="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition disabled:opacity-60 cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[13px] font-semibold transition disabled:opacity-60 cursor-pointer"
                 >
                   {savingAdd ? "Creating..." : "Save Staff Member"}
                 </button>
@@ -589,17 +589,17 @@ export default function StaffManagementPage() {
 
       {/* ================= MODAL: CHANGE PASSWORD ================= */}
       {showPasswordModal && selectedStaff && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white rounded-xl p-6 sm:p-7 border border-slate-200/80 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-black text-slate-900">Change Staff Password</h3>
-                <p className="text-xs text-slate-500">Update password for {selectedStaff.staffId}</p>
+                <h3 className="text-base font-semibold text-slate-900">Change Staff Password</h3>
+                <p className="text-[13px] text-slate-500">Update password for {selectedStaff.staffId}</p>
               </div>
               <button 
                 type="button" 
                 onClick={() => setShowPasswordModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold p-1 cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 text-sm font-semibold p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -607,7 +607,7 @@ export default function StaffManagementPage() {
 
             <form onSubmit={handleUpdatePassword} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1">
                   New Password (min 6 characters)
                 </label>
                 <div className="relative">
@@ -634,14 +634,14 @@ export default function StaffManagementPage() {
                 <button
                   type="button"
                   onClick={() => setShowPasswordModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 text-xs font-bold cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 text-[13px] font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingPassword}
-                  className="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition disabled:opacity-60 cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[13px] font-semibold transition disabled:opacity-60 cursor-pointer"
                 >
                   {savingPassword ? "Changing..." : "Confirm & Change Password"}
                 </button>
@@ -653,40 +653,40 @@ export default function StaffManagementPage() {
 
       {/* ================= MODAL: PREVIEW & COPY SAVED STAFF CREDENTIALS ================= */}
       {savedStaffCredentials && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-2xl text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center mx-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white rounded-xl p-6 sm:p-7 border border-slate-200/80 shadow-2xl text-center space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-6 h-6" />
             </div>
 
             <div>
-              <h3 className="text-xl font-black text-slate-900">
+              <h3 className="text-xl font-semibold text-slate-900">
                 {savedStaffCredentials.isNew ? "Staff Account Created" : "Password Changed"}
               </h3>
-              <p className="text-xs text-slate-400 font-bold mt-0.5">
+              <p className="text-[13px] text-slate-400 font-semibold mt-0.5">
                 {savedStaffCredentials.staffName} ({savedStaffCredentials.staffId})
               </p>
             </div>
 
             {/* Credentials Card */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-left space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 text-xs">
-                <span className="font-bold text-slate-500">Staff Login ID:</span>
-                <span className="font-extrabold text-slate-900 font-mono text-sm tracking-wider">{savedStaffCredentials.staffId}</span>
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-left space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 text-[13px]">
+                <span className="font-semibold text-slate-500">Staff Login ID:</span>
+                <span className="font-semibold text-slate-900 font-mono text-sm tracking-wider">{savedStaffCredentials.staffId}</span>
               </div>
 
               {savedStaffCredentials.gate && (
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 text-xs">
-                  <span className="font-bold text-slate-500">Assigned Gate:</span>
-                  <span className="font-bold text-slate-800">{savedStaffCredentials.gate}</span>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 text-[13px]">
+                  <span className="font-semibold text-slate-500">Assigned Gate:</span>
+                  <span className="font-semibold text-slate-800">{savedStaffCredentials.gate}</span>
                 </div>
               )}
 
               <div className="space-y-1">
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                <span className="text-[13px] font-semibold uppercase tracking-wider text-slate-400">
                   Password
                 </span>
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-sm font-bold text-slate-900">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-sm font-semibold text-slate-900">
                   <span className="select-all tracking-wider">{savedStaffCredentials.password}</span>
                   <button
                     type="button"
@@ -695,12 +695,12 @@ export default function StaffManagementPage() {
                       setCopiedStaffPassword(true);
                       setTimeout(() => setCopiedStaffPassword(false), 2000);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition active:scale-95 cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-700 transition active:scale-95 cursor-pointer"
                   >
                     {copiedStaffPassword ? (
                       <>
                         <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="text-emerald-700 font-extrabold">Copied!</span>
+                        <span className="text-emerald-700 font-semibold">Copied!</span>
                       </>
                     ) : (
                       <>
@@ -714,7 +714,7 @@ export default function StaffManagementPage() {
             </div>
 
             {/* Warning Message */}
-            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-bold leading-relaxed text-left flex items-start gap-2.5">
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-[13px] font-semibold leading-relaxed text-left flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <p>
                 Store the password safely. After closing this window, this password will not be shown again.
@@ -729,7 +729,7 @@ export default function StaffManagementPage() {
                 setSuccessMsg(savedStaffCredentials.isNew ? "Staff credentials recorded." : "Staff password saved.");
                 setTimeout(() => setSuccessMsg(""), 3500);
               }}
-              className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition cursor-pointer active:scale-98"
+              className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer active:scale-98"
             >
               Done / I Have Stored The Password
             </button>

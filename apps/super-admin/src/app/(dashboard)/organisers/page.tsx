@@ -277,10 +277,10 @@ export default function OrganisersPage() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 max-w-7xl pb-24 relative">
+    <div className=" max-w-7xl pb-24 relative">
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-slate-900 text-white text-sm font-bold shadow-xl border border-slate-800 animate-in fade-in slide-in-from-bottom-2">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900 text-white text-sm font-semibold shadow-xl border border-slate-800">
           <CheckCircle className="w-4 h-4 text-emerald-400" />
           <span>{toastMsg}</span>
         </div>
@@ -289,7 +289,7 @@ export default function OrganisersPage() {
       {/* ===== Clean Standard Header ===== */}
       <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
             Organisers Directory
           </h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -301,7 +301,7 @@ export default function OrganisersPage() {
           <button
             onClick={fetchOrganisers}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 text-xs font-semibold transition-all shadow-xs cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 text-[13px] font-semibold transition-all shadow-xs cursor-pointer"
             title="Refresh list"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-amber-500" : ""}`} />
@@ -313,7 +313,7 @@ export default function OrganisersPage() {
               setCreateError("");
               setIsCreateModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-4 py-2 text-xs font-bold text-slate-950 transition-all shadow-xs hover:shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-4 py-2 text-[13px] font-semibold text-slate-950 transition-all shadow-xs hover:shadow-sm cursor-pointer"
           >
             <Plus className="h-4 w-4 stroke-[2.5]" />
             <span>Create New Organiser</span>
@@ -323,11 +323,11 @@ export default function OrganisersPage() {
 
       {/* ===== Access Forbidden Fallback Screen ===== */}
       {isForbidden ? (
-        <div className="rounded-3xl bg-white border border-slate-100 shadow-[0_2px_14px_rgba(0,0,0,0.03)] p-12 text-center max-w-lg mx-auto my-12 animate-in fade-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-3xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 mx-auto mb-4">
+        <div className="rounded-xl bg-white border border-slate-200/80 shadow-xs p-12 text-center max-w-lg mx-auto my-12">
+          <div className="w-16 h-16 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 mx-auto mb-4">
             <ShieldCheck className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-black text-slate-900">Administrator Clearance Required</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Administrator Clearance Required</h2>
           <p className="text-sm font-semibold text-slate-500 mt-2 mb-6 leading-relaxed">
             Managing partner credentials is strictly reserved for Super Administrators. Please sync your active session.
           </p>
@@ -342,7 +342,7 @@ export default function OrganisersPage() {
               } catch {}
               await fetchOrganisers();
             }}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-black text-slate-950 transition-all shadow-sm hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-semibold text-slate-950 transition-all shadow-sm hover:scale-[1.02]"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
             <span>Sync Session & Reload</span>
@@ -355,8 +355,8 @@ export default function OrganisersPage() {
             {/* Total */}
             <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Organisers</p>
-                <p className="text-2xl font-bold text-slate-900 tracking-tight mt-1">{totalCount}</p>
+                <p className="text-[13px] font-semibold uppercase tracking-wider text-slate-500">Total Organisers</p>
+                <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{totalCount}</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-600 flex items-center justify-center shrink-0">
                 <Users className="w-5 h-5" />
@@ -366,8 +366,8 @@ export default function OrganisersPage() {
             {/* Active */}
             <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Active & Ready</p>
-                <p className="text-2xl font-bold text-slate-900 tracking-tight mt-1">{approvedCount}</p>
+                <p className="text-[13px] font-semibold uppercase tracking-wider text-slate-500">Active & Ready</p>
+                <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{approvedCount}</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/70 text-emerald-600 flex items-center justify-center shrink-0">
                 <UserCheck className="w-5 h-5" />
@@ -377,8 +377,8 @@ export default function OrganisersPage() {
             {/* Suspended */}
             <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Suspended</p>
-                <p className="text-2xl font-bold text-slate-900 tracking-tight mt-1">{suspendedCount}</p>
+                <p className="text-[13px] font-semibold uppercase tracking-wider text-slate-500">Suspended</p>
+                <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{suspendedCount}</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200/70 text-rose-600 flex items-center justify-center shrink-0">
                 <UserX className="w-5 h-5" />
@@ -389,11 +389,11 @@ export default function OrganisersPage() {
           {/* ===== Toolbar & Filters (Reference Style) ===== */}
           <div className="rounded-xl bg-white border border-slate-200/90 shadow-xs p-5 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-              <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
+              <div className="flex items-center gap-2 text-slate-800 font-semibold text-sm">
                 <Filter className="h-4 w-4 text-amber-600" />
                 <span>Filter Organisers</span>
               </div>
-              <span className="text-xs font-medium text-slate-500">
+              <span className="text-[13px] font-medium text-slate-500">
                 Showing {paginatedOrganisers.length} of {filteredOrganisers.length} organisers (Page {currentPage} of {totalPages})
               </span>
             </div>
@@ -403,38 +403,38 @@ export default function OrganisersPage() {
               <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-50 border border-slate-200/70 overflow-x-auto">
                 <button
                   onClick={() => { setStatusFilter("ALL"); setCurrentPage(1); }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 cursor-pointer ${
                     statusFilter === "ALL"
                       ? "bg-white text-slate-900 border border-slate-200/80 shadow-xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   <span>All</span>
-                  <span className="px-1.5 py-0.2 rounded bg-slate-100 text-[10px] text-slate-600">{totalCount}</span>
+                  <span className="px-1.5 py-0.2 rounded bg-slate-100 text-xs text-slate-600">{totalCount}</span>
                 </button>
 
                 <button
                   onClick={() => { setStatusFilter("APPROVED"); setCurrentPage(1); }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 cursor-pointer ${
                     statusFilter === "APPROVED"
                       ? "bg-emerald-50 text-emerald-800 border border-emerald-200/70 shadow-xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   <span>Active</span>
-                  <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-[10px] text-emerald-700">{approvedCount}</span>
+                  <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-xs text-emerald-700">{approvedCount}</span>
                 </button>
 
                 <button
                   onClick={() => { setStatusFilter("SUSPENDED"); setCurrentPage(1); }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-all shrink-0 cursor-pointer ${
                     statusFilter === "SUSPENDED"
                       ? "bg-rose-50 text-rose-800 border border-rose-200/70 shadow-xs"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   <span>Suspended</span>
-                  <span className="px-1.5 py-0.2 rounded bg-rose-100 text-[10px] text-rose-700">{suspendedCount}</span>
+                  <span className="px-1.5 py-0.2 rounded bg-rose-100 text-xs text-rose-700">{suspendedCount}</span>
                 </button>
               </div>
 
@@ -446,7 +446,7 @@ export default function OrganisersPage() {
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                   placeholder="Search by business, name, email..."
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-1.5 pl-9 pr-3 text-xs font-medium text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white transition-all"
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-1.5 pl-9 pr-3 text-[13px] font-medium text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white transition-all"
                 />
               </div>
             </div>
@@ -457,22 +457,22 @@ export default function OrganisersPage() {
             {isLoading ? (
               <div className="p-12 flex flex-col items-center justify-center text-slate-400 gap-2">
                 <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
-                <p className="text-xs font-semibold">Loading organisers directory...</p>
+                <p className="text-[13px] font-semibold">Loading organisers directory...</p>
               </div>
             ) : filteredOrganisers.length === 0 ? (
               <div className="p-12 text-center">
                 <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 mx-auto mb-2">
                   <Users className="w-5 h-5" />
                 </div>
-                <h3 className="text-sm font-bold text-slate-900">No Organisers Found</h3>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                <h3 className="text-sm font-semibold text-slate-900">No Organisers Found</h3>
+                <p className="text-[13px] text-slate-400 mt-1 max-w-sm mx-auto">
                   {searchQuery ? "No partners match your search query." : "Click 'Create New Organiser' above to add your first partner account."}
                 </p>
               </div>
             ) : (
               <div className="overflow-x-auto min-w-full">
-                <table className="w-full text-left text-xs min-w-[800px]">
-                  <thead className="bg-slate-50 border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                <table className="w-full text-left text-[13px] min-w-[800px]">
+                  <thead className="bg-slate-50 border-b border-slate-100 text-xs font-medium uppercase tracking-wide text-slate-500">
                     <tr>
                       <th className="px-5 py-3.5">Business / Host</th>
                       <th className="px-5 py-3.5">Account User</th>
@@ -490,20 +490,20 @@ export default function OrganisersPage() {
                           {/* Business */}
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200/50 flex items-center justify-center text-amber-700 font-black text-sm shrink-0">
+                              <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200/50 flex items-center justify-center text-amber-700 font-semibold text-sm shrink-0">
                                 {org.businessName.charAt(0).toUpperCase()}
                               </div>
                               <div>
-                                <p className="font-extrabold text-slate-900">{org.businessName}</p>
-                                <p className="text-[11px] text-slate-400 font-mono mt-0.5">{org.contactEmail}</p>
+                                <p className="font-semibold text-slate-900">{org.businessName}</p>
+                                <p className="text-[13px] text-slate-400 font-mono mt-0.5">{org.contactEmail}</p>
                               </div>
                             </div>
                           </td>
 
                           {/* Account User */}
                           <td className="px-6 py-4">
-                            <p className="font-bold text-slate-800">{org.user?.name || "—"}</p>
-                            <p className="text-[11px] text-slate-400 font-mono">{org.user?.email}</p>
+                            <p className="font-semibold text-slate-800">{org.user?.name || "—"}</p>
+                            <p className="text-[13px] text-slate-400 font-mono">{org.user?.email}</p>
                           </td>
 
                           {/* Contact Phone */}
@@ -514,12 +514,12 @@ export default function OrganisersPage() {
                           {/* Status */}
                           <td className="px-6 py-4">
                             {isApproved ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                 Active
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-rose-50 text-rose-700 border border-rose-200/70">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/70">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                                 Suspended
                               </span>
@@ -527,7 +527,7 @@ export default function OrganisersPage() {
                           </td>
 
                           {/* Joined Date */}
-                          <td className="px-6 py-4 text-slate-500 font-bold">
+                          <td className="px-6 py-4 text-slate-500 font-semibold">
                             {new Date(org.createdAt).toLocaleDateString("en-US", {
                               year: "numeric",
                               month: "short",
@@ -555,7 +555,7 @@ export default function OrganisersPage() {
                               {isApproved ? (
                                 <button
                                   onClick={() => setStatusModalTarget({ organiser: org, newStatus: "SUSPENDED" })}
-                                  className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/60 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                                  className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/60 font-semibold text-[13px] transition-colors flex items-center gap-1 cursor-pointer"
                                 >
                                   <Ban className="w-3.5 h-3.5" />
                                   <span>Suspend</span>
@@ -563,7 +563,7 @@ export default function OrganisersPage() {
                               ) : (
                                 <button
                                   onClick={() => setStatusModalTarget({ organiser: org, newStatus: "APPROVED" })}
-                                  className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/60 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/60 font-semibold text-[13px] transition-colors flex items-center gap-1 cursor-pointer"
                                 >
                                   <CheckCircle className="w-3.5 h-3.5" />
                                   <span>Activate</span>
@@ -580,13 +580,13 @@ export default function OrganisersPage() {
                                 </button>
 
                                 {openDropdown === org.id && (
-                                  <div className="absolute right-0 top-10 w-44 rounded-2xl bg-white shadow-xl border border-slate-100 z-30 p-1.5 animate-in fade-in zoom-in-95 duration-100 text-left">
+                                  <div className="absolute right-0 top-10 w-44 rounded-xl bg-white shadow-xl border border-slate-200/80 z-30 p-1.5 text-left">
                                     <button
                                       onClick={() => {
                                         handleCopy(org.contactEmail, org.id);
                                         setOpenDropdown(null);
                                       }}
-                                      className="w-full px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                                      className="w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
                                     >
                                       <Copy className="w-3.5 h-3.5 text-slate-400" />
                                       <span>Copy Email</span>
@@ -599,7 +599,7 @@ export default function OrganisersPage() {
                                         setResetModalTarget(org);
                                         setOpenDropdown(null);
                                       }}
-                                      className="w-full px-3 py-2 text-sm font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-700 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                                      className="w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-amber-50 hover:text-amber-700 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
                                     >
                                       <KeyRound className="w-3.5 h-3.5 text-amber-500" />
                                       <span>Reset Password</span>
@@ -611,7 +611,7 @@ export default function OrganisersPage() {
                                           setStatusModalTarget({ organiser: org, newStatus: "SUSPENDED" });
                                           setOpenDropdown(null);
                                         }}
-                                        className="w-full px-3 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                                        className="w-full px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
                                       >
                                         <Ban className="w-3.5 h-3.5" />
                                         <span>Suspend Account</span>
@@ -623,7 +623,7 @@ export default function OrganisersPage() {
                                             setStatusModalTarget({ organiser: org, newStatus: "APPROVED" });
                                             setOpenDropdown(null);
                                           }}
-                                          className="w-full px-3 py-2 text-sm font-bold text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                                          className="w-full px-3 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
                                         >
                                           <CheckCircle className="w-3.5 h-3.5" />
                                           <span>Activate Account</span>
@@ -635,7 +635,7 @@ export default function OrganisersPage() {
                                               setDeleteModalTarget(org);
                                               setOpenDropdown(null);
                                             }}
-                                            className="w-full mt-1 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                                            className="w-full mt-1 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
                                           >
                                             <Trash2 className="w-3.5 h-3.5" />
                                             <span>Delete Account</span>
@@ -658,7 +658,7 @@ export default function OrganisersPage() {
 
             {/* Clean Pagination Footer */}
             {!isLoading && filteredOrganisers.length > pageSize && (
-              <div className="p-3.5 border-t border-slate-100 flex items-center justify-between bg-slate-50/40 text-xs">
+              <div className="p-3.5 border-t border-slate-100 flex items-center justify-between bg-slate-50/40 text-[13px]">
                 <span className="text-slate-500 font-medium">
                   Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filteredOrganisers.length)} of {filteredOrganisers.length} organisers
                 </span>
@@ -692,16 +692,16 @@ export default function OrganisersPage() {
       {/* ========================================================================= */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-xl p-6 sm:p-8 max-w-xl w-full shadow-2xl border border-slate-200/80">
             {/* Modal Header */}
             <div className="flex items-start justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-900">Create Organiser Account</h2>
-                  <p className="text-sm font-semibold text-slate-400">
+                  <h2 className="text-xl font-semibold text-slate-900">Create Organiser Account</h2>
+                  <p className="text-sm text-slate-500">
                     Create credentials directly. The organiser can log in immediately.
                   </p>
                 </div>
@@ -716,7 +716,7 @@ export default function OrganisersPage() {
 
             {/* Error Banner */}
             {createError && (
-              <div className="mt-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-700 text-sm font-bold flex items-center gap-2">
+              <div className="mt-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-sm font-semibold flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{createError}</span>
               </div>
@@ -726,7 +726,7 @@ export default function OrganisersPage() {
             <form onSubmit={handleCreateSubmit} className="mt-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                     Contact Person Name *
                   </label>
                   <input
@@ -734,13 +734,13 @@ export default function OrganisersPage() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
                     placeholder="e.g. Rahul Sharma"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                     Organiser / Brand Name *
                   </label>
                   <input
@@ -748,7 +748,7 @@ export default function OrganisersPage() {
                     required
                     value={formData.businessName}
                     onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
                     placeholder="e.g. Comedy Central Club"
                   />
                 </div>
@@ -756,7 +756,7 @@ export default function OrganisersPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                     Login Email (User ID) *
                   </label>
                   <input
@@ -764,20 +764,20 @@ export default function OrganisersPage() {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
                     placeholder="organizer@domain.com"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                     Contact Phone Number
                   </label>
                   <input
                     type="text"
                     value={formData.contactPhone}
                     onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all"
                     placeholder="+91 98765 43210"
                   />
                 </div>
@@ -785,13 +785,13 @@ export default function OrganisersPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-sm font-black text-slate-700 uppercase tracking-wider">
+                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider">
                     Password *
                   </label>
                   <button
                     type="button"
                     onClick={generateRandomPassword}
-                    className="text-[11px] font-bold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-200 transition-colors cursor-pointer"
+                    className="text-[13px] font-semibold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-200 transition-colors cursor-pointer"
                   >
                     ⚡ Generate Password
                   </button>
@@ -802,7 +802,7 @@ export default function OrganisersPage() {
                     required
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 pl-3.5 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all font-mono"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-3.5 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all font-mono"
                     placeholder="Min 8 chars with uppercase, number & symbol"
                   />
                   <button
@@ -820,14 +820,14 @@ export default function OrganisersPage() {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-black text-slate-950 transition-all shadow-xs disabled:opacity-60 flex items-center gap-2 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-semibold text-slate-950 transition-all shadow-xs disabled:opacity-60 flex items-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
@@ -852,31 +852,31 @@ export default function OrganisersPage() {
       {/* ========================================================================= */}
       {createdCredentials && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-in fade-in zoom-in-95">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-600 mx-auto mb-4">
+          <div className="bg-white rounded-xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200/80 text-center">
+            <div className="w-14 h-14 rounded-xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-600 mx-auto mb-4">
               <CheckCircle className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-black text-slate-900">Organiser Account Created!</h3>
+            <h3 className="text-xl font-semibold text-slate-900">Organiser Account Created!</h3>
             <p className="text-sm text-slate-500 mt-1 mb-5">
               Account for <strong>{createdCredentials.businessName}</strong> is active. Share these login details with the organiser:
             </p>
 
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-left space-y-2.5 mb-6 text-sm font-mono">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 text-left space-y-2.5 mb-6 text-sm font-mono">
               <div>
-                <span className="text-[10px] font-bold text-slate-400 block uppercase font-sans">Login Portal</span>
-                <span className="text-slate-800 font-bold select-all">http://localhost:3001/login</span>
+                <span className="text-xs text-slate-500 block uppercase font-sans">Login Portal</span>
+                <span className="text-slate-800 font-semibold select-all">http://localhost:3001/login</span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-400 block uppercase font-sans">Role</span>
-                <span className="text-slate-800 font-bold">Organiser</span>
+                <span className="text-xs text-slate-500 block uppercase font-sans">Role</span>
+                <span className="text-slate-800 font-semibold">Organiser</span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-400 block uppercase font-sans">Login Email (ID)</span>
-                <span className="text-slate-900 font-black select-all">{createdCredentials.email}</span>
+                <span className="text-xs text-slate-500 block uppercase font-sans">Login Email (ID)</span>
+                <span className="text-slate-900 font-semibold select-all">{createdCredentials.email}</span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-400 block uppercase font-sans">Password</span>
-                <span className="text-slate-900 font-black select-all">{createdCredentials.password}</span>
+                <span className="text-xs text-slate-500 block uppercase font-sans">Password</span>
+                <span className="text-slate-900 font-semibold select-all">{createdCredentials.password}</span>
               </div>
             </div>
 
@@ -887,14 +887,14 @@ export default function OrganisersPage() {
                   navigator.clipboard.writeText(text);
                   showToast("Login details copied to clipboard!");
                 }}
-                className="flex-1 py-3 px-4 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-black text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
+                className="flex-1 py-3 px-4 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-semibold text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
               >
                 <Copy className="w-4 h-4" />
                 <span>Copy Login Details</span>
               </button>
               <button
                 onClick={() => setCreatedCredentials(null)}
-                className="py-3 px-5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
+                className="py-3 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
               >
                 Done
               </button>
@@ -908,8 +908,8 @@ export default function OrganisersPage() {
       {/* ========================================================================= */}
       {statusModalTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-in fade-in zoom-in-95 duration-200">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 border ${
+          <div className="bg-white rounded-xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200/80 text-center">
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4 border ${
               statusModalTarget.newStatus === "APPROVED" 
                 ? "bg-emerald-50 border-emerald-200/60 text-emerald-600" 
                 : "bg-rose-50 border-rose-200/60 text-rose-600"
@@ -917,7 +917,7 @@ export default function OrganisersPage() {
               {statusModalTarget.newStatus === "APPROVED" ? <CheckCircle className="w-7 h-7" /> : <Ban className="w-7 h-7" />}
             </div>
 
-            <h3 className="text-xl font-black text-slate-900">
+            <h3 className="text-xl font-semibold text-slate-900">
               {statusModalTarget.newStatus === "APPROVED" ? "Activate Organiser?" : "Suspend Organiser?"}
             </h3>
 
@@ -931,7 +931,7 @@ export default function OrganisersPage() {
               <button
                 type="button"
                 onClick={() => setStatusModalTarget(null)}
-                className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -939,7 +939,7 @@ export default function OrganisersPage() {
                 type="button"
                 disabled={isStatusSubmitting}
                 onClick={handleConfirmStatusChange}
-                className={`px-6 py-2.5 rounded-2xl text-sm font-black transition-all shadow-xs cursor-pointer ${
+                className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-xs cursor-pointer ${
                   statusModalTarget.newStatus === "APPROVED"
                     ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                     : "bg-rose-600 hover:bg-rose-700 text-white"
@@ -957,15 +957,15 @@ export default function OrganisersPage() {
       {/* ========================================================================= */}
       {resetModalTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200/80">
             <div className="flex items-start justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
                   <KeyRound className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900">Reset Password</h3>
-                  <p className="text-sm font-semibold text-slate-400 mt-0.5">
+                  <h3 className="text-base font-semibold text-slate-900">Reset Password</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">
                     {resetModalTarget.businessName}
                   </p>
                 </div>
@@ -979,7 +979,7 @@ export default function OrganisersPage() {
             </div>
 
             {resetError && (
-              <div className="mt-4 p-3 rounded-2xl bg-rose-50 border border-rose-200/80 text-rose-700 text-sm font-bold flex items-center gap-2">
+              <div className="mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-sm font-semibold flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{resetError}</span>
               </div>
@@ -987,7 +987,7 @@ export default function OrganisersPage() {
 
             <form onSubmit={handleConfirmResetPassword} className="mt-5 space-y-4">
               <div>
-                <label className="block text-sm font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                   New Password *
                 </label>
                 <div className="relative">
@@ -996,7 +996,7 @@ export default function OrganisersPage() {
                     required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-2.5 pl-3.5 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all font-mono"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-3.5 pr-10 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-3 focus:ring-amber-400/20 transition-all font-mono"
                     placeholder="Enter new 8+ char password"
                   />
                   <button
@@ -1013,14 +1013,14 @@ export default function OrganisersPage() {
                 <button
                   type="button"
                   onClick={() => setResetModalTarget(null)}
-                  className="px-5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isResetSubmitting}
-                  className="px-6 py-2.5 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-black text-slate-950 transition-all shadow-xs disabled:opacity-60 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-semibold text-slate-950 transition-all shadow-xs disabled:opacity-60 cursor-pointer"
                 >
                   {isResetSubmitting ? "Changing..." : "Confirm & Change Password"}
                 </button>
@@ -1034,24 +1034,24 @@ export default function OrganisersPage() {
       {/* ===== MODAL: PREVIEW & COPY RESET PASSWORD ===== */}
       {/* ========================================================================= */}
       {savedResetCredentials && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center mx-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200/80 text-center space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center mx-auto">
               <CheckCircle className="w-6 h-6" />
             </div>
 
             <div>
-              <h3 className="text-xl font-black text-slate-900">Password Changed</h3>
-              <p className="text-xs text-slate-400 font-bold mt-0.5">
+              <h3 className="text-xl font-semibold text-slate-900">Password Changed</h3>
+              <p className="text-[13px] text-slate-400 font-semibold mt-0.5">
                 {savedResetCredentials.businessName}
               </p>
             </div>
 
             <div className="text-left space-y-1.5 pt-1">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-400">
+              <label className="text-[13px] font-semibold uppercase tracking-wider text-slate-400">
                 New Password
               </label>
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80 font-mono text-sm font-bold text-slate-900">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80 font-mono text-sm font-semibold text-slate-900">
                 <span className="select-all tracking-wider">{savedResetCredentials.password}</span>
                 <button
                   type="button"
@@ -1060,12 +1060,12 @@ export default function OrganisersPage() {
                     setCopiedResetPassword(true);
                     setTimeout(() => setCopiedResetPassword(false), 2000);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition shadow-2xs active:scale-95 cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-[13px] font-semibold text-slate-700 hover:bg-slate-100 transition shadow-2xs active:scale-95 cursor-pointer"
                 >
                   {copiedResetPassword ? (
                     <>
                       <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="text-emerald-700 font-extrabold">Copied!</span>
+                      <span className="text-emerald-700 font-semibold">Copied!</span>
                     </>
                   ) : (
                     <>
@@ -1078,7 +1078,7 @@ export default function OrganisersPage() {
             </div>
 
             {/* Warning Message */}
-            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs font-bold leading-relaxed text-left flex items-start gap-2.5">
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-[13px] font-semibold leading-relaxed text-left flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <p>
                 Store the password safely. After closing this window, this password will not be shown again.
@@ -1092,7 +1092,7 @@ export default function OrganisersPage() {
                 setCopiedResetPassword(false);
                 showToast("Password saved and stored safely.");
               }}
-              className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition cursor-pointer active:scale-98"
+              className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer active:scale-98"
             >
               Done / I Have Stored The Password
             </button>
@@ -1105,12 +1105,12 @@ export default function OrganisersPage() {
       {/* ========================================================================= */}
       {deleteModalTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 border bg-rose-50 border-rose-200/60 text-rose-600">
+          <div className="bg-white rounded-xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200/80 text-center">
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4 border bg-rose-50 border-rose-200/60 text-rose-600">
               <Trash2 className="w-6 h-6" />
             </div>
             
-            <h3 className="text-xl font-black text-slate-900">Delete Organiser</h3>
+            <h3 className="text-xl font-semibold text-slate-900">Delete Organiser</h3>
             <p className="text-sm font-semibold text-slate-500 mt-2 mb-6 leading-relaxed">
               Are you absolutely sure you want to permanently delete the account for <strong className="text-slate-800">{deleteModalTarget.businessName}</strong>? This action cannot be undone.
             </p>
@@ -1119,14 +1119,14 @@ export default function OrganisersPage() {
               <button
                 onClick={() => setDeleteModalTarget(null)}
                 disabled={isDeleteSubmitting}
-                className="flex-1 py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-semibold text-slate-700 transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={isDeleteSubmitting}
-                className="flex-1 py-3 px-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-sm font-black text-white flex items-center justify-center gap-2 transition-all shadow-md shadow-rose-600/20 cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all shadow-md shadow-rose-600/20 cursor-pointer disabled:opacity-50"
               >
                 {isDeleteSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 Yes, Delete

@@ -161,10 +161,10 @@ export default function SocialLinksAdminPage() {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
               Social Media Links
             </h1>
-            <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-black uppercase tracking-wider">
+            <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-[13px] font-semibold uppercase tracking-wider">
               Footer Config
             </span>
           </div>
@@ -176,7 +176,7 @@ export default function SocialLinksAdminPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={handleResetDefaults}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition-all cursor-pointer"
             title="Reset to default development homepages"
           >
             <RefreshCw className="w-4 h-4" />
@@ -186,7 +186,7 @@ export default function SocialLinksAdminPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-extrabold shadow-md shadow-amber-500/25 transition-all cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-semibold shadow-md shadow-amber-500/25 transition-all cursor-pointer disabled:opacity-50"
           >
             {saving ? (
               <>
@@ -205,35 +205,35 @@ export default function SocialLinksAdminPage() {
 
       {/* Global Alerts */}
       {successMsg && (
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-bold shadow-xs animate-in fade-in">
+        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold shadow-xs">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
       {errorMsg && (
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold shadow-xs animate-in fade-in">
+        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-semibold shadow-xs">
           <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* ===== LIVE FOOTER PREVIEW (DARK MODE) ===== */}
-      <section className="rounded-3xl bg-[#1e1e24] p-6 sm:p-8 text-white border border-slate-800 shadow-xl relative overflow-hidden">
+      <section className="rounded-xl bg-[#1e1e24] p-6 sm:p-8 text-white border border-slate-800 shadow-xl relative overflow-hidden">
         <div className="flex items-center justify-between pb-6 border-b border-slate-700/60 mb-6">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+            <span className="text-[13px] font-semibold uppercase tracking-wider text-slate-400">
               Live User-Side Footer Preview
             </span>
           </div>
-          <span className="text-xs font-bold text-slate-400">
+          <span className="text-[13px] text-slate-500">
             {activeLinks.length} Active {activeLinks.length === 1 ? "Link" : "Links"} Visible
           </span>
         </div>
 
         {/* Realistic Footer Snippet */}
         <div className="flex flex-col items-center justify-center py-6">
-          <div className="text-3xl font-black tracking-tighter text-white mb-6">
+          <div className="text-2xl font-semibold tracking-tighter text-white mb-6">
             Mytix<span className="text-red-500">.</span>
           </div>
 
@@ -250,11 +250,11 @@ export default function SocialLinksAdminPage() {
                   className="group flex flex-col items-center transition-transform hover:-translate-y-1"
                 >
                   {/* Circle Icon with first letter */}
-                  <div className="w-11 h-11 rounded-full border border-gray-600 bg-[#2d2d34] flex items-center justify-center font-black text-white text-base shadow-md group-hover:bg-white group-hover:text-[#1e1e24] group-hover:border-white transition-all">
+                  <div className="w-11 h-11 rounded-full border border-gray-600 bg-[#2d2d34] flex items-center justify-center font-semibold text-white text-base shadow-md group-hover:bg-white group-hover:text-[#1e1e24] group-hover:border-white transition-all">
                     {item.letter || item.name.charAt(0).toUpperCase()}
                   </div>
                   {/* Text label underneath */}
-                  <span className="mt-2 text-xs font-medium text-gray-400 group-hover:text-white transition-colors lowercase">
+                  <span className="mt-2 text-[13px] font-medium text-gray-400 group-hover:text-white transition-colors lowercase">
                     {item.name}
                   </span>
                 </a>
@@ -265,11 +265,11 @@ export default function SocialLinksAdminPage() {
       </section>
 
       {/* ===== LIST & MANAGEMENT CARD ===== */}
-      <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] space-y-6">
+      <section className="bg-white rounded-xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
-            <h2 className="text-lg font-black text-slate-900">Manage Social Links</h2>
-            <p className="text-sm font-semibold text-slate-400">
+            <h2 className="text-lg font-semibold text-slate-900">Manage Social Links</h2>
+            <p className="text-sm text-slate-500">
               Configure URLs, circular letter badges, and toggle visibility for each platform.
             </p>
           </div>
@@ -277,7 +277,7 @@ export default function SocialLinksAdminPage() {
           <button
             type="button"
             onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-extrabold text-sm border border-amber-200/80 transition-all cursor-pointer self-start sm:self-auto"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 font-semibold text-sm border border-amber-200/80 transition-all cursor-pointer self-start sm:self-auto"
           >
             <Plus className="w-4 h-4 text-amber-600" />
             <span>Add Social Link</span>
@@ -286,15 +286,15 @@ export default function SocialLinksAdminPage() {
 
         {/* Add Form Accordion */}
         {showAddForm && (
-          <form onSubmit={handleAddLink} className="p-5 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-4 animate-in fade-in">
+          <form onSubmit={handleAddLink} className="p-5 rounded-xl bg-amber-50/60 border border-amber-200/80 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+              <span className="text-[13px] font-semibold uppercase tracking-wider text-amber-900">
                 New Social Media Link
               </span>
               <button 
                 type="button" 
                 onClick={() => setShowAddForm(false)}
-                className="text-xs font-bold text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="text-[13px] text-slate-500 hover:text-slate-600 cursor-pointer"
               >
                 Cancel
               </button>
@@ -302,7 +302,7 @@ export default function SocialLinksAdminPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
               <div className="sm:col-span-4">
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                   Platform Name (e.g. facebook, discord, tiktok)
                 </label>
                 <input
@@ -311,12 +311,12 @@ export default function SocialLinksAdminPage() {
                   placeholder="e.g. facebook"
                   value={newPlatform}
                   onChange={(e) => handlePlatformNameChange(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                   Circle Letter (Icon)
                 </label>
                 <input
@@ -325,12 +325,12 @@ export default function SocialLinksAdminPage() {
                   placeholder="F"
                   value={newLetter}
                   onChange={(e) => setNewLetter(e.target.value.toUpperCase())}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-black text-center text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 uppercase"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-center text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 uppercase"
                 />
               </div>
 
               <div className="sm:col-span-6">
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                   Target URL (Homepage or Profile Link)
                 </label>
                 <input
@@ -347,7 +347,7 @@ export default function SocialLinksAdminPage() {
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm shadow-sm transition-all cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm shadow-sm transition-all cursor-pointer"
               >
                 Add to List
               </button>
@@ -359,20 +359,20 @@ export default function SocialLinksAdminPage() {
         {loading ? (
           <div className="py-12 flex flex-col items-center justify-center text-slate-400">
             <RefreshCw className="w-8 h-8 animate-spin mb-3 text-amber-500" />
-            <span className="text-sm font-bold">Loading social links...</span>
+            <span className="text-sm font-semibold">Loading social links...</span>
           </div>
         ) : links.length === 0 ? (
           <div className="text-center py-12 text-slate-400">
             <Share2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="font-bold text-slate-600">No social links configured yet.</p>
-            <p className="text-xs text-slate-400 mt-1">Click &quot;Add Social Link&quot; or &quot;Reset Defaults&quot; above.</p>
+            <p className="font-semibold text-slate-600">No social links configured yet.</p>
+            <p className="text-[13px] text-slate-400 mt-1">Click &quot;Add Social Link&quot; or &quot;Reset Defaults&quot; above.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {links.map((item, idx) => (
               <div
                 key={item.id}
-                className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl border transition-all ${
+                className={`flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl border transition-all ${
                   item.isActive 
                     ? "bg-slate-50/70 border-slate-200/80" 
                     : "bg-slate-100/50 border-dashed border-slate-200 opacity-60"
@@ -402,15 +402,15 @@ export default function SocialLinksAdminPage() {
                   </div>
 
                   {/* Circular badge */}
-                  <div className="w-10 h-10 rounded-full bg-slate-900 text-white font-black flex items-center justify-center text-sm shadow-xs shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-slate-900 text-white font-semibold flex items-center justify-center text-sm shadow-xs shrink-0">
                     {item.letter || item.name.charAt(0).toUpperCase()}
                   </div>
 
                   <div>
-                    <span className="text-xs font-black uppercase text-slate-800 block">
+                    <span className="text-[13px] font-semibold uppercase text-slate-800 block">
                       {item.name}
                     </span>
-                    <span className="text-[11px] font-semibold text-slate-400 block truncate max-w-[200px] sm:max-w-xs">
+                    <span className="text-[13px] text-slate-500 block truncate max-w-[200px] sm:max-w-xs">
                       {item.url}
                     </span>
                   </div>
@@ -423,7 +423,7 @@ export default function SocialLinksAdminPage() {
                     value={item.name}
                     onChange={(e) => handleUpdateField(item.id, "name", e.target.value)}
                     placeholder="Platform name"
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[13px] font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
                   <input
                     type="text"
@@ -431,14 +431,14 @@ export default function SocialLinksAdminPage() {
                     value={item.letter}
                     onChange={(e) => handleUpdateField(item.id, "letter", e.target.value.toUpperCase())}
                     placeholder="Initial (e.g. F)"
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-black text-center text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 uppercase"
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[13px] font-semibold text-center text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500 uppercase"
                   />
                   <input
                     type="text"
                     value={item.url}
                     onChange={(e) => handleUpdateField(item.id, "url", e.target.value)}
                     placeholder="URL (https://...)"
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[13px] font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
                 </div>
 
@@ -447,7 +447,7 @@ export default function SocialLinksAdminPage() {
                   <button
                     type="button"
                     onClick={() => handleToggleActive(item.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-[13px] font-semibold transition-all cursor-pointer ${
                       item.isActive
                         ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
                         : "bg-slate-200 text-slate-600 hover:bg-slate-300"

@@ -231,22 +231,21 @@ export default function BannersPage() {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-3 duration-500 max-w-7xl pb-24 relative">
+    <div className=" max-w-7xl pb-24 relative">
       {/* Ambient background glow */}
-      <div className="absolute -top-12 -right-12 w-80 h-80 bg-amber-200/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
       {/* ===== HEADER ===== */}
       <header className="mb-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-100/80 border border-amber-200/60 text-amber-900 text-[10px] font-extrabold uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-100/80 border border-amber-200/60 text-amber-900 text-xs font-semibold uppercase tracking-wider">
               Hero & Media Slider
             </span>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">
-            Banners & <span className="text-amber-500">Promotions</span>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            Banners & Promotions
           </h1>
-          <p className="mt-1 text-sm font-semibold text-slate-400">
+          <p className="mt-1 text-sm text-slate-500">
             Manage homepage carousel slides, event features, and hero creative banners.
           </p>
         </div>
@@ -254,7 +253,7 @@ export default function BannersPage() {
         <div className="flex items-center gap-3">
           {/* Toast Notification */}
           {toastMsg && (
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-sm font-bold shadow-2xs animate-in fade-in">
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-sm font-semibold shadow-2xs">
               <Check className="w-3.5 h-3.5 text-emerald-600" />
               <span>{toastMsg}</span>
             </div>
@@ -263,7 +262,7 @@ export default function BannersPage() {
           <button
             onClick={fetchBanners}
             disabled={isRefreshing}
-            className="flex items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white hover:bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
             title="Refresh Banners"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-amber-600" : "text-slate-400"}`} />
@@ -278,7 +277,7 @@ export default function BannersPage() {
               setDisplayOrder(banners.length + 1);
               setIsCreateModalOpen(true);
             }}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-extrabold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
           >
             <Plus className="h-4 w-4 stroke-[2.5]" />
             <span>Add New Banner</span>
@@ -290,79 +289,79 @@ export default function BannersPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         
         {/* Card 1: Total Banners */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center">
               <ImageIcon className="w-6 h-6 text-amber-600" />
             </div>
-            <span className="text-[10px] font-extrabold text-amber-900 bg-[#FFF9EB] px-2.5 py-1 rounded-full border border-amber-200/70">
+            <span className="text-xs font-semibold text-amber-900 bg-[#FFF9EB] px-2.5 py-1 rounded-full border border-amber-200/70">
               Carousel Assets
             </span>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Banners</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">{totalBanners}</p>
-            <p className="text-[11px] font-semibold text-slate-400 mt-1.5">Stored in Supabase bucket</p>
+            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Total Banners</p>
+            <p className="text-3xl font-semibold text-slate-900 mt-1">{totalBanners}</p>
+            <p className="text-[13px] text-slate-500 mt-1.5">Stored in Supabase bucket</p>
           </div>
         </div>
 
         {/* Card 2: Active Banners */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50/90 border border-emerald-200/60 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50/90 border border-emerald-200/60 flex items-center justify-center">
               <Eye className="w-6 h-6 text-emerald-600" />
             </div>
-            <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
+            <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
               Live on Site
             </span>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Slides</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">{activeBanners}</p>
-            <p className="text-[11px] font-bold text-emerald-600 mt-1.5 flex items-center gap-1">
+            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Active Slides</p>
+            <p className="text-3xl font-semibold text-slate-900 mt-1">{activeBanners}</p>
+            <p className="text-[13px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1">
               <span>● Visible to users</span>
             </p>
           </div>
         </div>
 
         {/* Card 3: Inactive Drafts */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200/60 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200/60 flex items-center justify-center">
               <EyeOff className="w-6 h-6 text-slate-500" />
             </div>
-            <span className="text-[10px] font-extrabold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200">
+            <span className="text-xs font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200">
               Draft / Hidden
             </span>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Inactive Slides</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">{inactiveBanners}</p>
-            <p className="text-[11px] font-semibold text-slate-400 mt-1.5">Offline or scheduled</p>
+            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Inactive Slides</p>
+            <p className="text-3xl font-semibold text-slate-900 mt-1">{inactiveBanners}</p>
+            <p className="text-[13px] text-slate-500 mt-1.5">Offline or scheduled</p>
           </div>
         </div>
 
         {/* Card 4: Standard Aspect Ratio */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+        <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50/90 border border-blue-200/60 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-blue-50/90 border border-blue-200/60 flex items-center justify-center">
               <Layers className="w-6 h-6 text-blue-600" />
             </div>
-            <span className="text-[10px] font-extrabold text-blue-800 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200/60">
+            <span className="text-xs font-semibold text-blue-800 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200/60">
               16:9 Standard
             </span>
           </div>
           <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Format Ratio</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">1920 × 1080</p>
-            <p className="text-[11px] font-semibold text-slate-400 mt-1.5">Optimal HD desktop fit</p>
+            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Format Ratio</p>
+            <p className="text-3xl font-semibold text-slate-900 mt-1">1920 × 1080</p>
+            <p className="text-[13px] text-slate-500 mt-1.5">Optimal HD desktop fit</p>
           </div>
         </div>
 
       </div>
 
       {/* ===== SEARCH & FILTER BAR ===== */}
-      <div className="bg-white rounded-3xl p-5 mb-7 border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="bg-white rounded-xl p-5 mb-7 border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         
         {/* Search */}
         <div className="relative flex-1">
@@ -372,7 +371,7 @@ export default function BannersPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search banners by title or campaign name..."
-            className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 pl-11 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
+            className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 py-3 pl-11 pr-4 text-sm font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20 transition-all"
           />
         </div>
 
@@ -386,9 +385,9 @@ export default function BannersPage() {
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
-              className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all shrink-0 cursor-pointer ${
+              className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shrink-0 cursor-pointer ${
                 statusFilter === tab.id
-                  ? "bg-[#FFF9EB] text-amber-950 border border-amber-300/80 shadow-2xs font-extrabold"
+                  ? "bg-[#FFF9EB] text-amber-950 border border-amber-300/80 shadow-2xs font-semibold"
                   : "text-slate-500 hover:bg-slate-50 border border-transparent"
               }`}
             >
@@ -401,24 +400,24 @@ export default function BannersPage() {
 
       {/* ===== BANNERS GRID ===== */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
+        <div className="flex flex-col items-center justify-center py-24 bg-white rounded-xl border border-slate-200/80 shadow-xs">
           <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
-          <p className="text-sm font-bold text-slate-500">Loading media banners...</p>
+          <p className="text-sm font-semibold text-slate-500">Loading media banners...</p>
         </div>
       ) : filteredBanners.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] p-6 text-center">
-          <div className="w-16 h-16 rounded-3xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 mb-4 shadow-2xs">
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-slate-200/80 shadow-xs p-6 text-center">
+          <div className="w-16 h-16 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 mb-4 shadow-2xs">
             <ImageIcon className="w-8 h-8" />
           </div>
-          <h3 className="text-base font-black text-slate-900 mb-1">No Banners Found</h3>
-          <p className="text-sm font-semibold text-slate-400 max-w-sm mb-6">
+          <h3 className="text-base font-semibold text-slate-900 mb-1">No Banners Found</h3>
+          <p className="text-sm text-slate-500 max-w-sm mb-6">
             {searchQuery || statusFilter !== "ALL"
               ? "No banners match your search filter criteria."
               : "No promotional banners have been created yet. Add your first hero slide!"}
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] px-6 py-3 text-sm font-black text-slate-950 transition-all shadow-xs cursor-pointer"
+            className="flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-6 py-3 text-sm font-semibold text-slate-950 transition-all shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Add New Banner
           </button>
@@ -428,7 +427,7 @@ export default function BannersPage() {
           {filteredBanners.map((banner) => (
             <div 
               key={banner.id} 
-              className="group relative bg-white rounded-3xl border border-slate-100 shadow-[0_2px_16px_rgba(0,0,0,0.03)] overflow-hidden flex flex-col hover:border-amber-200/80 hover:shadow-lg transition-all"
+              className="group relative bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col hover:border-amber-200/80 hover:shadow-lg transition-all"
             >
               {/* Image Preview with 16:9 Aspect Ratio */}
               <div className="aspect-video w-full bg-slate-100 relative overflow-hidden">
@@ -447,7 +446,7 @@ export default function BannersPage() {
 
                 {/* Status Badges Overlay */}
                 <div className="absolute top-3 left-3 flex items-center gap-2">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md shadow-sm ${
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider backdrop-blur-md shadow-sm ${
                     banner.isActive 
                       ? "bg-emerald-500/90 text-white border border-emerald-400/50" 
                       : "bg-slate-900/80 text-slate-300 border border-slate-700/50"
@@ -457,7 +456,7 @@ export default function BannersPage() {
                   </span>
 
                   {banner.displayOrder && (
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-slate-900/80 text-white backdrop-blur-md border border-slate-700/50">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-900/80 text-white backdrop-blur-md border border-slate-700/50">
                       Order #{banner.displayOrder}
                     </span>
                   )}
@@ -468,10 +467,10 @@ export default function BannersPage() {
               {/* Title & Info Card */}
               <div className="p-5 flex items-center justify-between">
                 <div className="min-w-0 pr-3">
-                  <h3 className="text-base font-black text-slate-900 truncate" title={banner.title}>
+                  <h3 className="text-base font-semibold text-slate-900 truncate" title={banner.title}>
                     {banner.title}
                   </h3>
-                  <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
+                  <p className="text-[13px] text-slate-500 mt-0.5">
                     {banner.createdAt
                       ? `Added ${new Date(banner.createdAt).toLocaleDateString("en-AU", { month: "short", day: "numeric", year: "numeric" })}`
                       : "Recently added"}
@@ -510,17 +509,17 @@ export default function BannersPage() {
 
       {/* ===== CREATE BANNER MODAL ===== */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full p-8 border border-slate-200/80 shadow-2xl relative">
             
             <div className="flex items-start justify-between pb-5 border-b border-slate-100 mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
                   <ImageIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 leading-tight">Add New Banner</h3>
-                  <p className="text-sm font-semibold text-slate-400 mt-0.5">Upload a 16:9 hero banner image for homepage carousel.</p>
+                  <h3 className="text-base font-semibold text-slate-900 leading-tight">Add New Banner</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">Upload a 16:9 hero banner image for homepage carousel.</p>
                 </div>
               </div>
               <button 
@@ -535,7 +534,7 @@ export default function BannersPage() {
               
               {/* Title */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Banner Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -544,13 +543,13 @@ export default function BannersPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Coldplay Music of the Spheres World Tour"
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20"
+                  className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20"
                 />
               </div>
 
               {/* Display Order */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Display Order Priority
                 </label>
                 <input
@@ -558,18 +557,18 @@ export default function BannersPage() {
                   min={1}
                   value={displayOrder}
                   onChange={(e) => setDisplayOrder(Number(e.target.value))}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                 />
               </div>
 
               {/* Image Upload Zone */}
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Banner Image (16:9) <span className="text-red-500">*</span>
                 </label>
 
                 {imagePreview ? (
-                  <div className="relative rounded-2xl overflow-hidden aspect-video border border-slate-200 shadow-2xs group mb-2">
+                  <div className="relative rounded-xl overflow-hidden aspect-video border border-slate-200 shadow-2xs group mb-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                     <button
@@ -585,8 +584,8 @@ export default function BannersPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border-2 border-dashed border-slate-200/90 bg-slate-50/40 p-5 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors">
-                    <div className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 shadow-2xs mb-2">
+                  <div className="rounded-xl border-2 border-dashed border-slate-200/90 bg-slate-50/40 p-5 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors">
+                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 shadow-2xs mb-2">
                       <UploadCloud className="w-5 h-5 text-amber-500" />
                     </div>
                     <input
@@ -600,9 +599,9 @@ export default function BannersPage() {
                         setImageFile(file);
                         setImagePreview(URL.createObjectURL(file));
                       }}
-                      className="text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-bold file:bg-[#FFF9EB] file:text-amber-900 cursor-pointer"
+                      className="text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[13px] file:font-semibold file:bg-[#FFF9EB] file:text-amber-900 cursor-pointer"
                     />
-                    <p className="text-[10px] font-semibold text-slate-400 mt-2">
+                    <p className="text-xs text-slate-500 mt-2">
                       Formats: JPG, PNG, WEBP • Max 5MB • 1920×1080 recommended
                     </p>
                   </div>
@@ -614,14 +613,14 @@ export default function BannersPage() {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 py-3.5 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
+                  className="flex-1 rounded-xl bg-slate-100 hover:bg-slate-200 py-3.5 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !imageFile}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] py-3.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] py-3.5 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
@@ -643,17 +642,17 @@ export default function BannersPage() {
 
       {/* ===== EDIT BANNER MODAL ===== */}
       {editingBanner && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-8 border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full p-8 border border-slate-200/80 shadow-2xl relative">
             
             <div className="flex items-start justify-between pb-5 border-b border-slate-100 mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
                   <Edit2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 leading-tight">Edit Banner</h3>
-                  <p className="text-sm font-semibold text-slate-400 mt-0.5">Update title, image file, or order sequence.</p>
+                  <h3 className="text-base font-semibold text-slate-900 leading-tight">Edit Banner</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">Update title, image file, or order sequence.</p>
                 </div>
               </div>
               <button 
@@ -667,7 +666,7 @@ export default function BannersPage() {
             <form onSubmit={handleUpdate} className="space-y-5">
               
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Banner Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -675,12 +674,12 @@ export default function BannersPage() {
                   required
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20"
+                  className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-400/20"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Display Order Priority
                 </label>
                 <input
@@ -688,20 +687,20 @@ export default function BannersPage() {
                   min={1}
                   value={editDisplayOrder}
                   onChange={(e) => setEditDisplayOrder(Number(e.target.value))}
-                  className="w-full rounded-2xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
+                  className="w-full rounded-xl border border-slate-200/80 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+                <label className="block text-sm font-semibold text-slate-800 mb-2">
                   Banner Image (16:9)
                 </label>
 
                 {editImagePreview && (
-                  <div className="relative rounded-2xl overflow-hidden aspect-video border border-slate-200 shadow-2xs group mb-3">
+                  <div className="relative rounded-xl overflow-hidden aspect-video border border-slate-200 shadow-2xs group mb-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={editImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                    <span className="absolute bottom-2 left-2 px-2.5 py-1 rounded-full bg-slate-900/80 text-white text-[10px] font-bold">
+                    <span className="absolute bottom-2 left-2 px-2.5 py-1 rounded-full bg-slate-900/80 text-white text-xs font-semibold">
                       {editImageFile ? "New Image Selected" : "Current Active Image"}
                     </span>
                   </div>
@@ -717,9 +716,9 @@ export default function BannersPage() {
                     setEditImageFile(file);
                     setEditImagePreview(URL.createObjectURL(file));
                   }}
-                  className="text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-bold file:bg-[#FFF9EB] file:text-amber-900 cursor-pointer"
+                  className="text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[13px] file:font-semibold file:bg-[#FFF9EB] file:text-amber-900 cursor-pointer"
                 />
-                <p className="text-[10px] font-semibold text-slate-400 mt-1.5">
+                <p className="text-xs text-slate-500 mt-1.5">
                   Leave empty to keep the existing image file.
                 </p>
               </div>
@@ -728,14 +727,14 @@ export default function BannersPage() {
                 <button
                   type="button"
                   onClick={() => setEditingBanner(null)}
-                  className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 py-3.5 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
+                  className="flex-1 rounded-xl bg-slate-100 hover:bg-slate-200 py-3.5 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isEditSubmitting}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-[#F6C636] hover:bg-[#E5B523] py-3.5 text-sm font-black text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] py-3.5 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
                 >
                   {isEditSubmitting ? (
                     <>
@@ -757,14 +756,14 @@ export default function BannersPage() {
 
       {/* ===== DELETE CONFIRMATION MODAL ===== */}
       {bannerToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-md w-full p-7 border border-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-200 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-7 border border-slate-200/80 shadow-2xl relative text-center">
             
             <div className="w-14 h-14 rounded-full bg-red-50 border border-red-200/70 text-red-600 flex items-center justify-center mx-auto mb-4 shadow-2xs">
               <Trash2 className="w-6 h-6" />
             </div>
 
-            <h3 className="text-lg font-black text-slate-900 mb-1">Delete Banner?</h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">Delete Banner?</h3>
             <p className="text-sm font-semibold text-slate-500 mb-6 leading-relaxed">
               Are you sure you want to permanently delete &ldquo;<strong className="text-slate-800">{bannerToDelete.title}</strong>&rdquo;? This will immediately remove it from the homepage carousel.
             </p>
@@ -773,7 +772,7 @@ export default function BannersPage() {
               <button
                 type="button"
                 onClick={() => setBannerToDelete(null)}
-                className="flex-1 rounded-2xl bg-slate-100 hover:bg-slate-200 py-3 text-sm font-bold text-slate-700 transition-colors cursor-pointer"
+                className="flex-1 rounded-xl bg-slate-100 hover:bg-slate-200 py-3 text-sm font-semibold text-slate-700 transition-colors cursor-pointer"
               >
                 Keep Banner
               </button>
@@ -781,7 +780,7 @@ export default function BannersPage() {
                 type="button"
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="flex-1 rounded-2xl bg-red-600 hover:bg-red-700 py-3 text-sm font-bold text-white transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 py-3 text-sm font-semibold text-white transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isDeleting ? "Deleting..." : "Yes, Delete"}
               </button>

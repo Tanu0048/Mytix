@@ -80,7 +80,7 @@ export default function Sidebar() {
       />
     )}
     <aside
-      className={`fixed inset-y-0 left-0 z-50 border-r border-slate-100 bg-white flex flex-col justify-between transition-all duration-300 ease-in-out ${
+      className={`fixed inset-y-0 left-0 z-50 border-r border-slate-200/80 bg-white flex flex-col justify-between transition-all duration-300 ease-in-out ${
         isMobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
       } lg:translate-x-0 lg:shadow-none ${isCollapsed ? "w-20" : "w-64"}`}
     >
@@ -90,7 +90,7 @@ export default function Sidebar() {
           <div className="flex flex-col items-center pt-6 pb-4">
             <button
               onClick={toggleSidebar}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200/80 p-1.5 shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer overflow-hidden"
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 border border-amber-200/80 p-1.5 shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer overflow-hidden"
               title="Expand menu (Mytix)"
             >
               <Image 
@@ -134,7 +134,7 @@ export default function Sidebar() {
 
         {/* Navigation items */}
         <nav className={isCollapsed ? "px-2 mt-2" : "px-4 mt-3"}>
-          <ul className="space-y-1.5">
+          <ul className="space-y-0.5">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive =
@@ -147,9 +147,9 @@ export default function Sidebar() {
                     <Link
                       href={item.href}
                       scroll={false}
-                      className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-all duration-200 ease-in-out active:scale-95 ${
+                      className={`flex h-12 w-12 items-center justify-center rounded-xl border transition-all duration-200 ease-in-out active:scale-95 ${
                         isActive
-                          ? "bg-[#FFF9EB] text-amber-600 border-amber-300/80 shadow-2xs font-extrabold"
+                          ? "bg-[#FFF9EB] text-amber-600 border-amber-300/80 shadow-2xs font-semibold"
                           : "text-slate-400 border-transparent hover:bg-slate-50 hover:text-slate-900"
                       }`}
                     >
@@ -161,7 +161,7 @@ export default function Sidebar() {
                     </Link>
 
                     {/* Floating Tooltip */}
-                    <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-sm font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
+                    <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-sm font-semibold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
                       {item.name}
                     </div>
                   </li>
@@ -174,10 +174,10 @@ export default function Sidebar() {
                     href={item.href}
                     scroll={false}
                     onClick={closeMobile}
-                    className={`group relative flex items-center rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-150 select-none ${
+                    className={`group relative flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 select-none ${
                       isActive
-                        ? "bg-amber-50 text-amber-900 border border-amber-200/70"
-                        : "text-slate-600 border border-transparent hover:bg-slate-50 hover:text-slate-900"
+                        ? "bg-amber-50 text-amber-900"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
                     <Icon
@@ -201,11 +201,11 @@ export default function Sidebar() {
           <div className="relative group">
             <button
               onClick={() => router.push("/events/create")}
-              className="w-11 h-11 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 flex items-center justify-center text-amber-700 transition-all shadow-2xs hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-11 h-11 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 flex items-center justify-center text-amber-700 transition-all shadow-2xs hover:scale-105 active:scale-95 cursor-pointer"
             >
               <Crown className="w-5 h-5" />
             </button>
-            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-sm font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
+            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-sm font-semibold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
               Create Event
             </div>
           </div>
@@ -214,11 +214,11 @@ export default function Sidebar() {
           <div className="relative group">
             <button
               onClick={handleLogout}
-              className="w-11 h-11 rounded-2xl border border-transparent hover:bg-red-50 text-slate-400 hover:text-red-500 flex items-center justify-center transition-all cursor-pointer"
+              className="w-11 h-11 rounded-xl border border-transparent hover:bg-red-50 text-slate-400 hover:text-red-500 flex items-center justify-center transition-all cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </button>
-            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-sm font-bold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
+            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900 text-white text-sm font-semibold rounded-xl whitespace-nowrap shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200 z-50">
               Sign Out
             </div>
           </div>
@@ -230,7 +230,7 @@ export default function Sidebar() {
           {/* Sign Out Button */}
           <button 
             onClick={handleLogout}
-            className="group flex w-full items-center rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer"
+            className="group flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer"
           >
             <LogOut className="mr-2.5 h-4 w-4 text-rose-500" />
             <span>Sign Out</span>

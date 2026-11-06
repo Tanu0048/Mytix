@@ -384,18 +384,18 @@ export default function MobileScannerPage() {
       <header className="px-3.5 py-2.5 sm:px-4 sm:py-3 bg-[#0d131f] border-b border-slate-800/90 space-y-2.5 shrink-0 z-30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+            <div className="w-7 h-7 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-semibold text-[13px] shrink-0 shadow-xs">
               M
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <p className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-amber-400 truncate">
+                <p className="text-[13px] sm:text-[13px] font-semibold uppercase tracking-wider text-amber-400 truncate">
                   Turnstile Scanner
                 </p>
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
               </div>
-              <p className="text-[10px] sm:text-[11px] font-bold text-slate-300 truncate">
-                Staff: <span className="text-white font-extrabold">{user?.staffId || user?.name}</span>
+              <p className="text-xs sm:text-[13px] font-semibold text-slate-300 truncate">
+                Staff: <span className="text-white font-semibold">{user?.staffId || user?.name}</span>
               </p>
             </div>
           </div>
@@ -403,7 +403,7 @@ export default function MobileScannerPage() {
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={handleLogout}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer flex items-center gap-1 text-[11px] font-bold active:scale-95"
+              className="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer flex items-center gap-1 text-[13px] font-semibold active:scale-95"
               title="Sign Out"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -421,7 +421,7 @@ export default function MobileScannerPage() {
                 setSelectedEventId(e.target.value);
                 loadStats(e.target.value);
               }}
-              className="w-full bg-[#161f31] border border-slate-700/80 rounded-xl px-2.5 py-2 text-xs font-bold text-white outline-none focus:border-amber-400 truncate"
+              className="w-full bg-[#161f31] border border-slate-700/80 rounded-xl px-2.5 py-2 text-[13px] font-semibold text-white outline-none focus:border-amber-400 truncate"
             >
               {events.map((ev) => (
                 <option key={ev.id} value={ev.id} className="bg-slate-900 text-white">
@@ -431,7 +431,7 @@ export default function MobileScannerPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-slate-800/90 border border-slate-700/60 text-slate-200 text-xs font-black shrink-0">
+          <div className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-slate-800/90 border border-slate-700/60 text-slate-200 text-[13px] font-semibold shrink-0">
             <DoorOpen className="w-3.5 h-3.5 text-amber-400" />
             <span className="truncate max-w-[85px]">{gateName}</span>
           </div>
@@ -440,9 +440,9 @@ export default function MobileScannerPage() {
         {/* Check-In Progress Bar */}
         {stats && (
           <div className="space-y-1">
-            <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-bold">
+            <div className="flex items-center justify-between text-xs sm:text-[13px] font-semibold">
               <span className="text-slate-400">Venue Capacity:</span>
-              <span className="text-amber-400 font-extrabold">
+              <span className="text-amber-400 font-semibold">
                 {stats.checkedInCount} / {stats.totalIssuedTickets} ({stats.checkInRatePercent})
               </span>
             </div>
@@ -464,14 +464,14 @@ export default function MobileScannerPage() {
           <div className="flex-1 flex flex-col justify-between space-y-3 min-h-0">
             
             {/* Camera Frame Container */}
-            <div className="relative flex-1 w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-black border-2 border-slate-800 flex items-center justify-center min-h-0 shadow-inner">
+            <div className="relative flex-1 w-full rounded-xl sm:rounded-xl overflow-hidden bg-black border-2 border-slate-800 flex items-center justify-center min-h-0 shadow-inner">
               
               {/* HTML5 QR Code Video Target */}
               <div id="qr-camera-viewport" className="w-full h-full object-cover [&>video]:w-full [&>video]:h-full [&>video]:object-cover" />
 
               {/* Glowing Corner Overlays & Target Frame */}
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                <div className="relative w-[min(250px,70vw)] h-[min(250px,70vw)] border-2 border-amber-400/40 rounded-3xl shadow-[0_0_40px_rgba(251,191,36,0.15)] flex items-center justify-center">
+                <div className="relative w-[min(250px,70vw)] h-[min(250px,70vw)] border-2 border-amber-400/40 rounded-xl shadow-[0_0_40px_rgba(251,191,36,0.15)] flex items-center justify-center">
                   
                   {/* Neon Amber Targeting Corners */}
                   <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-amber-400 rounded-tl-xl" />
@@ -492,11 +492,11 @@ export default function MobileScannerPage() {
                   <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center">
                     <Camera className="w-6 h-6" />
                   </div>
-                  <h4 className="font-bold text-sm text-white">Camera Permission Needed</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed max-w-xs">{cameraError}</p>
+                  <h4 className="font-semibold text-sm text-white">Camera Permission Needed</h4>
+                  <p className="text-[13px] text-slate-400 leading-relaxed max-w-xs">{cameraError}</p>
                   <button
                     onClick={startCamera}
-                    className="px-5 py-2.5 rounded-xl bg-amber-400 text-slate-950 font-black text-xs hover:bg-amber-300 transition active:scale-95 cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl bg-amber-400 text-slate-950 font-semibold text-[13px] hover:bg-amber-300 transition active:scale-95 cursor-pointer"
                   >
                     Allow Camera & Retry
                   </button>
@@ -510,7 +510,7 @@ export default function MobileScannerPage() {
                     setScanResult(null);
                     scanLockRef.current = false;
                   }}
-                  className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-5 text-center animate-in fade-in duration-150 cursor-pointer ${
+                  className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-5 text-center cursor-pointer ${
                     scanResult.granted 
                       ? "bg-emerald-950/95 border-4 border-emerald-400" 
                       : scanResult.status === "ALREADY_USED"
@@ -529,36 +529,36 @@ export default function MobileScannerPage() {
                       </div>
                     )}
 
-                    <h2 className="text-2xl font-black tracking-tight text-white uppercase">
+                    <h2 className="text-2xl font-semibold tracking-tight text-white uppercase">
                       {scanResult.title}
                     </h2>
 
                     {scanResult.attendeeName && (
-                      <div className="p-3 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                        <p className="text-sm font-extrabold text-white">{scanResult.attendeeName}</p>
+                      <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                        <p className="text-sm font-semibold text-white">{scanResult.attendeeName}</p>
                         {scanResult.ticketType && (
-                          <p className="text-xs font-bold text-amber-300">{scanResult.ticketType}</p>
+                          <p className="text-[13px] font-semibold text-amber-300">{scanResult.ticketType}</p>
                         )}
                         {scanResult.seat && (
-                          <p className="text-[11px] font-semibold text-slate-300">Seat: {scanResult.seat}</p>
+                          <p className="text-[13px] font-semibold text-slate-300">Seat: {scanResult.seat}</p>
                         )}
                       </div>
                     )}
 
                     {scanResult.previouslyUsedAt && (
-                      <div className="p-2.5 rounded-xl bg-rose-900/40 border border-rose-500/30 text-rose-200 text-xs space-y-0.5">
-                        <p className="font-bold">Scanned at: {new Date(scanResult.previouslyUsedAt).toLocaleTimeString()}</p>
+                      <div className="p-2.5 rounded-xl bg-rose-900/40 border border-rose-500/30 text-rose-200 text-[13px] space-y-0.5">
+                        <p className="font-semibold">Scanned at: {new Date(scanResult.previouslyUsedAt).toLocaleTimeString()}</p>
                         {scanResult.previouslyUsedGate && (
-                          <p className="text-[11px] text-rose-300">Gate: {scanResult.previouslyUsedGate}</p>
+                          <p className="text-[13px] text-rose-300">Gate: {scanResult.previouslyUsedGate}</p>
                         )}
                       </div>
                     )}
 
-                    <p className="text-xs text-slate-200 font-medium">
+                    <p className="text-[13px] text-slate-200 font-medium">
                       {scanResult.message}
                     </p>
 
-                    <p className="text-[11px] font-extrabold text-white/70 pt-2 underline decoration-dashed">
+                    <p className="text-[13px] font-semibold text-white/70 pt-2 underline decoration-dashed">
                       Tap anywhere to scan next
                     </p>
                   </div>
@@ -572,7 +572,7 @@ export default function MobileScannerPage() {
               <button
                 type="button"
                 onClick={toggleTorch}
-                className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold border transition cursor-pointer active:scale-95 ${
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold border transition cursor-pointer active:scale-95 ${
                   torchOn 
                     ? "bg-amber-400 text-slate-950 border-amber-400 shadow-md"
                     : "bg-slate-900/90 text-slate-300 border-slate-800 hover:bg-slate-800"
@@ -585,7 +585,7 @@ export default function MobileScannerPage() {
               <button
                 type="button"
                 onClick={() => setSoundEnabled(!soundEnabled)}
-                className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold border transition cursor-pointer active:scale-95 ${
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold border transition cursor-pointer active:scale-95 ${
                   soundEnabled 
                     ? "bg-slate-900/90 text-slate-300 border-slate-800"
                     : "bg-rose-950/60 text-rose-300 border-rose-800"
@@ -614,7 +614,7 @@ export default function MobileScannerPage() {
                   placeholder="Guest name or Order ID..."
                   autoCapitalize="none"
                   autoCorrect="off"
-                  className="w-full bg-[#161f31] border border-slate-700/80 rounded-2xl pl-10 pr-8 py-3 text-base sm:text-xs font-semibold text-white outline-none focus:border-amber-400 transition"
+                  className="w-full bg-[#161f31] border border-slate-700/80 rounded-xl pl-10 pr-8 py-3 text-base sm:text-[13px] font-semibold text-white outline-none focus:border-amber-400 transition"
                 />
                 {searchQuery && (
                   <button
@@ -623,7 +623,7 @@ export default function MobileScannerPage() {
                       setSearchQuery("");
                       setSearchResults([]);
                     }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 text-xs"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 text-[13px]"
                   >
                     ✕
                   </button>
@@ -632,7 +632,7 @@ export default function MobileScannerPage() {
               <button
                 type="submit"
                 disabled={isSearching}
-                className="px-4 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition shrink-0 cursor-pointer active:scale-95"
+                className="px-4 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[13px] font-semibold transition shrink-0 cursor-pointer active:scale-95"
               >
                 {isSearching ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Search"}
               </button>
@@ -643,8 +643,8 @@ export default function MobileScannerPage() {
               {searchResults.length === 0 ? (
                 <div className="py-12 sm:py-16 text-center text-slate-500 space-y-2">
                   <UserCheck className="w-8 h-8 mx-auto text-slate-600" />
-                  <p className="text-xs font-bold text-slate-400">Search Attendees by Name or Order ID</p>
-                  <p className="text-[11px] text-slate-600 max-w-xs mx-auto">
+                  <p className="text-[13px] text-slate-500">Search Attendees by Name or Order ID</p>
+                  <p className="text-[13px] text-slate-600 max-w-xs mx-auto">
                     Use this lookup if an attendee&apos;s phone battery died or their screen is cracked.
                   </p>
                 </div>
@@ -652,19 +652,19 @@ export default function MobileScannerPage() {
                 searchResults.map((ticket) => (
                   <div 
                     key={ticket.id}
-                    className="p-3.5 rounded-2xl bg-[#0f172a] border border-slate-800 flex items-center justify-between gap-3 shadow-xs"
+                    className="p-3.5 rounded-xl bg-[#0f172a] border border-slate-800 flex items-center justify-between gap-3 shadow-xs"
                   >
                     <div className="space-y-0.5 min-w-0">
-                      <p className="text-xs font-extrabold text-white truncate">{ticket.attendeeName}</p>
-                      <p className="text-[11px] font-bold text-amber-400 truncate">{ticket.ticketTypeName}</p>
+                      <p className="text-[13px] font-semibold text-white truncate">{ticket.attendeeName}</p>
+                      <p className="text-[13px] font-semibold text-amber-400 truncate">{ticket.ticketTypeName}</p>
                       {ticket.seat && (
-                        <p className="text-[10px] text-slate-400">Seat: {ticket.seat}</p>
+                        <p className="text-xs text-slate-400">Seat: {ticket.seat}</p>
                       )}
                     </div>
 
                     <div className="shrink-0">
                       {ticket.status === "USED" ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 text-slate-400 text-[11px] font-bold">
+                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800 text-slate-400 text-[13px] font-semibold">
                           <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
                           Checked In
                         </span>
@@ -673,7 +673,7 @@ export default function MobileScannerPage() {
                           type="button"
                           disabled={checkingInId === ticket.id}
                           onClick={() => handleManualCheckIn(ticket.id)}
-                          className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black transition cursor-pointer active:scale-95 shadow-xs"
+                          className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[13px] font-semibold transition cursor-pointer active:scale-95 shadow-xs"
                         >
                           {checkingInId === ticket.id ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -698,7 +698,7 @@ export default function MobileScannerPage() {
         <button
           type="button"
           onClick={() => setActiveTab("SCAN")}
-          className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black transition cursor-pointer active:scale-95 ${
+          className={`flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition cursor-pointer active:scale-95 ${
             activeTab === "SCAN"
               ? "bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20"
               : "bg-slate-900 text-slate-400 hover:text-white"
@@ -711,7 +711,7 @@ export default function MobileScannerPage() {
         <button
           type="button"
           onClick={() => setActiveTab("SEARCH")}
-          className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-black transition cursor-pointer active:scale-95 ${
+          className={`flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition cursor-pointer active:scale-95 ${
             activeTab === "SEARCH"
               ? "bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20"
               : "bg-slate-900 text-slate-400 hover:text-white"

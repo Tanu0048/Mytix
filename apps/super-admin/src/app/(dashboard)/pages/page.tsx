@@ -209,10 +209,10 @@ export default function PagesCMSPage() {
   if (user && user.role !== "ADMIN") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
-        <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
+        <div className="w-16 h-16 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
           <ShieldAlert className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Super-Admin Access Required</h2>
+        <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">Super-Admin Access Required</h2>
         <p className="text-slate-500 max-w-md mt-2 text-sm leading-relaxed">
           Only platform Super-Admins have permission to manage website pages.
         </p>
@@ -241,16 +241,16 @@ export default function PagesCMSPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
               Pages CMS
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500">
+            <p className="text-[13px] sm:text-sm text-slate-500">
               Edit About Us, Contact Us, FAQ, and Organiser Requirements displayed on the user website.
             </p>
           </div>
@@ -260,7 +260,7 @@ export default function PagesCMSPage() {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition shadow-sm hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[13px] font-semibold transition shadow-sm hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
         >
           {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {saving ? "Publishing..." : "Publish Changes"}
@@ -269,7 +269,7 @@ export default function PagesCMSPage() {
 
       {/* Alerts */}
       {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-sm font-semibold flex items-center gap-3 animate-in fade-in">
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-sm font-semibold flex items-center gap-3">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -282,12 +282,12 @@ export default function PagesCMSPage() {
       )}
 
       {/* Tab Switcher */}
-      <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-100 shadow-2xs overflow-x-auto">
+      <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200/80 shadow-2xs overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer whitespace-nowrap ${
+            className={`flex-1 px-4 py-2.5 rounded-xl text-[13px] sm:text-sm font-semibold transition cursor-pointer whitespace-nowrap ${
               activeTab === tab.key
                 ? "bg-amber-500 text-slate-950 shadow-sm"
                 : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
@@ -317,8 +317,8 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
   return (
     <div className="space-y-6">
       {/* Hero Section */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Hero Section</h3>
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Hero Section</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField label="Hero Tagline" value={data.heroTagline} onChange={(v) => update("heroTagline", v)} />
           <InputField label="Hero Title" value={data.heroTitle} onChange={(v) => update("heroTitle", v)} />
@@ -328,19 +328,19 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
       </div>
 
       {/* Stats */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Statistics ({data.stats.length})</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Statistics ({data.stats.length})</h3>
           <button
             type="button"
             onClick={() => update("stats", [...data.stats, { label: "New Stat", value: "0", sub: "Description" }])}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> Add Stat
           </button>
         </div>
         {data.stats.map((stat, i) => (
-          <div key={i} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+          <div key={i} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end bg-slate-50/50 rounded-xl p-4 border border-slate-200/80">
             <InputField label="Value" value={stat.value} onChange={(v) => {
               const next = [...data.stats]; next[i] = { ...next[i], value: v }; update("stats", next);
             }} />
@@ -362,8 +362,8 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
       </div>
 
       {/* Narrative */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Narrative Section</h3>
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Narrative Section</h3>
         <InputField label="Section Tagline" value={data.narrativeTagline} onChange={(v) => update("narrativeTagline", v)} />
         <InputField label="Section Title" value={data.narrativeTitle} onChange={(v) => update("narrativeTitle", v)} />
         {data.narrativeParagraphs.map((p, i) => (
@@ -390,31 +390,31 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
         <button
           type="button"
           onClick={() => update("narrativeParagraphs", [...data.narrativeParagraphs, ""])}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" /> Add Paragraph
         </button>
       </div>
 
       {/* Feature Box */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Feature Highlight Box</h3>
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Feature Highlight Box</h3>
         <InputField label="Title" value={data.featureBoxTitle} onChange={(v) => update("featureBoxTitle", v)} />
         <TextareaField label="Description" value={data.featureBoxDescription} onChange={(v) => update("featureBoxDescription", v)} rows={3} />
         <InputField label="Badge Text" value={data.featureBoxBadge} onChange={(v) => update("featureBoxBadge", v)} />
       </div>
 
       {/* Values */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Core Values ({data.values.length})</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Each value is a card shown in the &ldquo;What sets us apart&rdquo; section.</p>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Core Values ({data.values.length})</h3>
+            <p className="text-[13px] text-slate-500 mt-0.5">Each value is a card shown in the &ldquo;What sets us apart&rdquo; section.</p>
           </div>
           <button
             type="button"
             onClick={() => update("values", [...data.values, { title: "New Value", desc: "Description..." }])}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> Add Value
           </button>
@@ -422,7 +422,7 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
         <InputField label="Section Heading" value={data.valuesHeading} onChange={(v) => update("valuesHeading", v)} />
         <InputField label="Section Subheading" value={data.valuesSubheading} onChange={(v) => update("valuesSubheading", v)} />
         {data.values.map((val, i) => (
-          <div key={i} className="bg-slate-50/50 rounded-xl p-4 border border-slate-100 space-y-3">
+          <div key={i} className="bg-slate-50/50 rounded-xl p-4 border border-slate-200/80 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1">
                 <InputField label={`Value ${i + 1} Title`} value={val.title} onChange={(v) => {
@@ -445,8 +445,8 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
       </div>
 
       {/* CTA */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Call to Action Banner</h3>
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Call to Action Banner</h3>
         <InputField label="CTA Title" value={data.ctaTitle} onChange={(v) => update("ctaTitle", v)} />
         <InputField label="CTA Description" value={data.ctaDescription} onChange={(v) => update("ctaDescription", v)} />
       </div>
@@ -472,17 +472,17 @@ function ContactUsEditor({ data, onChange }: { data: ContactUsData; onChange: (d
   return (
     <div className="space-y-6">
       {/* Hero */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Hero Section</h3>
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Hero Section</h3>
         <InputField label="Hero Tagline" value={data.heroTagline} onChange={(v) => update("heroTagline", v)} />
         <InputField label="Hero Title" value={data.heroTitle} onChange={(v) => update("heroTitle", v)} />
         <TextareaField label="Hero Description" value={data.heroDescription} onChange={(v) => update("heroDescription", v)} rows={3} />
       </div>
 
       {/* Contact Cards */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Contact Cards ({data.contactCards.length})</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Contact Cards ({data.contactCards.length})</h3>
           <button
             type="button"
             onClick={() => update("contactCards", [...data.contactCards, {
@@ -493,14 +493,14 @@ function ContactUsEditor({ data, onChange }: { data: ContactUsData; onChange: (d
               badge: "New",
               iconType: "mail"
             }])}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> Add Card
           </button>
         </div>
 
         {data.contactCards.map((card, i) => (
-          <div key={i} className="bg-slate-50/50 rounded-xl p-4 border border-slate-100 space-y-3">
+          <div key={i} className="bg-slate-50/50 rounded-xl p-4 border border-slate-200/80 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <InputField label="Title" value={card.title} onChange={(v) => {
@@ -529,7 +529,7 @@ function ContactUsEditor({ data, onChange }: { data: ContactUsData; onChange: (d
                 const next = [...data.contactCards]; next[i] = { ...next[i], actionHref: v }; update("contactCards", next);
               }} />
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Icon Type</label>
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Icon Type</label>
                 <select
                   value={card.iconType}
                   onChange={(e) => {
@@ -548,19 +548,19 @@ function ContactUsEditor({ data, onChange }: { data: ContactUsData; onChange: (d
       </div>
 
       {/* Office Locations */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Office Locations ({data.offices.length})</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Office Locations ({data.offices.length})</h3>
           <button
             type="button"
             onClick={() => update("offices", [...data.offices, { label: "New Office", address: "Address", city: "City, State, Country" }])}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> Add Office
           </button>
         </div>
         {data.offices.map((office, i) => (
-          <div key={i} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+          <div key={i} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end bg-slate-50/50 rounded-xl p-4 border border-slate-200/80">
             <InputField label="Label" value={office.label} onChange={(v) => {
               const next = [...data.offices]; next[i] = { ...next[i], label: v }; update("offices", next);
             }} />
@@ -592,8 +592,8 @@ function FaqEditor({ data, onChange }: { data: FaqData; onChange: (d: FaqData) =
   return (
     <div className="space-y-6">
       {/* Heading */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">FAQ Section Heading</h3>
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">FAQ Section Heading</h3>
         <InputField label="Heading" value={data.heading} onChange={(v) => update("heading", v)} />
         <InputField label="Subheading" value={data.subheading} onChange={(v) => update("subheading", v)} />
       </div>
@@ -602,15 +602,15 @@ function FaqEditor({ data, onChange }: { data: FaqData; onChange: (d: FaqData) =
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-black text-slate-900 tracking-tight">
+            <h3 className="text-base font-semibold text-slate-900 tracking-tight">
               FAQ Items ({data.items.length})
             </h3>
-            <p className="text-xs text-slate-500">Each item appears as an accordion on the homepage and FAQ section.</p>
+            <p className="text-[13px] text-slate-500">Each item appears as an accordion on the homepage and FAQ section.</p>
           </div>
           <button
             type="button"
             onClick={() => update("items", [...data.items, { question: "New Question?", answer: "Enter the answer here..." }])}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> Add FAQ
           </button>
@@ -619,11 +619,11 @@ function FaqEditor({ data, onChange }: { data: FaqData; onChange: (d: FaqData) =
         {data.items.map((item, index) => (
           <div
             key={index}
-            className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-3"
+            className="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-3"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[13px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
                   Question {index + 1}
                 </label>
                 <input
@@ -632,7 +632,7 @@ function FaqEditor({ data, onChange }: { data: FaqData; onChange: (d: FaqData) =
                   onChange={(e) => {
                     const next = [...data.items]; next[index] = { ...next[index], question: e.target.value }; update("items", next);
                   }}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 text-sm font-bold focus:outline-hidden focus:ring-2 focus:ring-amber-400"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-amber-400"
                 />
               </div>
               <button
@@ -645,7 +645,7 @@ function FaqEditor({ data, onChange }: { data: FaqData; onChange: (d: FaqData) =
               </button>
             </div>
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+              <label className="block text-[13px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
                 Answer
               </label>
               <textarea
@@ -679,10 +679,10 @@ function OrganiserRequirementsEditor({
   return (
     <div className="space-y-6">
       {/* Hero Section */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
           <Sparkles className="w-4 h-4 text-amber-500" />
-          <h2 className="text-base font-black text-slate-900 tracking-tight">Hero Header</h2>
+          <h2 className="text-base font-semibold text-slate-900 tracking-tight">Hero Header</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <InputField
@@ -707,13 +707,13 @@ function OrganiserRequirementsEditor({
       </div>
 
       {/* Requirements List */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h2 className="text-base font-black text-slate-900 tracking-tight">
+            <h2 className="text-base font-semibold text-slate-900 tracking-tight">
               Organiser Eligibility & Requirements
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-[13px] text-slate-400">
               Checklist of criteria, documents, and compliance needed to become an organiser.
             </p>
           </div>
@@ -729,7 +729,7 @@ function OrganiserRequirementsEditor({
                 }
               ])
             }
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-800 transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             Add Requirement
@@ -743,7 +743,7 @@ function OrganiserRequirementsEditor({
               className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-3"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-amber-600 uppercase tracking-wider">
+                <span className="text-[13px] font-semibold text-amber-600 uppercase tracking-wider">
                   Requirement #{index + 1}
                 </span>
                 {data.requirements.length > 1 && (
@@ -804,13 +804,13 @@ function OrganiserRequirementsEditor({
       </div>
 
       {/* Platform Benefits */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h2 className="text-base font-black text-slate-900 tracking-tight">
+            <h2 className="text-base font-semibold text-slate-900 tracking-tight">
               Organiser Benefits & Features
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-[13px] text-slate-400">
               Why creators and promoters choose Mytix (e.g. mobile turnstile, gate staff isolation, fast payouts).
             </p>
           </div>
@@ -822,7 +822,7 @@ function OrganiserRequirementsEditor({
                 { title: "New Benefit", desc: "Description of benefit..." }
               ])
             }
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-800 transition cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             Add Benefit
@@ -836,7 +836,7 @@ function OrganiserRequirementsEditor({
               className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2.5"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-black uppercase text-slate-400">
+                <span className="text-[13px] font-semibold uppercase text-slate-400">
                   Benefit #{index + 1}
                 </span>
                 {data.benefits.length > 1 && (
@@ -877,12 +877,12 @@ function OrganiserRequirementsEditor({
       </div>
 
       {/* Onboarding Steps */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="pb-3 border-b border-slate-100">
-          <h2 className="text-base font-black text-slate-900 tracking-tight">
+          <h2 className="text-base font-semibold text-slate-900 tracking-tight">
             How It Works (3 Steps)
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-[13px] text-slate-400">
             Step-by-step onboarding walkthrough for new organizers.
           </p>
         </div>
@@ -894,10 +894,10 @@ function OrganiserRequirementsEditor({
               className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2"
             >
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center">
+                <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-semibold text-[13px] flex items-center justify-center">
                   {step.step || index + 1}
                 </span>
-                <span className="text-xs font-bold text-slate-600">Step {index + 1}</span>
+                <span className="text-[13px] font-semibold text-slate-600">Step {index + 1}</span>
               </div>
               <InputField
                 label="Title"
@@ -924,10 +924,10 @@ function OrganiserRequirementsEditor({
       </div>
 
       {/* Direct Contact Details */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
+      <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
           <Building2 className="w-4 h-4 text-amber-500" />
-          <h2 className="text-base font-black text-slate-900 tracking-tight">
+          <h2 className="text-base font-semibold text-slate-900 tracking-tight">
             Partnership Contact Details
           </h2>
         </div>
@@ -990,7 +990,7 @@ function OrganiserRequirementsEditor({
 function InputField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <div>
-      <label className="block text-xs font-bold text-slate-700 mb-1.5">{label}</label>
+      <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">{label}</label>
       <input
         type="text"
         value={value}
@@ -1005,7 +1005,7 @@ function InputField({ label, value, onChange, placeholder }: { label: string; va
 function TextareaField({ label, value, onChange, rows = 3, placeholder }: { label: string; value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
   return (
     <div>
-      <label className="block text-xs font-bold text-slate-700 mb-1.5">{label}</label>
+      <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">{label}</label>
       <textarea
         rows={rows}
         value={value}

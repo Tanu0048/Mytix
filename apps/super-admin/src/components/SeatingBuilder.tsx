@@ -51,7 +51,7 @@ const MAX_PREVIEW_TABLES = 60;
 
 const inputCls =
   "w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 disabled:bg-slate-50 disabled:text-slate-500";
-const labelCls = "block text-[11px] font-bold text-slate-700 mb-1";
+const labelCls = "block text-[13px] font-semibold text-slate-700 mb-1";
 
 function KindIcon({ kind, className = "w-4 h-4" }: { kind: SectionKind; className?: string }) {
   if (kind === "STANDING") return <Users className={className} />;
@@ -91,7 +91,7 @@ function SeatDot({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`w-5 h-5 shrink-0 rounded-[5px] text-[8px] font-black flex items-center justify-center transition-colors ${cls} ${
+      className={`w-5 h-5 shrink-0 rounded-[5px] text-[10px] font-semibold flex items-center justify-center transition-colors ${cls} ${
         disabled ? "cursor-default" : "cursor-pointer"
       }`}
     >
@@ -125,7 +125,7 @@ function SectionPreview({
         <div className="flex flex-wrap gap-3 justify-center">
           {shown.map((t) => (
             <div key={t} className="relative w-24 h-24">
-              <div className="absolute inset-5 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-[10px] font-black text-slate-200">
+              <div className="absolute inset-5 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-xs font-semibold text-slate-200">
                 {t}
               </div>
               {Array.from({ length: perRow }, (_, i) => {
@@ -146,7 +146,7 @@ function SectionPreview({
           ))}
         </div>
         {rows.length > shown.length && (
-          <p className="text-center text-[10px] text-slate-500 mt-2">+ {rows.length - shown.length} more tables (same layout)</p>
+          <p className="text-center text-xs text-slate-500 mt-2">+ {rows.length - shown.length} more tables (same layout)</p>
         )}
       </div>
     );
@@ -159,18 +159,18 @@ function SectionPreview({
       <div className="space-y-1 min-w-fit mx-auto w-fit">
         {shownRows.map((r) => (
           <div key={r} className="flex items-center gap-1">
-            <span className="w-6 text-[9px] font-black text-slate-500 text-right pr-1">{r}</span>
+            <span className="w-6 text-[11px] font-semibold text-slate-500 text-right pr-1">{r}</span>
             {Array.from({ length: shownSeats }, (_, i) => {
               const key = `${r}-${i + 1}`;
               const mark = markOf(s, key);
               return <SeatDot key={key} label={String(i + 1)} mark={mark} onClick={() => toggle(key)} disabled={locked} title={markTitle(key, mark)} />;
             })}
-            {perRow > shownSeats && <span className="text-[9px] text-slate-500 ml-1">+{perRow - shownSeats}</span>}
+            {perRow > shownSeats && <span className="text-[11px] text-slate-500 ml-1">+{perRow - shownSeats}</span>}
           </div>
         ))}
       </div>
       {rows.length > shownRows.length && (
-        <p className="text-center text-[10px] text-slate-500 mt-2">+ {rows.length - shownRows.length} more rows</p>
+        <p className="text-center text-xs text-slate-500 mt-2">+ {rows.length - shownRows.length} more rows</p>
       )}
     </div>
   );
@@ -244,7 +244,7 @@ export default function SeatingBuilder({
   return (
     <div className="space-y-6">
       {locked && (
-        <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold">
+        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[13px] font-semibold">
           <Lock className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
           <span>{lockedReason || "The seat layout is locked."}</span>
         </div>
@@ -252,7 +252,7 @@ export default function SeatingBuilder({
 
       {/* Step 1 — how will people attend? */}
       <div>
-        <p className="text-xs font-black text-slate-900 mb-3">1. How will people attend this event?</p>
+        <p className="text-[13px] font-semibold text-slate-900 mb-3">1. How will people attend this event?</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {MODE_OPTIONS.map((opt) => {
             const active = mode === opt.id;
@@ -262,29 +262,29 @@ export default function SeatingBuilder({
                 type="button"
                 onClick={() => chooseMode(opt.id)}
                 disabled={locked && !active}
-                className={`text-left p-4 rounded-2xl border-2 transition-all ${
+                className={`text-left p-4 rounded-xl border-2 transition-all ${
                   active
                     ? "border-amber-400 bg-amber-50/50 ring-2 ring-amber-400/20"
                     : "border-slate-100 bg-slate-50/40 hover:border-slate-200 disabled:opacity-50 disabled:hover:border-slate-100"
                 } ${locked ? "cursor-default" : "cursor-pointer"}`}
               >
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="text-sm font-black text-slate-900">
+                  <span className="text-sm font-semibold text-slate-900">
                     <span className="mr-1.5">{opt.emoji}</span>
                     {opt.title}
                   </span>
                   {active && (
-                    <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[11px] font-black shrink-0">✓</span>
+                    <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[13px] font-semibold shrink-0">✓</span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed font-medium">{opt.subtitle}</p>
-                <p className="text-[10px] text-slate-400 font-semibold mt-1">e.g. {opt.example}</p>
+                <p className="text-[13px] text-slate-500 leading-relaxed font-medium">{opt.subtitle}</p>
+                <p className="text-xs text-slate-400 font-semibold mt-1">e.g. {opt.example}</p>
               </button>
             );
           })}
         </div>
         {mode === "GENERAL" && (
-          <p className="mt-3 text-[11px] font-semibold text-slate-500">
+          <p className="mt-3 text-[13px] font-semibold text-slate-500">
             ✓ Nothing else to set up. Buyers choose a ticket category and quantity. The “Total Tickets” you set in each category is the limit.
           </p>
         )}
@@ -295,8 +295,8 @@ export default function SeatingBuilder({
           {/* Step 2 — quick start */}
           {!locked && (
             <div>
-              <p className="text-xs font-black text-slate-900 mb-1">2. Start from a ready-made layout <span className="text-slate-400 font-semibold">(optional)</span></p>
-              <p className="text-[11px] text-slate-400 font-medium mb-3">Pick one and adjust it, or build your own below. Missing ticket categories are created for you.</p>
+              <p className="text-[13px] font-semibold text-slate-900 mb-1">2. Start from a ready-made layout <span className="text-slate-400 font-semibold">(optional)</span></p>
+              <p className="text-[13px] text-slate-400 font-medium mb-3">Pick one and adjust it, or build your own below. Missing ticket categories are created for you.</p>
               <div className="flex flex-wrap gap-2">
                 {TEMPLATES[mode].map((tpl) => (
                   <button
@@ -307,8 +307,8 @@ export default function SeatingBuilder({
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
                     <span>
-                      <span className="block text-xs font-black text-slate-900">{tpl.title}</span>
-                      <span className="block text-[10px] font-semibold text-slate-400">{tpl.description}</span>
+                      <span className="block text-[13px] font-semibold text-slate-900">{tpl.title}</span>
+                      <span className="block text-xs text-slate-500">{tpl.description}</span>
                     </span>
                   </button>
                 ))}
@@ -318,15 +318,15 @@ export default function SeatingBuilder({
 
           {/* Step 3 — sections */}
           <div>
-            <p className="text-xs font-black text-slate-900 mb-1">{locked ? "Layout" : "3. Build your layout"}</p>
+            <p className="text-[13px] font-semibold text-slate-900 mb-1">{locked ? "Layout" : "3. Build your layout"}</p>
             {!locked && (
-              <p className="text-[11px] text-slate-400 font-medium mb-3">
+              <p className="text-[13px] text-slate-400 font-medium mb-3">
                 Each section is sold under one ticket category. Tip: tap any seat in a preview to mark it ♿ wheelchair space, tap again to
                 block it (aisle, pillar, not for sale).
               </p>
             )}
             {newTierNote && !locked && (
-              <div className="mb-3 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">{newTierNote}</div>
+              <div className="mb-3 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[13px] font-semibold">{newTierNote}</div>
             )}
 
             <div className="space-y-4">
@@ -335,15 +335,15 @@ export default function SeatingBuilder({
                 const capacity = sectionCapacity(sec);
                 const tierMissing = !sec.tierName || !tierNames.some((n) => n.toLowerCase() === sec.tierName.trim().toLowerCase());
                 return (
-                  <div key={sec.id} className="rounded-2xl border border-slate-200/80 bg-slate-50/30 overflow-hidden">
+                  <div key={sec.id} className="rounded-xl border border-slate-200/80 bg-slate-50/30 overflow-hidden">
                     {/* Header */}
                     <div className="p-4 space-y-3">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-amber-800 bg-amber-100/70 border border-amber-200/70 px-2 py-1 rounded-lg">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-800 bg-amber-100/70 border border-amber-200/70 px-2 py-1 rounded-lg">
                           <KindIcon kind={sec.kind} className="w-3 h-3" /> {KIND_LABELS[sec.kind].title}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-black text-slate-700">
+                          <span className="text-[13px] font-semibold text-slate-700">
                             {capacity} {sec.kind === "STANDING" ? "people" : "seats"}
                           </span>
                           {!locked && sections.length > 1 && (
@@ -433,7 +433,7 @@ export default function SeatingBuilder({
                               className={inputCls}
                             />
                           </div>
-                          <p className="col-span-3 text-[10px] font-semibold text-slate-400 -mt-1">
+                          <p className="col-span-3 text-xs text-slate-500 -mt-1">
                             Rows {rows[0]}–{rows[rows.length - 1]} · seats numbered 1–{sec.seatsPerRow}
                           </p>
                         </div>
@@ -465,7 +465,7 @@ export default function SeatingBuilder({
                               className={inputCls}
                             />
                           </div>
-                          <p className="col-span-2 text-[10px] font-semibold text-slate-400 -mt-1">
+                          <p className="col-span-2 text-xs text-slate-500 -mt-1">
                             Tables T1–T{sec.tables} · buyers pick individual chairs at a table
                           </p>
                         </div>
@@ -483,7 +483,7 @@ export default function SeatingBuilder({
                             onChange={(e) => updateSection(idx, { capacity: clampInt(e.target.value, 1, 200000) })}
                             className={inputCls}
                           />
-                          <p className="text-[10px] font-semibold text-slate-400 mt-1">No seat numbers — buyers choose a quantity.</p>
+                          <p className="text-xs text-slate-500 mt-1">No seat numbers — buyers choose a quantity.</p>
                         </div>
                       )}
                     </div>
@@ -491,7 +491,7 @@ export default function SeatingBuilder({
                     {/* Preview */}
                     {sec.kind !== "STANDING" && (
                       <div className="bg-slate-950 px-3 py-4">
-                        <div className="flex items-center justify-between mb-3 text-[10px] font-bold">
+                        <div className="flex items-center justify-between mb-3 text-xs font-semibold">
                           <span className="text-slate-400">Preview — what buyers will see</span>
                           <span className="flex items-center gap-2 text-slate-400">
                             <span className="inline-flex items-center gap-1"><Accessibility className="w-3 h-3 text-sky-400" />{sec.accessible?.length || 0}</span>
@@ -514,7 +514,7 @@ export default function SeatingBuilder({
                     key={kind}
                     type="button"
                     onClick={() => addSection(kind)}
-                    className="flex items-center gap-1.5 text-xs font-extrabold text-amber-900 bg-[#FFF9EB] hover:bg-amber-100/70 border border-amber-200/80 px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 text-[13px] font-semibold text-amber-900 bg-[#FFF9EB] hover:bg-amber-100/70 border border-amber-200/80 px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" /> <KindIcon kind={kind} className="w-3.5 h-3.5" /> {KIND_LABELS[kind].title}
                   </button>
@@ -524,19 +524,19 @@ export default function SeatingBuilder({
           </div>
 
           {/* Summary */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-black text-slate-900">Capacity summary</span>
-              <span className="text-xs font-black text-amber-700">{totalCapacity} total</span>
+              <span className="text-[13px] font-semibold text-slate-900">Capacity summary</span>
+              <span className="text-[13px] font-semibold text-amber-700">{totalCapacity} total</span>
             </div>
             <ul className="space-y-1">
               {tierNames.map((n) => {
                 const cap = caps.get(n.toLowerCase());
                 return (
-                  <li key={n} className="flex items-center justify-between text-[11px] font-semibold">
+                  <li key={n} className="flex items-center justify-between text-[13px] font-semibold">
                     <span className="text-slate-600">{n}</span>
                     {cap !== undefined ? (
-                      <span className="text-slate-900 font-black">{cap} tickets</span>
+                      <span className="text-slate-900 font-semibold">{cap} tickets</span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-amber-700">
                         <AlertTriangle className="w-3 h-3" /> Not on the map — sold by quantity
@@ -546,7 +546,7 @@ export default function SeatingBuilder({
                 );
               })}
             </ul>
-            <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-slate-100 text-[10px] font-bold text-slate-500">
+            <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-slate-100 text-xs font-semibold text-slate-500">
               <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-slate-800 border border-slate-600" /> Seat for sale</span>
               <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-sky-500" /> Wheelchair space</span>
               <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm border border-dashed border-slate-500" /> Blocked / aisle</span>

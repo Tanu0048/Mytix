@@ -159,10 +159,10 @@ export default function SuperAdminTermsPage() {
   if (user && user.role !== "ADMIN") {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
-        <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
+        <div className="w-16 h-16 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
           <ShieldAlert className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Super-Admin Access Required</h2>
+        <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">Super-Admin Access Required</h2>
         <p className="text-slate-500 max-w-md mt-2 text-sm leading-relaxed">
           Only platform Super-Admins have permission to manage global platform legal policies and Terms & Conditions. Event Organisers cannot modify these settings.
         </p>
@@ -184,17 +184,17 @@ export default function SuperAdminTermsPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
                 Terms & Conditions Management
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500">
+              <p className="text-[13px] sm:text-sm text-slate-500">
                 Super-Admin Control Panel: Edit and publish live legal terms displayed across Mytix.
               </p>
             </div>
@@ -205,7 +205,7 @@ export default function SuperAdminTermsPage() {
           <button
             type="button"
             onClick={() => setPreviewMode(!previewMode)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold transition cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-[13px] font-semibold transition cursor-pointer"
           >
             {previewMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             {previewMode ? "Edit Mode" : "Live Preview"}
@@ -215,7 +215,7 @@ export default function SuperAdminTermsPage() {
             type="button"
             onClick={() => handleSave()}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition shadow-sm hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[13px] font-semibold transition shadow-sm hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
           >
             {saving ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -229,7 +229,7 @@ export default function SuperAdminTermsPage() {
 
       {/* Success / Error Alerts */}
       {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-sm font-semibold flex items-center gap-3 animate-in fade-in">
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-sm font-semibold flex items-center gap-3">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -244,20 +244,20 @@ export default function SuperAdminTermsPage() {
 
       {/* Preview Mode */}
       {previewMode ? (
-        <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm space-y-6">
+        <div className="bg-white rounded-xl p-8 border border-slate-200/80 shadow-sm space-y-6">
           <div className="border-b border-slate-100 pb-6">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase bg-amber-100 text-amber-800 mb-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-semibold tracking-widest uppercase bg-amber-100 text-amber-800 mb-2">
               <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Live Preview
             </span>
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{terms.title}</h2>
+            <h2 className="text-3xl font-semibold text-slate-900 tracking-tight">{terms.title}</h2>
             <p className="text-sm text-slate-500 mt-1">{terms.subtitle}</p>
-            <p className="text-xs text-amber-600 font-bold mt-2">Last Updated: {terms.lastUpdated}</p>
+            <p className="text-[13px] text-amber-600 font-semibold mt-2">Last Updated: {terms.lastUpdated}</p>
           </div>
 
           <div className="space-y-6">
             {terms.sections.map((section, idx) => (
               <div key={idx} className="space-y-2">
-                <h3 className="text-lg font-bold text-slate-900">{section.title}</h3>
+                <h3 className="text-lg font-semibold text-slate-900">{section.title}</h3>
                 <p className="text-sm text-slate-600 leading-relaxed font-normal whitespace-pre-line">
                   {section.content}
                 </p>
@@ -269,13 +269,13 @@ export default function SuperAdminTermsPage() {
         /* Edit Form */
         <div className="space-y-6">
           {/* Header Metadata */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">
+          <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">
               General Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                   Page Title
                 </label>
                 <input
@@ -288,7 +288,7 @@ export default function SuperAdminTermsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                   Last Updated Date / Version
                 </label>
                 <input
@@ -302,7 +302,7 @@ export default function SuperAdminTermsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
                 Subtitle / Description
               </label>
               <input
@@ -319,10 +319,10 @@ export default function SuperAdminTermsPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-black text-slate-900 tracking-tight">
+                <h3 className="text-base font-semibold text-slate-900 tracking-tight">
                   Policy Sections ({terms.sections.length})
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-[13px] text-slate-500">
                   Each section represents a distinct legal clause shown to users.
                 </p>
               </div>
@@ -330,7 +330,7 @@ export default function SuperAdminTermsPage() {
               <button
                 type="button"
                 onClick={handleAddSection}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Clause
@@ -340,18 +340,18 @@ export default function SuperAdminTermsPage() {
             {terms.sections.map((section, index) => (
               <div 
                 key={index} 
-                className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-100 shadow-2xs space-y-3"
+                className="bg-white p-5 sm:p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-3"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    <label className="block text-[13px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
                       Clause {index + 1} Heading
                     </label>
                     <input
                       type="text"
                       value={section.title}
                       onChange={(e) => handleSectionChange(index, "title", e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 text-sm font-bold focus:outline-hidden focus:ring-2 focus:ring-amber-400"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 text-sm font-semibold focus:outline-hidden focus:ring-2 focus:ring-amber-400"
                     />
                   </div>
 
@@ -366,7 +366,7 @@ export default function SuperAdminTermsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[13px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
                     Clause Text & Rules
                   </label>
                   <textarea
@@ -389,7 +389,7 @@ export default function SuperAdminTermsPage() {
                   setTerms(DEFAULT_TERMS_FALLBACK);
                 }
               }}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer"
+              className="text-[13px] font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer"
             >
               Reset to Recommended Default
             </button>
@@ -398,7 +398,7 @@ export default function SuperAdminTermsPage() {
               type="button"
               onClick={() => handleSave()}
               disabled={saving}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-black transition shadow-sm hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-semibold transition shadow-sm hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
             >
               {saving ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
