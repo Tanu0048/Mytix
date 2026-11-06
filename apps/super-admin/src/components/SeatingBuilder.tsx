@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Sparkles, Lock, Accessibility, Ban, Users, Armchair, UtensilsCrossed, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Sparkles, Lock, Accessibility, Ban, Users, Armchair, UtensilsCrossed, AlertTriangle, Paintbrush } from "lucide-react";
 import {
   type SeatingMode,
   type SeatSection,
@@ -22,7 +22,26 @@ import {
   cleanMarks,
   rowLabel,
   rowIndex,
+  tierOfSeat,
+  setSeatTier,
+  setRowTier,
 } from "@/lib/seating";
+
+/** What tapping a seat in a preview does. */
+type Tool = { type: "marks" } | { type: "tier"; tier: string };
+
+/** Colours used to show each ticket category on the seat map (by category order). */
+const TIER_COLORS = [
+  { seat: "bg-amber-400 text-slate-900", swatch: "bg-amber-400" },
+  { seat: "bg-sky-400 text-slate-900", swatch: "bg-sky-400" },
+  { seat: "bg-violet-400 text-slate-900", swatch: "bg-violet-400" },
+  { seat: "bg-emerald-400 text-slate-900", swatch: "bg-emerald-400" },
+  { seat: "bg-rose-400 text-slate-900", swatch: "bg-rose-400" },
+  { seat: "bg-orange-400 text-slate-900", swatch: "bg-orange-400" },
+  { seat: "bg-teal-400 text-slate-900", swatch: "bg-teal-400" },
+  { seat: "bg-fuchsia-400 text-slate-900", swatch: "bg-fuchsia-400" },
+];
+const UNKNOWN_TIER_COLOR = { seat: "bg-slate-600 text-slate-200", swatch: "bg-slate-600" };
 
 export interface BuilderTier {
   name: string;
@@ -65,34 +84,48 @@ function clampInt(value: string, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
-/** One clickable seat in the preview. */
+/** One clickable seat in the preview, coloured by its ticket category. */
 function SeatDot({
   label,
   mark,
-  onClick,
+  colorCls,
+  onApply,
+  dragPaint,
   disabled,
   title,
 }: {
   label: string;
   mark: "normal" | "accessible" | "blocked";
-  onClick: () => void;
+  colorCls: string;
+  onApply: () => void;
+  /** When true, dragging across seats with the mouse button held applies the tool too. */
+  dragPaint: boolean;
   disabled?: boolean;
   title: string;
 }) {
   const cls =
     mark === "blocked"
-      ? "border border-dashed border-slate-600 bg-transparent text-slate-600"
-      : mark === "accessible"
-        ? "bg-sky-500 border border-sky-300 text-white"
-        : "bg-slate-800 border border-slate-600 text-slate-300 hover:border-amber-400 hover:text-amber-300";
+      ? "border border-dashed border-slate-500 bg-transparent text-slate-500"
+      : `${colorCls} ${mark === "accessible" ? "ring-2 ring-white/90" : ""}`;
   return (
     <button
       type="button"
-      onClick={onClick}
+      // Pointer down applies immediately (and starts a drag); click only handles keyboard activation
+      onPointerDown={(e) => {
+        if (disabled || e.button !== 0) return;
+        e.preventDefault();
+        onApply();
+      }}
+      onPointerEnter={(e) => {
+        if (!disabled && dragPaint && e.buttons === 1) onApply();
+      }}
+      onClick={(e) => {
+        if (!disabled && e.detail === 0) onApply();
+      }}
       disabled={disabled}
       title={title}
-      className={`w-5 h-5 shrink-0 rounded-[5px] text-[10px] font-semibold flex items-center justify-center transition-colors ${cls} ${
-        disabled ? "cursor-default" : "cursor-pointer"
+      className={`w-5 h-5 shrink-0 rounded-[5px] text-[10px] font-semibold flex items-center justify-center transition-transform select-none ${cls} ${
+        disabled ? "cursor-default" : "cursor-pointer hover:scale-110"
       }`}
     >
       {mark === "accessible" ? "♿" : mark === "blocked" ? "×" : label}
@@ -104,19 +137,54 @@ function SectionPreview({
   section,
   onChange,
   locked,
+  tool,
+  colorFor,
 }: {
   section: SeatSection;
   onChange: (s: SeatSection) => void;
   locked?: boolean;
+  tool: Tool;
+  colorFor: (tierName: string) => { seat: string; swatch: string };
 }) {
   const s = cleanMarks(section);
   const rows = sectionRows(s);
   const perRow = seatsPerRowOf(s);
-  const toggle = (key: string) => !locked && onChange(cycleMark(s, key));
-  const markTitle = (key: string, mark: string) =>
-    `${key.replace("-", " · seat ")} — ${mark === "accessible" ? "Wheelchair" : mark === "blocked" ? "Blocked (not for sale)" : "Normal"}${
-      locked ? "" : " (tap to change)"
-    }`;
+  const painting = tool.type === "tier";
+
+  const apply = (key: string) => {
+    if (locked) return;
+    if (tool.type === "tier") {
+      if (markOf(s, key) === "blocked") return; // blocked seats aren't sold
+      onChange(setSeatTier(s, key, tool.tier));
+    } else {
+      onChange(cycleMark(s, key));
+    }
+  };
+  const paintRow = (row: string) => {
+    if (!locked && tool.type === "tier") onChange(setRowTier(s, row, tool.tier));
+  };
+  const seatTitle = (key: string) => {
+    const mark = markOf(s, key);
+    const place = s.kind === "TABLES" ? key.replace(/^T(\d+)-/, "Table $1 · Chair ") : key.replace("-", "");
+    const what = mark === "blocked" ? "Blocked (not for sale)" : `${tierOfSeat(s, key)}${mark === "accessible" ? " · Wheelchair" : ""}`;
+    const hint = locked ? "" : painting ? ` — tap to make it ${tool.tier}` : " — tap: normal → wheelchair → blocked";
+    return `${place}: ${what}${hint}`;
+  };
+  const dot = (key: string, label: string) => (
+    <SeatDot
+      key={key}
+      label={label}
+      mark={markOf(s, key)}
+      colorCls={colorFor(tierOfSeat(s, key)).seat}
+      onApply={() => apply(key)}
+      dragPaint={painting}
+      disabled={locked}
+      title={seatTitle(key)}
+    />
+  );
+  const rowLabelCls = `text-[11px] font-semibold text-slate-400 ${
+    painting && !locked ? "cursor-pointer hover:text-white underline decoration-dotted underline-offset-2" : "cursor-default"
+  }`;
 
   if (s.kind === "TABLES") {
     const shown = rows.slice(0, MAX_PREVIEW_TABLES);
@@ -125,20 +193,27 @@ function SectionPreview({
         <div className="flex flex-wrap gap-3 justify-center">
           {shown.map((t) => (
             <div key={t} className="relative w-24 h-24">
-              <div className="absolute inset-5 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-xs font-semibold text-slate-200">
+              <button
+                type="button"
+                onClick={() => paintRow(t)}
+                disabled={locked || !painting}
+                title={painting && !locked ? `Make every chair at ${t} “${tool.tier}”` : t}
+                className={`absolute inset-5 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-xs font-semibold text-slate-200 ${
+                  painting && !locked ? "cursor-pointer hover:border-white" : "cursor-default"
+                }`}
+              >
                 {t}
-              </div>
+              </button>
               {Array.from({ length: perRow }, (_, i) => {
                 const angle = (2 * Math.PI * i) / perRow - Math.PI / 2;
                 const key = `${t}-${i + 1}`;
-                const mark = markOf(s, key);
                 return (
                   <div
                     key={key}
                     className="absolute"
                     style={{ left: `calc(50% + ${Math.cos(angle) * 38}px - 10px)`, top: `calc(50% + ${Math.sin(angle) * 38}px - 10px)` }}
                   >
-                    <SeatDot label={String(i + 1)} mark={mark} onClick={() => toggle(key)} disabled={locked} title={markTitle(key, mark)} />
+                    {dot(key, String(i + 1))}
                   </div>
                 );
               })}
@@ -159,12 +234,16 @@ function SectionPreview({
       <div className="space-y-1 min-w-fit mx-auto w-fit">
         {shownRows.map((r) => (
           <div key={r} className="flex items-center gap-1">
-            <span className="w-6 text-[11px] font-semibold text-slate-500 text-right pr-1">{r}</span>
-            {Array.from({ length: shownSeats }, (_, i) => {
-              const key = `${r}-${i + 1}`;
-              const mark = markOf(s, key);
-              return <SeatDot key={key} label={String(i + 1)} mark={mark} onClick={() => toggle(key)} disabled={locked} title={markTitle(key, mark)} />;
-            })}
+            <button
+              type="button"
+              onClick={() => paintRow(r)}
+              disabled={locked || !painting}
+              title={painting && !locked ? `Make all of row ${r} “${tool.tier}”` : `Row ${r}`}
+              className={`w-6 text-right pr-1 ${rowLabelCls}`}
+            >
+              {r}
+            </button>
+            {Array.from({ length: shownSeats }, (_, i) => dot(`${r}-${i + 1}`, String(i + 1)))}
             {perRow > shownSeats && <span className="text-[11px] text-slate-500 ml-1">+{perRow - shownSeats}</span>}
           </div>
         ))}
@@ -188,10 +267,20 @@ export default function SeatingBuilder({
   lockedReason,
 }: SeatingBuilderProps) {
   const [newTierNote, setNewTierNote] = useState("");
+  const [tool, setTool] = useState<Tool>({ type: "marks" });
   const allowedKinds = kindsForMode(mode);
   const tierNames = tiers.map((t) => String(t.name || "").trim()).filter(Boolean);
   const caps = capacityByTier(sections);
   const totalCapacity = sections.reduce((sum, s) => sum + sectionCapacity(s), 0);
+  const hasSeatedSection = sections.some((s) => s.kind !== "STANDING");
+
+  const colorFor = (tierName: string) => {
+    const idx = tierNames.findIndex((n) => n.toLowerCase() === tierName.trim().toLowerCase());
+    return idx === -1 ? UNKNOWN_TIER_COLOR : TIER_COLORS[idx % TIER_COLORS.length];
+  };
+  // If the selected paint category was renamed or deleted, fall back to the wheelchair/block tool
+  const activeTool: Tool =
+    tool.type === "tier" && !tierNames.some((n) => n.toLowerCase() === tool.tier.toLowerCase()) ? { type: "marks" } : tool;
 
   const updateSection = (idx: number, patch: Partial<SeatSection> | SeatSection) => {
     const next = [...sections];
@@ -320,13 +409,54 @@ export default function SeatingBuilder({
           <div>
             <p className="text-[13px] font-semibold text-slate-900 mb-1">{locked ? "Layout" : "3. Build your layout"}</p>
             {!locked && (
-              <p className="text-[13px] text-slate-400 font-medium mb-3">
-                Each section is sold under one ticket category. Tip: tap any seat in a preview to mark it ♿ wheelchair space, tap again to
-                block it (aisle, pillar, not for sale).
+              <p className="text-[13px] text-slate-500 mb-3">
+                Set the size of each section, then use the seat tools below to decide exactly what every seat is.
               </p>
             )}
             {newTierNote && !locked && (
               <div className="mb-3 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[13px] font-semibold">{newTierNote}</div>
+            )}
+
+            {/* Seat tools: what a tap on a seat does */}
+            {!locked && hasSeatedSection && (
+              <div className="sticky top-16 z-10 mb-4 rounded-xl border border-slate-200 bg-white/95 backdrop-blur p-3 shadow-xs">
+                <div className="flex items-center gap-2 mb-2">
+                  <Paintbrush className="w-4 h-4 text-amber-600" />
+                  <span className="text-[13px] font-semibold text-slate-900">Seat tools — choose what tapping a seat does</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {tierNames.map((n) => {
+                    const active = activeTool.type === "tier" && activeTool.tier.toLowerCase() === n.toLowerCase();
+                    return (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setTool({ type: "tier", tier: n })}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[13px] font-medium transition-colors cursor-pointer ${
+                          active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                        }`}
+                      >
+                        <span className={`w-3 h-3 rounded-sm ${colorFor(n).swatch}`} />
+                        Make seats {n}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => setTool({ type: "marks" })}
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[13px] font-medium transition-colors cursor-pointer ${
+                      activeTool.type === "marks" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                    }`}
+                  >
+                    <Accessibility className="w-3.5 h-3.5" /> Wheelchair / <Ban className="w-3.5 h-3.5" /> Block
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  {activeTool.type === "tier"
+                    ? `Tap seats (or hold and drag) to make them “${activeTool.tier}”. Tap a row letter or table name to change the whole row/table.`
+                    : "Tap a seat: normal → ♿ wheelchair space → blocked (aisle, pillar, not for sale) → normal."}
+                </p>
+              </div>
             )}
 
             <div className="space-y-4">
@@ -372,7 +502,9 @@ export default function SeatingBuilder({
                           />
                         </div>
                         <div>
-                          <label className={labelCls}>Sold as ticket category</label>
+                          <label className={labelCls}>
+                            {sec.kind === "STANDING" ? "Sold as ticket category" : "Default category (all seats)"}
+                          </label>
                           <select
                             value={tierMissing ? "" : tierNames.find((n) => n.toLowerCase() === sec.tierName.trim().toLowerCase())}
                             disabled={locked}
@@ -492,13 +624,22 @@ export default function SeatingBuilder({
                     {sec.kind !== "STANDING" && (
                       <div className="bg-slate-950 px-3 py-4">
                         <div className="flex items-center justify-between mb-3 text-xs font-semibold">
-                          <span className="text-slate-400">Preview — what buyers will see</span>
-                          <span className="flex items-center gap-2 text-slate-400">
+                          <span className="text-slate-400">Seat map — what buyers will see</span>
+                          <span className="flex items-center gap-3 text-slate-400">
+                            {Object.keys(cleanMarks(sec).seatTiers || {}).length > 0 && (
+                              <span>{Object.keys(cleanMarks(sec).seatTiers || {}).length} seats in other categories</span>
+                            )}
                             <span className="inline-flex items-center gap-1"><Accessibility className="w-3 h-3 text-sky-400" />{sec.accessible?.length || 0}</span>
                             <span className="inline-flex items-center gap-1"><Ban className="w-3 h-3 text-slate-500" />{sec.blocked?.length || 0}</span>
                           </span>
                         </div>
-                        <SectionPreview section={sec} onChange={(s) => updateSection(idx, s)} locked={locked} />
+                        <SectionPreview
+                          section={sec}
+                          onChange={(s) => updateSection(idx, s)}
+                          locked={locked}
+                          tool={activeTool}
+                          colorFor={colorFor}
+                        />
                       </div>
                     )}
                   </div>
@@ -534,7 +675,10 @@ export default function SeatingBuilder({
                 const cap = caps.get(n.toLowerCase());
                 return (
                   <li key={n} className="flex items-center justify-between text-[13px] font-semibold">
-                    <span className="text-slate-600">{n}</span>
+                    <span className="inline-flex items-center gap-2 text-slate-600">
+                      <span className={`w-3 h-3 rounded-sm ${colorFor(n).swatch}`} />
+                      {n}
+                    </span>
                     {cap !== undefined ? (
                       <span className="text-slate-900 font-semibold">{cap} tickets</span>
                     ) : (
@@ -547,8 +691,8 @@ export default function SeatingBuilder({
               })}
             </ul>
             <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-slate-100 text-xs font-semibold text-slate-500">
-              <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-slate-800 border border-slate-600" /> Seat for sale</span>
-              <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-sky-500" /> Wheelchair space</span>
+              <span className="inline-flex items-center gap-1">Seat colour = its ticket category</span>
+              <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-slate-300 ring-2 ring-slate-500 text-[8px] leading-3 text-center">♿</span> Wheelchair space</span>
               <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm border border-dashed border-slate-500" /> Blocked / aisle</span>
             </div>
           </div>

@@ -33,6 +33,7 @@ import {
   type SeatSection,
   type SeatingTemplate,
   capacityByTier,
+  renameTierInSections,
   toApiConfig,
   validateSeating,
 } from "@/lib/seating";
@@ -85,11 +86,7 @@ export default function CreateEventPage() {
     setTicketTypes(updated);
     // Renaming a category keeps the seat map sections pointing at it
     if (field === "name" && oldName.trim()) {
-      setSeatSections((prev) =>
-        prev.map((sec) =>
-          sec.tierName.trim().toLowerCase() === oldName.trim().toLowerCase() ? { ...sec, tierName: String(value) } : sec
-        )
-      );
+      setSeatSections((prev) => renameTierInSections(prev, oldName, String(value)));
     }
   };
 

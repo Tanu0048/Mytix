@@ -7,7 +7,7 @@ import { Calendar, MapPin, Clock, Info, AlertCircle, User, Ticket, CheckCircle, 
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { EventDetailsSkeleton } from '@/components/ui/Skeleton';
-import SeatPicker from '@/components/SeatPicker';
+import SeatPicker, { seatedTierNamesOf } from '@/components/SeatPicker';
 import { API_BASE } from '@/config/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -98,9 +98,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
     !hasSeatMap
       ? []
       : event.seatingConfig.version === 2
-        ? event.seatingConfig.sections
-            .filter((sec: any) => (sec.kind || 'ROWS') !== 'STANDING')
-            .map((sec: any) => tierKey(sec.tierName))
+        ? seatedTierNamesOf(event.seatingConfig)
         : (event.ticketTypes || []).map((t: any) => tierKey(t.name))
   );
   const quantityTiers: any[] = (event?.ticketTypes || []).filter((t: any) => !seatedTierKeys.has(tierKey(t.name)));

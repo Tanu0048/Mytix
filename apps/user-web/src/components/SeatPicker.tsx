@@ -46,6 +46,22 @@ export interface SeatingSection {
   blocked?: string[];
   /** Wheelchair spaces, e.g. ["A-1"]. */
   accessible?: string[];
+  /** Per-seat ticket category overrides, e.g. { "A-5": "VIP" }. Other seats use `tierName`. */
+  seatTiers?: Record<string, string>;
+}
+
+/** Ticket category names (lower-cased) used by numbered seats in a seat map, including per-seat overrides. */
+export function seatedTierNamesOf(config: SeatingConfig | null | undefined): Set<string> {
+  const names = new Set<string>();
+  for (const s of config?.sections || []) {
+    if ((s.kind || "ROWS") === "STANDING") continue;
+    const overrides = s.seatTiers || {};
+    const sellable = (s.rows?.length || 0) * (s.seatsPerRow || 0) - (s.blocked?.length || 0);
+    if (sellable > Object.keys(overrides).length) names.add((s.tierName || "").trim().toLowerCase());
+    for (const t of Object.values(overrides)) names.add(String(t).trim().toLowerCase());
+  }
+  names.delete("");
+  return names;
 }
 
 export interface SeatingConfig {
@@ -88,7 +104,7 @@ export default function SeatPicker({
     return null;
   }
   // Legend: only categories that are actually on the seat map
-  const seatedTierNames = new Set(seatSections.map((s) => (s.tierName || "").trim().toLowerCase()));
+  const seatedTierNames = seatedTierNamesOf(config);
   const legendTiers = config.version === 2
     ? ticketTypes.filter((t) => seatedTierNames.has(t.name.trim().toLowerCase()))
     : ticketTypes;
@@ -100,12 +116,12 @@ export default function SeatPicker({
     "border-emerald-400/60 hover:bg-emerald-400/15 hover:border-emerald-400 text-slate-300", // Green/Economy
   ];
 
-  // Find tier by name fallback to first tier
-  const getTierInfoForSection = (section: SeatingSection) => {
+  // Find a ticket category by name (falls back to the first category)
+  const getTierInfo = (tierName?: string) => {
     let index = 0;
-    if (section.tierName) {
+    if (tierName) {
       const matchIndex = ticketTypes.findIndex(
-        (t) => t.name.toLowerCase() === section.tierName?.toLowerCase()
+        (t) => t.name.trim().toLowerCase() === tierName.trim().toLowerCase()
       );
       if (matchIndex !== -1) index = matchIndex;
     }
@@ -113,6 +129,7 @@ export default function SeatPicker({
     const colorClass = tierColors[index % tierColors.length];
     return { tier, colorClass };
   };
+  const formatPrice = (cents: number) => `$${(cents / 100).toLocaleString('en-AU')}`;
 
   return (
     <div className="w-full bg-slate-900 text-white rounded-2xl p-3 sm:p-6 md:p-8 shadow-xl border border-slate-800">
@@ -175,14 +192,23 @@ export default function SeatPicker({
       {/* Seating Sections */}
       <div className="space-y-12 sm:space-y-16 overflow-x-auto pb-6 pt-4 px-2 sm:px-4 touch-pan-x">
         {seatSections.map((section, sIdx) => {
-          const { tier, colorClass } = getTierInfoForSection(section);
-          const priceDisplay = tier ? `$${(tier.priceCents / 100).toLocaleString('en-AU')}` : '';
           const blocked = new Set(section.blocked || []);
           const accessible = new Set(section.accessible || []);
           const isTables = section.kind === "TABLES";
+          // Section header shows a price, or a range when seats in it have different categories
+          const sectionTierNames = new Set([section.tierName || "", ...Object.values(section.seatTiers || {})]);
+          const sectionPrices = Array.from(sectionTierNames)
+            .map((n) => getTierInfo(n).tier?.priceCents)
+            .filter((c): c is number => typeof c === "number");
+          const minPrice = sectionPrices.length ? Math.min(...sectionPrices) : null;
+          const maxPrice = sectionPrices.length ? Math.max(...sectionPrices) : null;
+          const sectionPriceDisplay =
+            minPrice === null ? '' : minPrice === maxPrice ? formatPrice(minPrice) : `${formatPrice(minPrice)}–${formatPrice(maxPrice!)}`;
 
           const renderSeat = (rowName: string, seatNum: number, style?: React.CSSProperties) => {
             const plain = `${rowName}-${seatNum}`;
+            const { tier, colorClass } = getTierInfo(section.seatTiers?.[plain] || section.tierName);
+            const priceDisplay = tier ? formatPrice(tier.priceCents) : '';
             const seatKey = `${section.name}:${plain}`;
             const isSelected = selectedSeats.includes(seatKey);
             const isBooked = isBookedSeat(section.name, rowName, seatNum);
@@ -234,10 +260,10 @@ export default function SeatPicker({
               {/* Section Header */}
               <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs font-bold mb-5">
                 <span className="text-slate-200">{section.name}</span>
-                {tier && (
+                {sectionPriceDisplay && (
                   <>
                     <span className="text-slate-500">•</span>
-                    <span className="text-amber-400 font-black">{priceDisplay}</span>
+                    <span className="text-amber-400 font-black">{sectionPriceDisplay}</span>
                   </>
                 )}
               </div>

@@ -9,7 +9,8 @@ import { hashPassword } from "../auth/password.service.js";
 import {
   normalizeSeatingConfig,
   capacityByTier,
-  assertTiersExist
+  assertTiersExist,
+  renameTierInConfig
 } from "./seating.js";
 
 function assertUniqueTierNames(names) {
@@ -36,7 +37,10 @@ function seatingFingerprint(seatingType, config, nameToId) {
     seatsPerRow: s.seatsPerRow || 0,
     capacity: s.capacity || 0,
     blocked: [...(s.blocked || [])].sort(),
-    tier: nameToId(String(s.tierName || "").trim().toLowerCase()) || s.tierName
+    tier: nameToId(String(s.tierName || "").trim().toLowerCase()) || s.tierName,
+    seatTiers: Object.entries(s.seatTiers || {})
+      .map(([seat, t]) => [seat, nameToId(String(t).trim().toLowerCase()) || t])
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
   }));
   return JSON.stringify(sections);
 }
@@ -271,12 +275,7 @@ export async function updateEvent(userId, eventId, data) {
     existingTiers.forEach((t, i) => {
       const newName = finalTierNames[i];
       if (newName === t.name) return;
-      for (const sec of config.sections) {
-        if (String(sec.tierName || "").trim().toLowerCase() === t.name.trim().toLowerCase()) {
-          sec.tierName = newName;
-          changed = true;
-        }
-      }
+      if (renameTierInConfig(config, t.name, newName)) changed = true;
     });
     if (changed) {
       updateData.seatingConfig = config;

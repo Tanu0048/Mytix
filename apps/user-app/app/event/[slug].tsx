@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Skeleton from '../../components/Skeleton';
-import SeatPicker from '../../components/SeatPicker';
+import SeatPicker, { seatedTierNamesOf } from '../../components/SeatPicker';
 
 const { width } = Dimensions.get('window');
 import { API_BASE, BACKEND_HOST } from '../../constants/api';
@@ -276,9 +276,7 @@ export default function EventDetailScreen() {
     !hasSeatMap
       ? []
       : event.seatingConfig.version === 2
-      ? event.seatingConfig.sections
-          .filter((sec: any) => (sec.kind || 'ROWS') !== 'STANDING')
-          .map((sec: any) => tierKey(sec.tierName))
+      ? seatedTierNamesOf(event.seatingConfig)
       : (event.ticketTypes || []).map((t: any) => tierKey(t.name))
   );
   const quantityTiers: any[] = (event.ticketTypes || []).filter((t: any) => !seatedTierKeys.has(tierKey(t.name)));

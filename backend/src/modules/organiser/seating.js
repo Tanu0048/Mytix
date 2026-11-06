@@ -142,6 +142,20 @@ export function normalizeSeatingConfig(seatingType, raw) {
     const blockedSet = new Set(section.blocked);
     section.accessible = cleanSeatList(s.accessible, validKeys).filter((k) => !blockedSet.has(k));
     if (section.blocked.length >= validKeys.size) throw bad(`every seat in "${name}" is blocked.`);
+
+    // Per-seat ticket category overrides: { "A-5": "VIP" }. Seats without an entry use the section's category.
+    const seatTiers = {};
+    if (s.seatTiers && typeof s.seatTiers === "object" && !Array.isArray(s.seatTiers)) {
+      for (const [rawKey, rawTier] of Object.entries(s.seatTiers)) {
+        const key = String(rawKey).trim().toUpperCase();
+        const tier = String(rawTier ?? "").trim();
+        if (!validKeys.has(key) || blockedSet.has(key) || !tier) continue;
+        if (tier.length > 128) throw bad(`ticket category name for seat ${key} in "${name}" is too long.`);
+        if (tier.toLowerCase() === tierName.toLowerCase()) continue; // same as section default
+        seatTiers[key] = tier;
+      }
+    }
+    section.seatTiers = seatTiers;
     return section;
   });
 
@@ -171,25 +185,50 @@ export function sellableSeatCount(section) {
   return Math.max(0, total - blocked);
 }
 
+/** Ticket category name of one seat ("A-5") in a section: its override, else the section's category. */
+export function seatTierName(section, plainKey) {
+  return (section.seatTiers && section.seatTiers[plainKey]) || section.tierName || "";
+}
+
 /**
  * Capacity per ticket category name (lower-cased) implied by the seat map:
- * sellable seats for seated sections, `capacity` for standing zones.
+ * one per sellable seat (using per-seat categories), `capacity` for standing zones.
  */
 export function capacityByTier(config) {
   const map = new Map();
+  const add = (name, n) => {
+    const key = String(name || "").trim().toLowerCase();
+    if (key && n > 0) map.set(key, (map.get(key) || 0) + n);
+  };
   for (const s of config?.sections || []) {
-    const key = String(s.tierName || "").trim().toLowerCase();
-    if (!key) continue;
-    const cap = (s.kind || "ROWS") === "STANDING" ? Number(s.capacity) || 0 : sellableSeatCount(s);
-    map.set(key, (map.get(key) || 0) + cap);
+    if ((s.kind || "ROWS") === "STANDING") {
+      add(s.tierName, Number(s.capacity) || 0);
+      continue;
+    }
+    const overrides = s.seatTiers || {};
+    const overrideCount = Object.keys(overrides).length;
+    for (const tier of Object.values(overrides)) add(tier, 1);
+    add(s.tierName, sellableSeatCount(s) - overrideCount);
   }
   return map;
 }
 
+/** All ticket category names (lower-cased) that are sold as numbered seats. */
+export function seatedTierKeys(config) {
+  const keys = new Set();
+  for (const s of seatedSections(config)) {
+    const overrides = s.seatTiers || {};
+    // Section default only counts if at least one seat still uses it
+    if (sellableSeatCount(s) > Object.keys(overrides).length) keys.add(String(s.tierName || "").trim().toLowerCase());
+    for (const t of Object.values(overrides)) keys.add(String(t).trim().toLowerCase());
+  }
+  keys.delete("");
+  return keys;
+}
+
 /** True when buyers of this ticket category must pick specific seats. */
 export function isSeatedTier(config, tierName) {
-  const key = String(tierName || "").trim().toLowerCase();
-  return seatedSections(config).some((s) => String(s.tierName || "").trim().toLowerCase() === key);
+  return seatedTierKeys(config).has(String(tierName || "").trim().toLowerCase());
 }
 
 /**
@@ -203,7 +242,31 @@ export function assertTiersExist(config, tierNames) {
     if (!names.has(s.tierName.trim().toLowerCase())) {
       throw bad(`section "${s.name}" uses ticket category "${s.tierName}", which does not exist.`);
     }
+    for (const [seat, tier] of Object.entries(s.seatTiers || {})) {
+      if (!names.has(String(tier).trim().toLowerCase())) {
+        throw bad(`seat ${seat} in "${s.name}" uses ticket category "${tier}", which does not exist.`);
+      }
+    }
   }
+}
+
+/** Renames a ticket category everywhere in a seat map (section defaults and per-seat overrides). */
+export function renameTierInConfig(config, oldName, newName) {
+  let changed = false;
+  const oldKey = String(oldName).trim().toLowerCase();
+  for (const s of config?.sections || []) {
+    if (String(s.tierName || "").trim().toLowerCase() === oldKey) {
+      s.tierName = newName;
+      changed = true;
+    }
+    for (const [seat, tier] of Object.entries(s.seatTiers || {})) {
+      if (String(tier).trim().toLowerCase() === oldKey) {
+        s.seatTiers[seat] = newName;
+        changed = true;
+      }
+    }
+  }
+  return changed;
 }
 
 /**
@@ -251,10 +314,10 @@ export function validateSelectedSeats(config, tierName, selectedSeats, quantity)
       num >= 1 &&
       num <= section.seatsPerRow;
     if (!valid) throw new AppError("INVALID_SEAT", 400, `Seat "${raw}" does not exist on this seat map.`);
-    if (String(section.tierName).trim().toLowerCase() !== tierKey) {
+    const plain = `${row}-${num}`;
+    if (String(seatTierName(section, plain)).trim().toLowerCase() !== tierKey) {
       throw new AppError("INVALID_SEAT", 400, `Seat "${raw}" belongs to a different ticket category.`);
     }
-    const plain = `${row}-${num}`;
     if ((section.blocked || []).includes(plain)) {
       throw new AppError("INVALID_SEAT", 400, `Seat "${raw}" is not available for sale.`);
     }

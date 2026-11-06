@@ -12,6 +12,7 @@ import {
   type SeatingTemplate,
   capacityByTier,
   fromApiConfig,
+  renameTierInSections,
   toApiConfig,
   validateSeating,
 } from "@/lib/seating";
@@ -102,11 +103,7 @@ function EditEventForm() {
     setTicketTypes(updated);
     // Renaming a category keeps the seat map pointing at it (the server does the same)
     if (field === "name" && oldName.trim()) {
-      setSeatSections((prev) =>
-        prev.map((sec) =>
-          sec.tierName.trim().toLowerCase() === oldName.trim().toLowerCase() ? { ...sec, tierName: String(value) } : sec
-        )
-      );
+      setSeatSections((prev) => renameTierInSections(prev, oldName, String(value)));
     }
   };
 

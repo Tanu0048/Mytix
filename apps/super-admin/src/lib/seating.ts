@@ -25,6 +25,8 @@ export interface SeatSection {
   // ROWS + TABLES: seat keys like "A-5" / "T2-3"
   blocked?: string[];
   accessible?: string[];
+  /** Per-seat ticket category overrides, e.g. { "A-5": "VIP" }. Other seats use `tierName`. */
+  seatTiers?: Record<string, string>;
 }
 
 export interface SeatingConfigPayload {
@@ -134,10 +136,20 @@ function validKeySet(section: SeatSection): Set<string> {
 export function cleanMarks(section: SeatSection): SeatSection {
   if (section.kind === "STANDING") return section;
   const valid = validKeySet(section);
+  const blocked = (section.blocked || []).filter((k) => valid.has(k));
+  const blockedSet = new Set(blocked);
+  const seatTiers: Record<string, string> = {};
+  for (const [key, tier] of Object.entries(section.seatTiers || {})) {
+    // Keep only real, sellable seats whose category differs from the section default
+    if (valid.has(key) && !blockedSet.has(key) && tier && tier.trim().toLowerCase() !== section.tierName.trim().toLowerCase()) {
+      seatTiers[key] = tier;
+    }
+  }
   return {
     ...section,
-    blocked: (section.blocked || []).filter((k) => valid.has(k)),
+    blocked,
     accessible: (section.accessible || []).filter((k) => valid.has(k)),
+    seatTiers,
   };
 }
 
@@ -148,15 +160,59 @@ export function sectionCapacity(section: SeatSection): number {
   return Math.max(0, sectionRows(s).length * seatsPerRowOf(s) - (s.blocked?.length || 0));
 }
 
-/** Capacity per ticket category name (lower-cased). */
+/** Ticket category of one seat ("A-5"): its own override, else the section's category. */
+export function tierOfSeat(section: SeatSection, key: string): string {
+  return section.seatTiers?.[key] || section.tierName;
+}
+
+/** Sets one seat's ticket category (removing the override when it equals the section default). */
+export function setSeatTier(section: SeatSection, key: string, tierName: string): SeatSection {
+  const seatTiers = { ...(section.seatTiers || {}) };
+  if (!tierName || tierName.trim().toLowerCase() === section.tierName.trim().toLowerCase()) delete seatTiers[key];
+  else seatTiers[key] = tierName;
+  return { ...section, seatTiers };
+}
+
+/** Sets the ticket category for every seat in one row (or table). */
+export function setRowTier(section: SeatSection, row: string, tierName: string): SeatSection {
+  let next = section;
+  for (let n = 1; n <= seatsPerRowOf(section); n++) next = setSeatTier(next, `${row}-${n}`, tierName);
+  return next;
+}
+
+/** Capacity per ticket category name (lower-cased), counting each seat under its own category. */
 export function capacityByTier(sections: SeatSection[]): Map<string, number> {
   const map = new Map<string, number>();
-  for (const s of sections) {
-    const key = s.tierName.trim().toLowerCase();
-    if (!key) continue;
-    map.set(key, (map.get(key) || 0) + sectionCapacity(s));
+  const add = (name: string, n: number) => {
+    const key = name.trim().toLowerCase();
+    if (key && n > 0) map.set(key, (map.get(key) || 0) + n);
+  };
+  for (const raw of sections) {
+    if (raw.kind === "STANDING") {
+      add(raw.tierName, sectionCapacity(raw));
+      continue;
+    }
+    const s = cleanMarks(raw);
+    const overrides = Object.values(s.seatTiers || {});
+    for (const t of overrides) add(t, 1);
+    add(s.tierName, sectionCapacity(s) - overrides.length);
   }
   return map;
+}
+
+/** Renames a ticket category in all sections (defaults and per-seat overrides). */
+export function renameTierInSections(sections: SeatSection[], oldName: string, newName: string): SeatSection[] {
+  const oldKey = oldName.trim().toLowerCase();
+  if (!oldKey) return sections;
+  return sections.map((sec) => {
+    const seatTiers: Record<string, string> = {};
+    for (const [k, t] of Object.entries(sec.seatTiers || {})) seatTiers[k] = t.trim().toLowerCase() === oldKey ? newName : t;
+    return {
+      ...sec,
+      tierName: sec.tierName.trim().toLowerCase() === oldKey ? newName : sec.tierName,
+      seatTiers,
+    };
+  });
 }
 
 export function markOf(section: SeatSection, key: string): SeatMark {
@@ -306,10 +362,11 @@ export function toApiConfig(mode: SeatingMode, sections: SeatSection[]): Seating
       const s = cleanMarks(raw);
       const base = { id: s.id, name: s.name.trim(), tierName: s.tierName.trim(), kind: s.kind };
       if (s.kind === "STANDING") return { ...base, capacity: s.capacity || 0 };
+      const marks = { blocked: s.blocked || [], accessible: s.accessible || [], seatTiers: s.seatTiers || {} };
       if (s.kind === "TABLES") {
-        return { ...base, tables: s.tables || 0, seatsPerTable: s.seatsPerTable || 0, blocked: s.blocked || [], accessible: s.accessible || [] };
+        return { ...base, tables: s.tables || 0, seatsPerTable: s.seatsPerTable || 0, ...marks };
       }
-      return { ...base, rows: sectionRows(s), seatsPerRow: s.seatsPerRow || 0, blocked: s.blocked || [], accessible: s.accessible || [] };
+      return { ...base, rows: sectionRows(s), seatsPerRow: s.seatsPerRow || 0, ...marks };
     }),
   };
 }
@@ -326,6 +383,7 @@ interface ApiSection {
   capacity?: number;
   blocked?: string[];
   accessible?: string[];
+  seatTiers?: Record<string, string>;
 }
 
 /** Reads a saved seatingConfig (any version) back into builder state. */
@@ -346,6 +404,7 @@ export function fromApiConfig(
         seatsPerTable: s.seatsPerTable || s.seatsPerRow || 0,
         blocked: s.blocked || [],
         accessible: s.accessible || [],
+        seatTiers: s.seatTiers || {},
       };
     }
     const rows = (s.rows || []).map((r) => String(r).toUpperCase());
@@ -360,6 +419,7 @@ export function fromApiConfig(
       seatsPerRow: s.seatsPerRow || 0,
       blocked: s.blocked || [],
       accessible: s.accessible || [],
+      seatTiers: s.seatTiers || {},
     };
   });
   const kinds = new Set(sections.map((s) => s.kind));
@@ -394,6 +454,11 @@ export function validateSeating(mode: SeatingMode, sections: SeatSection[], tier
     names.add(key);
     if (!s.tierName.trim() || !tiers.has(s.tierName.trim().toLowerCase())) {
       problems.push(`“${label}”: choose a ticket category.`);
+    }
+    for (const t of new Set(Object.values(cleanMarks(s).seatTiers || {}))) {
+      if (!tiers.has(t.trim().toLowerCase())) {
+        problems.push(`“${label}”: some seats use category “${t}”, which no longer exists. Repaint them.`);
+      }
     }
     if (sectionCapacity(s) <= 0) problems.push(`“${label}” has no seats or capacity.`);
   }

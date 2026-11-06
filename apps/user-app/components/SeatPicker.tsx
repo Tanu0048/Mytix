@@ -32,6 +32,22 @@ export interface SeatingSection {
   blocked?: string[];
   /** Wheelchair spaces, e.g. ["A-1"]. */
   accessible?: string[];
+  /** Per-seat ticket category overrides, e.g. { "A-5": "VIP" }. Other seats use `tierName`. */
+  seatTiers?: Record<string, string>;
+}
+
+/** Ticket category names (lower-cased) used by numbered seats in a seat map, including per-seat overrides. */
+export function seatedTierNamesOf(config: SeatingConfig | null | undefined): Set<string> {
+  const names = new Set<string>();
+  for (const s of config?.sections || []) {
+    if ((s.kind || 'ROWS') === 'STANDING') continue;
+    const overrides = s.seatTiers || {};
+    const sellable = (s.rows?.length || 0) * (s.seatsPerRow || 0) - (s.blocked?.length || 0);
+    if (sellable > Object.keys(overrides).length) names.add((s.tierName || '').trim().toLowerCase());
+    for (const t of Object.values(overrides)) names.add(String(t).trim().toLowerCase());
+  }
+  names.delete('');
+  return names;
 }
 
 export interface SeatingConfig {
@@ -107,18 +123,19 @@ export default function SeatPicker({
     return null;
   }
   // Legend: only categories that are actually on the seat map
-  const seatedTierNames = new Set(seatSections.map((s) => (s.tierName || '').trim().toLowerCase()));
+  const seatedTierNames = seatedTierNamesOf(config);
   const legendTiers =
     config.version === 2
       ? ticketTypes.filter((t) => seatedTierNames.has(t.name.trim().toLowerCase()))
       : ticketTypes;
   const hasAccessible = seatSections.some((s) => (s.accessible || []).length > 0);
 
-  const getTierInfoForSection = (section: SeatingSection) => {
+  // Find a ticket category by name (falls back to the first category)
+  const getTierInfo = (tierName?: string) => {
     let index = 0;
-    if (section.tierName) {
+    if (tierName) {
       const matchIndex = ticketTypes.findIndex(
-        (t) => t.name.toLowerCase() === section.tierName?.toLowerCase()
+        (t) => t.name.trim().toLowerCase() === tierName.trim().toLowerCase()
       );
       if (matchIndex !== -1) index = matchIndex;
     }
@@ -189,14 +206,25 @@ export default function SeatPicker({
       >
         <View style={{ alignItems: 'center' }}>
           {seatSections.map((section, sIdx) => {
-            const { tier, borderColor } = getTierInfoForSection(section);
-            const price = tier ? `$${(tier.priceCents / 100).toFixed(0)} AUD` : '';
             const blocked = new Set(section.blocked || []);
             const accessible = new Set(section.accessible || []);
             const isTables = section.kind === 'TABLES';
+            // Section header shows a price, or a range when seats in it have different categories
+            const sectionPrices = Array.from(new Set([section.tierName || '', ...Object.values(section.seatTiers || {})]))
+              .map((n) => getTierInfo(n).tier?.priceCents)
+              .filter((c): c is number => typeof c === 'number');
+            const minPrice = sectionPrices.length ? Math.min(...sectionPrices) : null;
+            const maxPrice = sectionPrices.length ? Math.max(...sectionPrices) : null;
+            const price =
+              minPrice === null
+                ? ''
+                : minPrice === maxPrice
+                ? `$${(minPrice / 100).toFixed(0)} AUD`
+                : `$${(minPrice / 100).toFixed(0)}–$${(maxPrice! / 100).toFixed(0)} AUD`;
 
             const renderSeat = (rowName: string, seatNum: number, extraStyle?: object) => {
               const plain = `${rowName}-${seatNum}`;
+              const { tier, borderColor } = getTierInfo(section.seatTiers?.[plain] || section.tierName);
               const seatKey = `${section.name}:${plain}`;
               const isSelected = selectedSeats.includes(seatKey);
               const isBooked = isBookedSeat(section.name, rowName, seatNum);
@@ -257,7 +285,7 @@ export default function SeatPicker({
                 {/* Section Header Pill */}
                 <View style={styles.sectionPill}>
                   <Text style={styles.sectionPillTitle}>{section.name}</Text>
-                  {tier ? (
+                  {price ? (
                     <>
                       <Text style={styles.sectionPillDot}>•</Text>
                       <Text style={styles.sectionPillPrice}>{price}</Text>
