@@ -34,6 +34,7 @@ import {
   type SeatingTemplate,
   capacityByTier,
   renameTierInSections,
+  removeTierFromSections,
   toApiConfig,
   validateSeating,
 } from "@/lib/seating";
@@ -79,15 +80,27 @@ export default function CreateEventPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Last non-empty name of each ticket category (by position). The seat map refers to
+  // categories by name, so while a name is being retyped (and is briefly empty) we keep
+  // the seat map on the old name and move it to the new one as soon as it's non-empty.
+  const tierLinkNames = useRef<string[]>([]);
+
   const handleTicketChange = (index: number, field: string, value: any) => {
     const updated = [...ticketTypes];
-    const oldName = updated[index].name;
+    const currentName = updated[index].name;
     updated[index] = { ...updated[index], [field]: value };
     setTicketTypes(updated);
-    // Renaming a category keeps the seat map sections pointing at it
-    if (field === "name" && oldName.trim()) {
-      setSeatSections((prev) => renameTierInSections(prev, oldName, String(value)));
+    if (field !== "name") return;
+    const linkName = tierLinkNames.current[index] || currentName;
+    const newName = String(value);
+    if (!newName.trim()) {
+      tierLinkNames.current[index] = linkName; // remember what the seat map points at
+      return;
     }
+    if (linkName.trim() && linkName !== newName) {
+      setSeatSections((prev) => renameTierInSections(prev, linkName, newName));
+    }
+    tierLinkNames.current[index] = newName;
   };
 
   // Seated / standing categories get their quantity from the seat map
@@ -121,6 +134,7 @@ export default function CreateEventPage() {
       const isUntouchedDefault =
         prev.length === 1 && prev[0].name === "General Admission" && !prev[0].description && Number(prev[0].priceCents) === 5000;
       const base = isUntouchedDefault ? [] : prev;
+      if (isUntouchedDefault) tierLinkNames.current = [];
       const have = new Set(base.map((t) => t.name.trim().toLowerCase()));
       const added = tpl.tiers.filter((t) => !have.has(t.name.toLowerCase())).map((t) => emptyTier(t.name, t.priceCents));
       return [...base, ...added];
@@ -133,9 +147,13 @@ export default function CreateEventPage() {
 
   const removeTicketType = (index: number) => {
     if (ticketTypes.length === 1) return;
+    const removedName = tierLinkNames.current[index] || ticketTypes[index].name;
     const updated = [...ticketTypes];
     updated.splice(index, 1);
+    tierLinkNames.current.splice(index, 1);
     setTicketTypes(updated);
+    // Seats that used the deleted category fall back to the first remaining one
+    setSeatSections((prev) => removeTierFromSections(prev, removedName, updated[0]?.name || ""));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -520,12 +538,15 @@ export default function CreateEventPage() {
             sections={seatSections}
             onSectionsChange={setSeatSections}
             tiers={ticketTypes}
+            onTierChange={handleTicketChange}
             onAddTier={addTierNamed}
+            onRemoveTier={removeTicketType}
             onApplyTemplate={applyTemplateTiers}
           />
         </div>
 
-        {/* ===== CARD 3: TICKET CATEGORIES ===== */}
+        {/* ===== CARD 3: TICKET CATEGORIES (open / standing events only; seated events set them on the seat map) ===== */}
+        {seatingMode === "GENERAL" && (
         <div className="rounded-xl bg-white p-6 sm:p-7 shadow-xs border border-slate-200/80">
           
           {/* Section Header */}
@@ -537,7 +558,7 @@ export default function CreateEventPage() {
               <div>
                 <h2 className="text-base font-semibold text-slate-900 leading-tight">Ticket Categories</h2>
                 <p className="text-sm text-slate-500 mt-0.5">
-                  Set a name and price for each category (e.g. VIP, Standard, Student). Seated categories get their ticket count from the seat map.
+                  Set a name, price and number of tickets for each category (e.g. VIP, Standard, Student).
                 </p>
               </div>
             </div>
@@ -546,7 +567,7 @@ export default function CreateEventPage() {
             <button 
               type="button" 
               onClick={addTicketType} 
-              className="flex items-center gap-1.5 text-sm font-semibold text-amber-900 bg-[#FFF9EB] hover:bg-amber-100/70 border border-amber-200/80 px-4 py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer"
+              className="flex items-center gap-1.5 whitespace-nowrap shrink-0 text-sm font-semibold text-amber-900 bg-[#FFF9EB] hover:bg-amber-100/70 border border-amber-200/80 px-4 py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-3" /> Add Category
             </button>
@@ -655,6 +676,7 @@ export default function CreateEventPage() {
           </div>
 
         </div>
+        )}
 
         {/* ===== BOTTOM ACTION BUTTON ===== */}
         <div className="flex justify-end pt-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Save, Loader2, Plus, Trash2, Ticket, Armchair } from "lucide-react";
 import api from "@/lib/api";
@@ -13,6 +13,7 @@ import {
   capacityByTier,
   fromApiConfig,
   renameTierInSections,
+  removeTierFromSections,
   toApiConfig,
   validateSeating,
 } from "@/lib/seating";
@@ -96,15 +97,27 @@ function EditEventForm() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Last non-empty name of each ticket category (by position). The seat map refers to
+  // categories by name, so while a name is being retyped (and is briefly empty) we keep
+  // the seat map on the old name and move it to the new one as soon as it's non-empty.
+  const tierLinkNames = useRef<string[]>([]);
+
   const handleTicketChange = (index: number, field: string, value: any) => {
     const updated = [...ticketTypes];
-    const oldName: string = updated[index].name || "";
+    const currentName: string = updated[index].name || "";
     updated[index] = { ...updated[index], [field]: value };
     setTicketTypes(updated);
-    // Renaming a category keeps the seat map pointing at it (the server does the same)
-    if (field === "name" && oldName.trim()) {
-      setSeatSections((prev) => renameTierInSections(prev, oldName, String(value)));
+    if (field !== "name") return;
+    const linkName = tierLinkNames.current[index] || currentName;
+    const newName = String(value);
+    if (!newName.trim()) {
+      tierLinkNames.current[index] = linkName; // remember what the seat map points at
+      return;
     }
+    if (linkName.trim() && linkName !== newName) {
+      setSeatSections((prev) => renameTierInSections(prev, linkName, newName));
+    }
+    tierLinkNames.current[index] = newName;
   };
 
   const anySold = ticketTypes.some((t) => (t.sold || 0) > 0);
@@ -159,9 +172,16 @@ function EditEventForm() {
       alert("An event must have at least one ticket tier.");
       return;
     }
+    const removedName = tierLinkNames.current[index] || tier.name || "";
     const updated = [...ticketTypes];
     updated.splice(index, 1);
+    tierLinkNames.current.splice(index, 1);
     setTicketTypes(updated);
+    // Seats that used the deleted category fall back to the first remaining one
+    if (seatSections.length > 0) {
+      setSeatSections((prev) => removeTierFromSections(prev, removedName, updated[0]?.name || ""));
+      setSeatingTouched(true);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,7 +196,8 @@ function EditEventForm() {
       }
       const sendSeating = seatingTouched && !seatingLocked;
       if (sendSeating) {
-        const problems = validateSeating(seatingMode, seatSections, tierNames);
+        const savedTierNames = ticketTypes.filter((t) => t.id).map((t) => String(t.name || ""));
+        const problems = validateSeating(seatingMode, seatSections, tierNames, savedTierNames);
         if (problems.length > 0) throw new Error(problems[0]);
       }
 
@@ -354,15 +375,18 @@ function EditEventForm() {
               setSeatSections(next);
               setSeatingTouched(true);
             }}
-            tiers={ticketTypes}
+            tiers={ticketTypes.map((t) => ({ ...t, removable: !t.id }))}
+            onTierChange={handleTicketChange}
             onAddTier={addTierNamed}
+            onRemoveTier={removeTicketType}
             onApplyTemplate={applyTemplateTiers}
             locked={seatingLocked}
             lockedReason={seatingLockReason}
           />
         </div>
 
-        {/* Ticketing Tiers Card */}
+        {/* Ticketing Tiers Card (open / standing events only; seated events edit categories on the seat map) */}
+        {seatingMode === "GENERAL" && (
         <div className="rounded-xl bg-white p-8 shadow-xs border border-slate-200/80">
           <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
             <div>
@@ -447,6 +471,7 @@ function EditEventForm() {
             ))}
           </div>
         </div>
+        )}
 
         {/* Submit Button */}
         <div className="flex justify-end gap-3">

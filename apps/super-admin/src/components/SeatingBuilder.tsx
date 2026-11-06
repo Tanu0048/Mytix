@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Sparkles, Lock, Accessibility, Ban, Users, Armchair, UtensilsCrossed, AlertTriangle, Paintbrush } from "lucide-react";
+import { Plus, Trash2, Sparkles, Lock, Accessibility, Ban, Users, Armchair, UtensilsCrossed, PaintBucket } from "lucide-react";
 import {
   type SeatingMode,
   type SeatSection,
@@ -18,19 +18,47 @@ import {
   sectionCapacity,
   capacityByTier,
   markOf,
-  cycleMark,
   cleanMarks,
   rowLabel,
   rowIndex,
   tierOfSeat,
-  setSeatTier,
+  paintSeat,
   setRowTier,
+  toggleAccessible,
+  toggleBlocked,
+  fillSection,
 } from "@/lib/seating";
 
-/** What tapping a seat in a preview does. */
-type Tool = { type: "marks" } | { type: "tier"; tier: string };
+export interface BuilderTier {
+  name: string;
+  priceCents: number | string;
+  /** Tickets already sold (edit page) — such categories can't be deleted. */
+  sold?: number;
+  /** Set to false for categories that can't be deleted here (e.g. already saved). */
+  removable?: boolean;
+}
 
-/** Colours used to show each ticket category on the seat map (by category order). */
+interface SeatingBuilderProps {
+  mode: SeatingMode;
+  onModeChange: (mode: SeatingMode) => void;
+  sections: SeatSection[];
+  onSectionsChange: (sections: SeatSection[]) => void;
+  /** Ticket categories, edited right here for seated events. */
+  tiers: BuilderTier[];
+  onTierChange: (index: number, field: "name" | "priceCents", value: string | number) => void;
+  /** Creates a ticket category and returns its final (unique) name. */
+  onAddTier: (suggestedName: string, priceCents?: number) => string;
+  onRemoveTier: (index: number) => void;
+  /** Called when a template is applied so the page can create the template's categories. */
+  onApplyTemplate: (template: SeatingTemplate) => void;
+  /** When true the seat layout can't change (e.g. tickets sold). Names and prices stay editable. */
+  locked?: boolean;
+  lockedReason?: string;
+}
+
+/** The brush: what tapping a seat does. A category is found by name, else by position (survives renames). */
+type Brush = { type: "tier"; index: number; name?: string } | { type: "accessible" } | { type: "blocked" };
+
 const TIER_COLORS = [
   { seat: "bg-amber-400 text-slate-900", swatch: "bg-amber-400" },
   { seat: "bg-sky-400 text-slate-900", swatch: "bg-sky-400" },
@@ -41,36 +69,15 @@ const TIER_COLORS = [
   { seat: "bg-teal-400 text-slate-900", swatch: "bg-teal-400" },
   { seat: "bg-fuchsia-400 text-slate-900", swatch: "bg-fuchsia-400" },
 ];
-const UNKNOWN_TIER_COLOR = { seat: "bg-slate-600 text-slate-200", swatch: "bg-slate-600" };
+const UNKNOWN_COLOR = { seat: "bg-slate-600 text-slate-200", swatch: "bg-slate-600" };
 
-export interface BuilderTier {
-  name: string;
-  priceCents: number | string;
-}
-
-interface SeatingBuilderProps {
-  mode: SeatingMode;
-  onModeChange: (mode: SeatingMode) => void;
-  sections: SeatSection[];
-  onSectionsChange: (sections: SeatSection[]) => void;
-  tiers: BuilderTier[];
-  /** Creates a ticket category and returns its final (unique) name. */
-  onAddTier: (suggestedName: string, priceCents?: number) => string;
-  /** Called when a template is applied so the page can create the template's categories. */
-  onApplyTemplate: (template: SeatingTemplate) => void;
-  /** When true the layout can be viewed but not changed (e.g. tickets already sold). */
-  locked?: boolean;
-  lockedReason?: string;
-}
-
-const NEW_TIER = "__new_category__";
-const MAX_PREVIEW_ROWS = 30;
-const MAX_PREVIEW_SEATS = 40;
-const MAX_PREVIEW_TABLES = 60;
+const MAX_PREVIEW_ROWS = 40;
+const MAX_PREVIEW_SEATS = 50;
+const MAX_PREVIEW_TABLES = 80;
 
 const inputCls =
-  "w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 disabled:bg-slate-50 disabled:text-slate-500";
-const labelCls = "block text-[13px] font-semibold text-slate-700 mb-1";
+  "w-full rounded-lg border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 disabled:bg-slate-50 disabled:text-slate-500";
+const labelCls = "block text-[13px] font-medium text-slate-600 mb-1";
 
 function KindIcon({ kind, className = "w-4 h-4" }: { kind: SectionKind; className?: string }) {
   if (kind === "STANDING") return <Users className={className} />;
@@ -84,47 +91,43 @@ function clampInt(value: string, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
-/** One clickable seat in the preview, coloured by its ticket category. */
+/** One seat on the map. Pointer-down paints (so you can also drag across seats). */
 function SeatDot({
   label,
   mark,
   colorCls,
-  onApply,
-  dragPaint,
+  onPaint,
   disabled,
   title,
 }: {
   label: string;
   mark: "normal" | "accessible" | "blocked";
   colorCls: string;
-  onApply: () => void;
-  /** When true, dragging across seats with the mouse button held applies the tool too. */
-  dragPaint: boolean;
+  onPaint: () => void;
   disabled?: boolean;
   title: string;
 }) {
   const cls =
     mark === "blocked"
       ? "border border-dashed border-slate-500 bg-transparent text-slate-500"
-      : `${colorCls} ${mark === "accessible" ? "ring-2 ring-white/90" : ""}`;
+      : `${colorCls} ${mark === "accessible" ? "ring-2 ring-white" : ""}`;
   return (
     <button
       type="button"
-      // Pointer down applies immediately (and starts a drag); click only handles keyboard activation
       onPointerDown={(e) => {
         if (disabled || e.button !== 0) return;
         e.preventDefault();
-        onApply();
+        onPaint();
       }}
       onPointerEnter={(e) => {
-        if (!disabled && dragPaint && e.buttons === 1) onApply();
+        if (!disabled && e.buttons === 1) onPaint();
       }}
       onClick={(e) => {
-        if (!disabled && e.detail === 0) onApply();
+        if (!disabled && e.detail === 0) onPaint(); // keyboard
       }}
       disabled={disabled}
       title={title}
-      className={`w-5 h-5 shrink-0 rounded-[5px] text-[10px] font-semibold flex items-center justify-center transition-transform select-none ${cls} ${
+      className={`w-6 h-6 shrink-0 rounded-md text-[10px] font-semibold flex items-center justify-center select-none transition-transform ${cls} ${
         disabled ? "cursor-default" : "cursor-pointer hover:scale-110"
       }`}
     >
@@ -133,42 +136,33 @@ function SeatDot({
   );
 }
 
-function SectionPreview({
+function SeatMap({
   section,
   onChange,
   locked,
-  tool,
+  paint,
+  paintRow,
   colorFor,
+  brushLabel,
 }: {
   section: SeatSection;
   onChange: (s: SeatSection) => void;
   locked?: boolean;
-  tool: Tool;
+  paint: (s: SeatSection, key: string) => SeatSection;
+  paintRow: ((s: SeatSection, row: string) => SeatSection) | null;
   colorFor: (tierName: string) => { seat: string; swatch: string };
+  brushLabel: string;
 }) {
   const s = cleanMarks(section);
   const rows = sectionRows(s);
   const perRow = seatsPerRowOf(s);
-  const painting = tool.type === "tier";
+  const isTables = s.kind === "TABLES";
 
-  const apply = (key: string) => {
-    if (locked) return;
-    if (tool.type === "tier") {
-      if (markOf(s, key) === "blocked") return; // blocked seats aren't sold
-      onChange(setSeatTier(s, key, tool.tier));
-    } else {
-      onChange(cycleMark(s, key));
-    }
-  };
-  const paintRow = (row: string) => {
-    if (!locked && tool.type === "tier") onChange(setRowTier(s, row, tool.tier));
-  };
-  const seatTitle = (key: string) => {
+  const title = (key: string) => {
     const mark = markOf(s, key);
-    const place = s.kind === "TABLES" ? key.replace(/^T(\d+)-/, "Table $1 · Chair ") : key.replace("-", "");
-    const what = mark === "blocked" ? "Blocked (not for sale)" : `${tierOfSeat(s, key)}${mark === "accessible" ? " · Wheelchair" : ""}`;
-    const hint = locked ? "" : painting ? ` — tap to make it ${tool.tier}` : " — tap: normal → wheelchair → blocked";
-    return `${place}: ${what}${hint}`;
+    const place = isTables ? key.replace(/^T(\d+)-/, "Table $1, chair ") : key.replace("-", "");
+    const what = mark === "blocked" ? "not for sale" : `${tierOfSeat(s, key)}${mark === "accessible" ? ", wheelchair space" : ""}`;
+    return locked ? `${place}: ${what}` : `${place}: ${what} — tap to apply “${brushLabel}”`;
   };
   const dot = (key: string, label: string) => (
     <SeatDot
@@ -176,80 +170,70 @@ function SectionPreview({
       label={label}
       mark={markOf(s, key)}
       colorCls={colorFor(tierOfSeat(s, key)).seat}
-      onApply={() => apply(key)}
-      dragPaint={painting}
+      onPaint={() => !locked && onChange(paint(s, key))}
       disabled={locked}
-      title={seatTitle(key)}
+      title={title(key)}
     />
   );
-  const rowLabelCls = `text-[11px] font-semibold text-slate-400 ${
-    painting && !locked ? "cursor-pointer hover:text-white underline decoration-dotted underline-offset-2" : "cursor-default"
-  }`;
+  const canPaintRow = !locked && !!paintRow;
+  const rowButton = (row: string, children: React.ReactNode, className: string) => (
+    <button
+      type="button"
+      disabled={!canPaintRow}
+      onClick={() => paintRow && onChange(paintRow(s, row))}
+      title={canPaintRow ? `Make all of ${isTables ? row.replace("T", "table ") : `row ${row}`} “${brushLabel}”` : undefined}
+      className={`${className} ${canPaintRow ? "cursor-pointer hover:text-white hover:border-white" : "cursor-default"}`}
+    >
+      {children}
+    </button>
+  );
 
-  if (s.kind === "TABLES") {
-    const shown = rows.slice(0, MAX_PREVIEW_TABLES);
-    return (
-      <div>
-        <div className="flex flex-wrap gap-3 justify-center">
-          {shown.map((t) => (
-            <div key={t} className="relative w-24 h-24">
-              <button
-                type="button"
-                onClick={() => paintRow(t)}
-                disabled={locked || !painting}
-                title={painting && !locked ? `Make every chair at ${t} “${tool.tier}”` : t}
-                className={`absolute inset-5 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-xs font-semibold text-slate-200 ${
-                  painting && !locked ? "cursor-pointer hover:border-white" : "cursor-default"
-                }`}
-              >
-                {t}
-              </button>
+  return (
+    <div className="bg-slate-950 rounded-lg px-3 py-4">
+      <div className="mx-auto mb-4 w-2/3 max-w-sm">
+        <div className="h-1.5 rounded-full bg-linear-to-r from-transparent via-amber-400 to-transparent" />
+        <p className="text-center text-[11px] font-medium uppercase tracking-widest text-slate-500 mt-1">Stage</p>
+      </div>
+      {isTables ? (
+        <div className="flex flex-wrap gap-4 justify-center">
+          {rows.slice(0, MAX_PREVIEW_TABLES).map((t) => (
+            <div key={t} className="relative w-28 h-28">
+              {rowButton(
+                t,
+                t.replace("T", "Table "),
+                "absolute inset-7 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-colors"
+              )}
               {Array.from({ length: perRow }, (_, i) => {
                 const angle = (2 * Math.PI * i) / perRow - Math.PI / 2;
-                const key = `${t}-${i + 1}`;
                 return (
                   <div
-                    key={key}
+                    key={i}
                     className="absolute"
-                    style={{ left: `calc(50% + ${Math.cos(angle) * 38}px - 10px)`, top: `calc(50% + ${Math.sin(angle) * 38}px - 10px)` }}
+                    style={{ left: `calc(50% + ${Math.cos(angle) * 44}px - 12px)`, top: `calc(50% + ${Math.sin(angle) * 44}px - 12px)` }}
                   >
-                    {dot(key, String(i + 1))}
+                    {dot(`${t}-${i + 1}`, String(i + 1))}
                   </div>
                 );
               })}
             </div>
           ))}
+          {rows.length > MAX_PREVIEW_TABLES && (
+            <p className="w-full text-center text-xs text-slate-500">+ {rows.length - MAX_PREVIEW_TABLES} more tables</p>
+          )}
         </div>
-        {rows.length > shown.length && (
-          <p className="text-center text-xs text-slate-500 mt-2">+ {rows.length - shown.length} more tables (same layout)</p>
-        )}
-      </div>
-    );
-  }
-
-  const shownRows = rows.slice(0, MAX_PREVIEW_ROWS);
-  const shownSeats = Math.min(perRow, MAX_PREVIEW_SEATS);
-  return (
-    <div className="overflow-x-auto">
-      <div className="space-y-1 min-w-fit mx-auto w-fit">
-        {shownRows.map((r) => (
-          <div key={r} className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => paintRow(r)}
-              disabled={locked || !painting}
-              title={painting && !locked ? `Make all of row ${r} “${tool.tier}”` : `Row ${r}`}
-              className={`w-6 text-right pr-1 ${rowLabelCls}`}
-            >
-              {r}
-            </button>
-            {Array.from({ length: shownSeats }, (_, i) => dot(`${r}-${i + 1}`, String(i + 1)))}
-            {perRow > shownSeats && <span className="text-[11px] text-slate-500 ml-1">+{perRow - shownSeats}</span>}
+      ) : (
+        <div className="overflow-x-auto">
+          <div className="space-y-1 w-fit mx-auto">
+            {rows.slice(0, MAX_PREVIEW_ROWS).map((r) => (
+              <div key={r} className="flex items-center gap-1">
+                {rowButton(r, r, "w-7 shrink-0 text-right pr-1.5 text-xs font-semibold text-slate-400 transition-colors")}
+                {Array.from({ length: Math.min(perRow, MAX_PREVIEW_SEATS) }, (_, i) => dot(`${r}-${i + 1}`, String(i + 1)))}
+                {perRow > MAX_PREVIEW_SEATS && <span className="text-xs text-slate-500 ml-1">+{perRow - MAX_PREVIEW_SEATS}</span>}
+              </div>
+            ))}
+            {rows.length > MAX_PREVIEW_ROWS && <p className="text-center text-xs text-slate-500">+ {rows.length - MAX_PREVIEW_ROWS} more rows</p>}
           </div>
-        ))}
-      </div>
-      {rows.length > shownRows.length && (
-        <p className="text-center text-xs text-slate-500 mt-2">+ {rows.length - shownRows.length} more rows</p>
+        </div>
       )}
     </div>
   );
@@ -261,54 +245,66 @@ export default function SeatingBuilder({
   sections,
   onSectionsChange,
   tiers,
+  onTierChange,
   onAddTier,
+  onRemoveTier,
   onApplyTemplate,
   locked = false,
   lockedReason,
 }: SeatingBuilderProps) {
-  const [newTierNote, setNewTierNote] = useState("");
-  const [tool, setTool] = useState<Tool>({ type: "marks" });
+  const [brush, setBrush] = useState<Brush>({ type: "tier", index: 0 });
   const allowedKinds = kindsForMode(mode);
-  const tierNames = tiers.map((t) => String(t.name || "").trim()).filter(Boolean);
+  const tierNames = tiers.map((t) => String(t.name || "").trim());
   const caps = capacityByTier(sections);
   const totalCapacity = sections.reduce((sum, s) => sum + sectionCapacity(s), 0);
-  const hasSeatedSection = sections.some((s) => s.kind !== "STANDING");
+  const hasSeats = sections.some((s) => s.kind !== "STANDING");
 
   const colorFor = (tierName: string) => {
-    const idx = tierNames.findIndex((n) => n.toLowerCase() === tierName.trim().toLowerCase());
-    return idx === -1 ? UNKNOWN_TIER_COLOR : TIER_COLORS[idx % TIER_COLORS.length];
-  };
-  // If the selected paint category was renamed or deleted, fall back to the wheelchair/block tool
-  const activeTool: Tool =
-    tool.type === "tier" && !tierNames.some((n) => n.toLowerCase() === tool.tier.toLowerCase()) ? { type: "marks" } : tool;
-
-  const updateSection = (idx: number, patch: Partial<SeatSection> | SeatSection) => {
-    const next = [...sections];
-    next[idx] = cleanMarks({ ...next[idx], ...patch });
-    onSectionsChange(next);
+    const idx = tierNames.findIndex((n) => n && n.toLowerCase() === tierName.trim().toLowerCase());
+    return idx === -1 ? UNKNOWN_COLOR : TIER_COLORS[idx % TIER_COLORS.length];
   };
 
-  const removeSection = (idx: number) => onSectionsChange(sections.filter((_, i) => i !== idx));
+  // Resolve the brush's category: by name first, else by position (keeps working while a name is retyped)
+  const brushTierIndex =
+    brush.type !== "tier"
+      ? -1
+      : (() => {
+          const byName = brush.name ? tierNames.findIndex((n) => n.toLowerCase() === brush.name!.toLowerCase()) : -1;
+          return byName !== -1 ? byName : Math.min(brush.index, tiers.length - 1);
+        })();
+  const brushTier = brushTierIndex >= 0 ? tierNames[brushTierIndex] : "";
+  const brushLabel = brush.type === "accessible" ? "Wheelchair space" : brush.type === "blocked" ? "Not for sale" : brushTier || "category";
+
+  const paint = (s: SeatSection, key: string): SeatSection => {
+    if (brush.type === "accessible") return toggleAccessible(s, key);
+    if (brush.type === "blocked") return toggleBlocked(s, key);
+    return brushTier ? paintSeat(s, key, brushTier) : s;
+  };
+  const paintRow = brush.type === "tier" && brushTier ? (s: SeatSection, row: string) => setRowTier(s, row, brushTier) : null;
+
+  const updateSection = (idx: number, next: SeatSection) => {
+    const copy = [...sections];
+    copy[idx] = cleanMarks(next);
+    onSectionsChange(copy);
+  };
 
   const addSection = (kind: SectionKind) => {
-    const count = sections.filter((s) => s.kind === kind).length + 1;
-    const baseName = kind === "STANDING" ? "Standing Area" : kind === "TABLES" ? "Tables" : "Section";
-    let name = count === 1 && kind === "STANDING" ? baseName : `${baseName} ${count}`;
+    const base = kind === "STANDING" ? "Standing area" : kind === "TABLES" ? "Tables" : "Section";
     const taken = new Set(sections.map((s) => s.name.trim().toLowerCase()));
-    let n = count;
-    while (taken.has(name.toLowerCase())) name = `${baseName} ${++n}`;
-    onSectionsChange([...sections, makeSection(kind, name, tierNames[0] || "", nextStartRow(sections))]);
+    let n = sections.filter((s) => s.kind === kind).length + 1;
+    let name = `${base} ${n}`;
+    while (taken.has(name.toLowerCase())) name = `${base} ${++n}`;
+    onSectionsChange([...sections, makeSection(kind, name, brushTier || tierNames[0] || "", nextStartRow(sections))]);
   };
 
   const chooseMode = (m: SeatingMode) => {
     if (locked || m === mode) return;
     onModeChange(m);
-    // Remove section types the new mode doesn't support; start with one section if empty
     const allowed = kindsForMode(m);
     const kept = sections.filter((s) => allowed.includes(s.kind));
     if (m !== "GENERAL" && kept.length === 0) {
-      const firstKind: SectionKind = m === "TABLES" ? "TABLES" : "ROWS";
-      kept.push(makeSection(firstKind, firstKind === "TABLES" ? "Tables 1" : "Section 1", tierNames[0] || ""));
+      const kind: SectionKind = m === "TABLES" ? "TABLES" : "ROWS";
+      kept.push(makeSection(kind, kind === "TABLES" ? "Tables 1" : "Section 1", tierNames[0] || ""));
     }
     onSectionsChange(m === "GENERAL" ? [] : kept);
   };
@@ -318,31 +314,27 @@ export default function SeatingBuilder({
     if (sections.length > 0 && !window.confirm(`Replace your current layout with “${tpl.title}”?`)) return;
     onApplyTemplate(tpl);
     onSectionsChange(tpl.build());
+    setBrush({ type: "tier", index: 0, name: tpl.tiers[0]?.name });
   };
 
-  const handleTierSelect = (idx: number, value: string) => {
-    if (value === NEW_TIER) {
-      const name = onAddTier(sections[idx].name.trim() || "New Category");
-      updateSection(idx, { tierName: name });
-      setNewTierNote(`New ticket category “${name}” added — set its price in Ticket Categories below.`);
-      return;
-    }
-    updateSection(idx, { tierName: value });
+  const addCategory = () => {
+    const name = onAddTier("New category");
+    setBrush({ type: "tier", index: tiers.length, name });
   };
 
   return (
     <div className="space-y-6">
       {locked && (
-        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[13px] font-semibold">
+        <div className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-[13px]">
           <Lock className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
           <span>{lockedReason || "The seat layout is locked."}</span>
         </div>
       )}
 
-      {/* Step 1 — how will people attend? */}
+      {/* How do people attend? */}
       <div>
-        <p className="text-[13px] font-semibold text-slate-900 mb-3">1. How will people attend this event?</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <p className="text-sm font-semibold text-slate-900 mb-2">How will people attend?</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {MODE_OPTIONS.map((opt) => {
             const active = mode === opt.id;
             return (
@@ -351,351 +343,298 @@ export default function SeatingBuilder({
                 type="button"
                 onClick={() => chooseMode(opt.id)}
                 disabled={locked && !active}
-                className={`text-left p-4 rounded-xl border-2 transition-all ${
-                  active
-                    ? "border-amber-400 bg-amber-50/50 ring-2 ring-amber-400/20"
-                    : "border-slate-100 bg-slate-50/40 hover:border-slate-200 disabled:opacity-50 disabled:hover:border-slate-100"
+                title={`${opt.subtitle} e.g. ${opt.example}`}
+                className={`text-left p-3 rounded-lg border transition-colors ${
+                  active ? "border-amber-400 bg-amber-50 ring-1 ring-amber-400" : "border-slate-200 bg-white hover:border-slate-300 disabled:opacity-50"
                 } ${locked ? "cursor-default" : "cursor-pointer"}`}
               >
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="text-sm font-semibold text-slate-900">
-                    <span className="mr-1.5">{opt.emoji}</span>
-                    {opt.title}
-                  </span>
-                  {active && (
-                    <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[13px] font-semibold shrink-0">✓</span>
-                  )}
-                </div>
-                <p className="text-[13px] text-slate-500 leading-relaxed font-medium">{opt.subtitle}</p>
-                <p className="text-xs text-slate-400 font-semibold mt-1">e.g. {opt.example}</p>
+                <span className="block text-sm font-semibold text-slate-900">
+                  <span className="mr-1">{opt.emoji}</span> {opt.title}
+                </span>
+                <span className="block text-xs text-slate-500 mt-0.5 leading-snug">{opt.example}</span>
               </button>
             );
           })}
         </div>
         {mode === "GENERAL" && (
-          <p className="mt-3 text-[13px] font-semibold text-slate-500">
-            ✓ Nothing else to set up. Buyers choose a ticket category and quantity. The “Total Tickets” you set in each category is the limit.
-          </p>
+          <p className="mt-3 text-[13px] text-slate-500">No seat map needed. Set your ticket categories, prices and ticket limits below.</p>
         )}
       </div>
 
       {mode !== "GENERAL" && (
         <>
-          {/* Step 2 — quick start */}
+          {/* Ready-made layouts */}
           {!locked && (
-            <div>
-              <p className="text-[13px] font-semibold text-slate-900 mb-1">2. Start from a ready-made layout <span className="text-slate-400 font-semibold">(optional)</span></p>
-              <p className="text-[13px] text-slate-400 font-medium mb-3">Pick one and adjust it, or build your own below. Missing ticket categories are created for you.</p>
-              <div className="flex flex-wrap gap-2">
-                {TEMPLATES[mode].map((tpl) => (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    onClick={() => applyTemplate(tpl)}
-                    className="flex items-start gap-2 text-left px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:border-amber-300 hover:bg-amber-50/40 transition-colors cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-                    <span>
-                      <span className="block text-[13px] font-semibold text-slate-900">{tpl.title}</span>
-                      <span className="block text-xs text-slate-500">{tpl.description}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[13px] font-medium text-slate-600 mr-1">Quick start:</span>
+              {TEMPLATES[mode].map((tpl) => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => applyTemplate(tpl)}
+                  title={tpl.description}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[13px] text-slate-700 hover:border-amber-300 hover:bg-amber-50 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> {tpl.title}
+                </button>
+              ))}
             </div>
           )}
 
-          {/* Step 3 — sections */}
-          <div>
-            <p className="text-[13px] font-semibold text-slate-900 mb-1">{locked ? "Layout" : "3. Build your layout"}</p>
-            {!locked && (
-              <p className="text-[13px] text-slate-500 mb-3">
-                Set the size of each section, then use the seat tools below to decide exactly what every seat is.
-              </p>
-            )}
-            {newTierNote && !locked && (
-              <div className="mb-3 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[13px] font-semibold">{newTierNote}</div>
-            )}
+          {/* Categories = the paint palette */}
+          <div className="sticky top-16 z-10 rounded-xl border border-slate-200 bg-white/95 backdrop-blur p-4 shadow-xs">
+            <div className="flex items-baseline justify-between gap-2 mb-1">
+              <p className="text-sm font-semibold text-slate-900">Ticket categories</p>
+              <p className="text-[13px] text-slate-500">{totalCapacity} tickets in total</p>
+            </div>
+            <p className="text-[13px] text-slate-500 mb-3">
+              {locked ? "You can still change names and prices." : "Pick a category, then tap seats (or a row letter) to give them that category."}
+            </p>
 
-            {/* Seat tools: what a tap on a seat does */}
-            {!locked && hasSeatedSection && (
-              <div className="sticky top-16 z-10 mb-4 rounded-xl border border-slate-200 bg-white/95 backdrop-blur p-3 shadow-xs">
-                <div className="flex items-center gap-2 mb-2">
-                  <Paintbrush className="w-4 h-4 text-amber-600" />
-                  <span className="text-[13px] font-semibold text-slate-900">Seat tools — choose what tapping a seat does</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {tierNames.map((n) => {
-                    const active = activeTool.type === "tier" && activeTool.tier.toLowerCase() === n.toLowerCase();
-                    return (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setTool({ type: "tier", tier: n })}
-                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[13px] font-medium transition-colors cursor-pointer ${
-                          active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                        }`}
-                      >
-                        <span className={`w-3 h-3 rounded-sm ${colorFor(n).swatch}`} />
-                        Make seats {n}
-                      </button>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    onClick={() => setTool({ type: "marks" })}
-                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[13px] font-medium transition-colors cursor-pointer ${
-                      activeTool.type === "marks" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                    }`}
-                  >
-                    <Accessibility className="w-3.5 h-3.5" /> Wheelchair / <Ban className="w-3.5 h-3.5" /> Block
-                  </button>
-                </div>
-                <p className="text-xs text-slate-500 mt-2">
-                  {activeTool.type === "tier"
-                    ? `Tap seats (or hold and drag) to make them “${activeTool.tier}”. Tap a row letter or table name to change the whole row/table.`
-                    : "Tap a seat: normal → ♿ wheelchair space → blocked (aisle, pillar, not for sale) → normal."}
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              {sections.map((sec, idx) => {
-                const rows = sectionRows(sec);
-                const capacity = sectionCapacity(sec);
-                const tierMissing = !sec.tierName || !tierNames.some((n) => n.toLowerCase() === sec.tierName.trim().toLowerCase());
+            <div className="space-y-2">
+              {tiers.map((t, i) => {
+                const active = !locked && brush.type === "tier" && brushTierIndex === i;
+                const count = caps.get(tierNames[i].toLowerCase()) || 0;
+                const canRemove = !locked && tiers.length > 1 && !(t.sold && t.sold > 0) && t.removable !== false;
                 return (
-                  <div key={sec.id} className="rounded-xl border border-slate-200/80 bg-slate-50/30 overflow-hidden">
-                    {/* Header */}
-                    <div className="p-4 space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-800 bg-amber-100/70 border border-amber-200/70 px-2 py-1 rounded-lg">
-                          <KindIcon kind={sec.kind} className="w-3 h-3" /> {KIND_LABELS[sec.kind].title}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[13px] font-semibold text-slate-700">
-                            {capacity} {sec.kind === "STANDING" ? "people" : "seats"}
-                          </span>
-                          {!locked && sections.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeSection(idx)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-                              title="Remove section"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className={labelCls}>Section name</label>
-                          <input
-                            type="text"
-                            value={sec.name}
-                            disabled={locked}
-                            onChange={(e) => updateSection(idx, { name: e.target.value.replace(/:/g, "") })}
-                            placeholder={sec.kind === "STANDING" ? "e.g. Dance Floor" : sec.kind === "TABLES" ? "e.g. VIP Tables" : "e.g. Balcony"}
-                            className={inputCls}
-                          />
-                        </div>
-                        <div>
-                          <label className={labelCls}>
-                            {sec.kind === "STANDING" ? "Sold as ticket category" : "Default category (all seats)"}
-                          </label>
-                          <select
-                            value={tierMissing ? "" : tierNames.find((n) => n.toLowerCase() === sec.tierName.trim().toLowerCase())}
-                            disabled={locked}
-                            onChange={(e) => handleTierSelect(idx, e.target.value)}
-                            className={`${inputCls} ${tierMissing ? "border-red-300" : ""}`}
-                          >
-                            <option value="" disabled>
-                              Choose a category…
-                            </option>
-                            {tierNames.map((n) => (
-                              <option key={n} value={n}>
-                                {n}
-                              </option>
-                            ))}
-                            <option value={NEW_TIER}>＋ Create a new category</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Kind-specific settings */}
-                      {sec.kind === "ROWS" && (
-                        <div className="grid grid-cols-3 gap-3">
-                          <div>
-                            <label className={labelCls}>Number of rows</label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={100}
-                              disabled={locked}
-                              value={sec.rowCount ?? 0}
-                              onChange={(e) => updateSection(idx, { rowCount: clampInt(e.target.value, 1, 100) })}
-                              className={inputCls}
-                            />
-                          </div>
-                          <div>
-                            <label className={labelCls}>First row letter</label>
-                            <input
-                              type="text"
-                              maxLength={2}
-                              disabled={locked}
-                              value={sec.startRow ?? "A"}
-                              onChange={(e) => {
-                                const v = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
-                                updateSection(idx, { startRow: v ? rowLabel(rowIndex(v)) : "A" });
-                              }}
-                              className={inputCls}
-                            />
-                          </div>
-                          <div>
-                            <label className={labelCls}>Seats in each row</label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={200}
-                              disabled={locked}
-                              value={sec.seatsPerRow ?? 0}
-                              onChange={(e) => updateSection(idx, { seatsPerRow: clampInt(e.target.value, 1, 200) })}
-                              className={inputCls}
-                            />
-                          </div>
-                          <p className="col-span-3 text-xs text-slate-500 -mt-1">
-                            Rows {rows[0]}–{rows[rows.length - 1]} · seats numbered 1–{sec.seatsPerRow}
-                          </p>
-                        </div>
-                      )}
-
-                      {sec.kind === "TABLES" && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className={labelCls}>Number of tables</label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={300}
-                              disabled={locked}
-                              value={sec.tables ?? 0}
-                              onChange={(e) => updateSection(idx, { tables: clampInt(e.target.value, 1, 300) })}
-                              className={inputCls}
-                            />
-                          </div>
-                          <div>
-                            <label className={labelCls}>Chairs per table</label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={30}
-                              disabled={locked}
-                              value={sec.seatsPerTable ?? 0}
-                              onChange={(e) => updateSection(idx, { seatsPerTable: clampInt(e.target.value, 1, 30) })}
-                              className={inputCls}
-                            />
-                          </div>
-                          <p className="col-span-2 text-xs text-slate-500 -mt-1">
-                            Tables T1–T{sec.tables} · buyers pick individual chairs at a table
-                          </p>
-                        </div>
-                      )}
-
-                      {sec.kind === "STANDING" && (
-                        <div className="max-w-xs">
-                          <label className={labelCls}>How many people can enter?</label>
-                          <input
-                            type="number"
-                            min={1}
-                            max={200000}
-                            disabled={locked}
-                            value={sec.capacity ?? 0}
-                            onChange={(e) => updateSection(idx, { capacity: clampInt(e.target.value, 1, 200000) })}
-                            className={inputCls}
-                          />
-                          <p className="text-xs text-slate-500 mt-1">No seat numbers — buyers choose a quantity.</p>
-                        </div>
-                      )}
+                  <div
+                    key={i}
+                    onClick={() => !locked && setBrush({ type: "tier", index: i, name: tierNames[i] })}
+                    className={`flex items-center gap-2 sm:gap-3 rounded-lg border p-2 transition-colors ${
+                      active ? "border-slate-900 bg-slate-50" : "border-slate-200"
+                    } ${locked ? "" : "cursor-pointer"}`}
+                  >
+                    <span className={`w-5 h-5 rounded-md shrink-0 ${TIER_COLORS[i % TIER_COLORS.length].swatch} ${active ? "ring-2 ring-slate-900 ring-offset-1" : ""}`} />
+                    <input
+                      type="text"
+                      value={t.name}
+                      onChange={(e) => onTierChange(i, "name", e.target.value)}
+                      onFocus={() => !locked && setBrush({ type: "tier", index: i, name: tierNames[i] })}
+                      placeholder="Category name, e.g. VIP"
+                      aria-label="Category name"
+                      className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white py-1.5 px-2.5 text-sm text-slate-900 outline-none focus:border-amber-400"
+                    />
+                    <div className="relative w-24 shrink-0">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={Number(t.priceCents) / 100}
+                        onChange={(e) => onTierChange(i, "priceCents", Math.round(Number(e.target.value || 0) * 100))}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label="Price"
+                        className="w-full rounded-md border border-slate-200 bg-white py-1.5 pl-6 pr-2 text-sm text-slate-900 outline-none focus:border-amber-400"
+                      />
                     </div>
-
-                    {/* Preview */}
-                    {sec.kind !== "STANDING" && (
-                      <div className="bg-slate-950 px-3 py-4">
-                        <div className="flex items-center justify-between mb-3 text-xs font-semibold">
-                          <span className="text-slate-400">Seat map — what buyers will see</span>
-                          <span className="flex items-center gap-3 text-slate-400">
-                            {Object.keys(cleanMarks(sec).seatTiers || {}).length > 0 && (
-                              <span>{Object.keys(cleanMarks(sec).seatTiers || {}).length} seats in other categories</span>
-                            )}
-                            <span className="inline-flex items-center gap-1"><Accessibility className="w-3 h-3 text-sky-400" />{sec.accessible?.length || 0}</span>
-                            <span className="inline-flex items-center gap-1"><Ban className="w-3 h-3 text-slate-500" />{sec.blocked?.length || 0}</span>
-                          </span>
-                        </div>
-                        <SectionPreview
-                          section={sec}
-                          onChange={(s) => updateSection(idx, s)}
-                          locked={locked}
-                          tool={activeTool}
-                          colorFor={colorFor}
-                        />
-                      </div>
-                    )}
+                    <span className={`w-20 shrink-0 text-right text-[13px] ${count ? "text-slate-700" : "text-amber-700"}`}>
+                      {count} {count === 1 ? "seat" : "seats"}
+                    </span>
+                    {t.sold ? <span className="hidden sm:inline text-xs text-slate-500 shrink-0">{t.sold} sold</span> : null}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (canRemove) onRemoveTier(i);
+                      }}
+                      disabled={!canRemove}
+                      title={
+                        canRemove
+                          ? "Delete category"
+                          : t.sold
+                            ? "Has sold tickets"
+                            : t.removable === false
+                              ? "Saved categories can't be deleted here — paint their seats with another category"
+                              : undefined
+                      }
+                      className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 cursor-pointer disabled:cursor-default shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 );
               })}
             </div>
 
-            {/* Add section buttons */}
             {!locked && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {allowedKinds.map((kind) => (
-                  <button
-                    key={kind}
-                    type="button"
-                    onClick={() => addSection(kind)}
-                    className="flex items-center gap-1.5 text-[13px] font-semibold text-amber-900 bg-[#FFF9EB] hover:bg-amber-100/70 border border-amber-200/80 px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> <KindIcon kind={kind} className="w-3.5 h-3.5" /> {KIND_LABELS[kind].title}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={addCategory}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-slate-300 text-[13px] text-slate-700 hover:border-amber-400 hover:text-amber-800 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add category
+                </button>
+                {hasSeats && (
+                  <>
+                    <span className="text-[13px] text-slate-400 ml-1">Other tools:</span>
+                    {([
+                      { type: "accessible", label: "Wheelchair space", icon: <Accessibility className="w-3.5 h-3.5" /> },
+                      { type: "blocked", label: "Not for sale", icon: <Ban className="w-3.5 h-3.5" /> },
+                    ] as const).map((b) => (
+                      <button
+                        key={b.type}
+                        type="button"
+                        onClick={() => setBrush({ type: b.type })}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[13px] cursor-pointer ${
+                          brush.type === b.type ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-700 hover:border-slate-300"
+                        }`}
+                      >
+                        {b.icon} {b.label}
+                      </button>
+                    ))}
+                  </>
+                )}
               </div>
             )}
           </div>
 
-          {/* Summary */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[13px] font-semibold text-slate-900">Capacity summary</span>
-              <span className="text-[13px] font-semibold text-amber-700">{totalCapacity} total</span>
-            </div>
-            <ul className="space-y-1">
-              {tierNames.map((n) => {
-                const cap = caps.get(n.toLowerCase());
-                return (
-                  <li key={n} className="flex items-center justify-between text-[13px] font-semibold">
-                    <span className="inline-flex items-center gap-2 text-slate-600">
-                      <span className={`w-3 h-3 rounded-sm ${colorFor(n).swatch}`} />
-                      {n}
-                    </span>
-                    {cap !== undefined ? (
-                      <span className="text-slate-900 font-semibold">{cap} tickets</span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-amber-700">
-                        <AlertTriangle className="w-3 h-3" /> Not on the map — sold by quantity
-                      </span>
+          {/* Sections */}
+          <div className="space-y-4">
+            {sections.map((sec, idx) => {
+              const rows = sectionRows(sec);
+              const capacity = sectionCapacity(sec);
+              const tierMissing = !tierNames.some((n) => n && n.toLowerCase() === sec.tierName.trim().toLowerCase());
+              return (
+                <div key={sec.id} className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="flex-1 min-w-40">
+                      <label className={labelCls}>
+                        <KindIcon kind={sec.kind} className="inline w-3.5 h-3.5 mr-1 -mt-0.5 text-slate-400" />
+                        {KIND_LABELS[sec.kind].title} — name
+                      </label>
+                      <input
+                        type="text"
+                        value={sec.name}
+                        disabled={locked}
+                        onChange={(e) => updateSection(idx, { ...sec, name: e.target.value.replace(/:/g, "") })}
+                        className={inputCls}
+                      />
+                    </div>
+
+                    {sec.kind === "ROWS" && (
+                      <>
+                        <div className="w-24">
+                          <label className={labelCls}>Rows</label>
+                          <input type="number" min={1} max={100} disabled={locked} value={sec.rowCount ?? 0}
+                            onChange={(e) => updateSection(idx, { ...sec, rowCount: clampInt(e.target.value, 1, 100) })} className={inputCls} />
+                        </div>
+                        <div className="w-24">
+                          <label className={labelCls}>First row</label>
+                          <input type="text" maxLength={2} disabled={locked} value={sec.startRow ?? "A"}
+                            onChange={(e) => {
+                              const v = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
+                              updateSection(idx, { ...sec, startRow: v ? rowLabel(rowIndex(v)) : "A" });
+                            }} className={inputCls} />
+                        </div>
+                        <div className="w-28">
+                          <label className={labelCls}>Seats per row</label>
+                          <input type="number" min={1} max={200} disabled={locked} value={sec.seatsPerRow ?? 0}
+                            onChange={(e) => updateSection(idx, { ...sec, seatsPerRow: clampInt(e.target.value, 1, 200) })} className={inputCls} />
+                        </div>
+                      </>
                     )}
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-slate-100 text-xs font-semibold text-slate-500">
-              <span className="inline-flex items-center gap-1">Seat colour = its ticket category</span>
-              <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-slate-300 ring-2 ring-slate-500 text-[8px] leading-3 text-center">♿</span> Wheelchair space</span>
-              <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded-sm border border-dashed border-slate-500" /> Blocked / aisle</span>
-            </div>
+
+                    {sec.kind === "TABLES" && (
+                      <>
+                        <div className="w-24">
+                          <label className={labelCls}>Tables</label>
+                          <input type="number" min={1} max={300} disabled={locked} value={sec.tables ?? 0}
+                            onChange={(e) => updateSection(idx, { ...sec, tables: clampInt(e.target.value, 1, 300) })} className={inputCls} />
+                        </div>
+                        <div className="w-28">
+                          <label className={labelCls}>Chairs per table</label>
+                          <input type="number" min={1} max={30} disabled={locked} value={sec.seatsPerTable ?? 0}
+                            onChange={(e) => updateSection(idx, { ...sec, seatsPerTable: clampInt(e.target.value, 1, 30) })} className={inputCls} />
+                        </div>
+                      </>
+                    )}
+
+                    {sec.kind === "STANDING" && (
+                      <>
+                        <div className="w-32">
+                          <label className={labelCls}>People allowed</label>
+                          <input type="number" min={1} max={200000} disabled={locked} value={sec.capacity ?? 0}
+                            onChange={(e) => updateSection(idx, { ...sec, capacity: clampInt(e.target.value, 1, 200000) })} className={inputCls} />
+                        </div>
+                        <div className="w-44">
+                          <label className={labelCls}>Ticket category</label>
+                          <select
+                            value={tierMissing ? "" : tierNames.find((n) => n.toLowerCase() === sec.tierName.trim().toLowerCase())}
+                            disabled={locked}
+                            onChange={(e) => updateSection(idx, { ...sec, tierName: e.target.value })}
+                            className={`${inputCls} ${tierMissing ? "border-red-300" : ""}`}
+                          >
+                            <option value="" disabled>Choose…</option>
+                            {tierNames.filter(Boolean).map((n) => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
+
+                    {!locked && sections.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => onSectionsChange(sections.filter((_, i) => i !== idx))}
+                        className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"
+                        title="Remove section"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {sec.kind !== "STANDING" && (
+                    <>
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-slate-500">
+                        <span>
+                          {capacity} seats
+                          {sec.kind === "ROWS" && rows.length > 0 && ` · rows ${rows[0]}–${rows[rows.length - 1]}`}
+                          {(sec.accessible?.length || 0) > 0 && ` · ${sec.accessible!.length} wheelchair`}
+                          {(sec.blocked?.length || 0) > 0 && ` · ${sec.blocked!.length} not for sale`}
+                        </span>
+                        {!locked && brush.type === "tier" && brushTier && (
+                          <button
+                            type="button"
+                            onClick={() => updateSection(idx, fillSection(sec, brushTier))}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-200 text-slate-700 hover:border-slate-300 cursor-pointer"
+                          >
+                            <PaintBucket className="w-3.5 h-3.5" /> Make whole section {brushTier}
+                          </button>
+                        )}
+                      </div>
+                      <SeatMap
+                        section={sec}
+                        onChange={(s) => updateSection(idx, s)}
+                        locked={locked}
+                        paint={paint}
+                        paintRow={paintRow}
+                        colorFor={colorFor}
+                        brushLabel={brushLabel}
+                      />
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
+          {!locked && (
+            <div className="flex flex-wrap gap-2">
+              {allowedKinds.map((kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => addSection(kind)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-[13px] font-medium text-slate-700 hover:border-amber-300 hover:bg-amber-50 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add {KIND_LABELS[kind].title.toLowerCase()}
+                </button>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>

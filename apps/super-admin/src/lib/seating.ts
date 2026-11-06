@@ -231,6 +231,59 @@ export function cycleMark(section: SeatSection, key: string): SeatSection {
   return { ...section, blocked, accessible };
 }
 
+/** Makes a seat sellable again (if it was blocked). */
+function unblock(section: SeatSection, key: string): SeatSection {
+  if (!section.blocked?.includes(key)) return section;
+  return { ...section, blocked: section.blocked.filter((k) => k !== key) };
+}
+
+/** Paints one seat with a ticket category (and makes it sellable if it was blocked). */
+export function paintSeat(section: SeatSection, key: string, tierName: string): SeatSection {
+  return setSeatTier(unblock(section, key), key, tierName);
+}
+
+/** Turns a seat's wheelchair-space marker on or off (and makes it sellable if it was blocked). */
+export function toggleAccessible(section: SeatSection, key: string): SeatSection {
+  const s = unblock(section, key);
+  const accessible = s.accessible || [];
+  return {
+    ...s,
+    accessible: accessible.includes(key) ? accessible.filter((k) => k !== key) : [...accessible, key],
+  };
+}
+
+/** Marks a seat as not for sale (aisle, pillar…) or makes it sellable again. */
+export function toggleBlocked(section: SeatSection, key: string): SeatSection {
+  if (section.blocked?.includes(key)) return unblock(section, key);
+  const seatTiers = { ...(section.seatTiers || {}) };
+  delete seatTiers[key];
+  return {
+    ...section,
+    blocked: [...(section.blocked || []), key],
+    accessible: (section.accessible || []).filter((k) => k !== key),
+    seatTiers,
+  };
+}
+
+/** Makes every seat in a section one ticket category (blocked seats stay blocked). */
+export function fillSection(section: SeatSection, tierName: string): SeatSection {
+  return { ...section, tierName, seatTiers: {} };
+}
+
+/**
+ * Removes a ticket category from the seat map: sections that used it as their main
+ * category switch to `fallback`, and individually painted seats go back to their section's category.
+ */
+export function removeTierFromSections(sections: SeatSection[], name: string, fallback: string): SeatSection[] {
+  const key = name.trim().toLowerCase();
+  if (!key) return sections;
+  return sections.map((sec) => {
+    const seatTiers: Record<string, string> = {};
+    for (const [k, t] of Object.entries(sec.seatTiers || {})) if (t.trim().toLowerCase() !== key) seatTiers[k] = t;
+    return { ...sec, tierName: sec.tierName.trim().toLowerCase() === key ? fallback : sec.tierName, seatTiers };
+  });
+}
+
 export function makeSection(kind: SectionKind, name: string, tierName: string, startRow = "A"): SeatSection {
   if (kind === "STANDING") return { id: newSectionId(), kind, name, tierName, capacity: 200 };
   if (kind === "TABLES") return { id: newSectionId(), kind, name, tierName, tables: 10, seatsPerTable: 8, blocked: [], accessible: [] };
@@ -436,7 +489,13 @@ export function fromApiConfig(
 }
 
 /** Human-readable problems that must be fixed before saving. Empty = OK. */
-export function validateSeating(mode: SeatingMode, sections: SeatSection[], tierNames: string[]): string[] {
+export function validateSeating(
+  mode: SeatingMode,
+  sections: SeatSection[],
+  tierNames: string[],
+  /** Categories allowed to have no seats (e.g. already-saved ones that can't be deleted). */
+  mayBeUnused: string[] = []
+): string[] {
   if (mode === "GENERAL") return [];
   const problems: string[] = [];
   const tiers = new Set(tierNames.map((n) => n.trim().toLowerCase()).filter(Boolean));
@@ -453,7 +512,11 @@ export function validateSeating(mode: SeatingMode, sections: SeatSection[], tier
     if (key && names.has(key)) problems.push(`Two sections are called “${label}”. Use different names.`);
     names.add(key);
     if (!s.tierName.trim() || !tiers.has(s.tierName.trim().toLowerCase())) {
-      problems.push(`“${label}”: choose a ticket category.`);
+      problems.push(
+        s.kind === "STANDING"
+          ? `“${label}”: choose its ticket category in “Sold as ticket category” (Seating & Layout).`
+          : `“${label}”: choose its ticket category in “Default category (all seats)” (Seating & Layout).`
+      );
     }
     for (const t of new Set(Object.values(cleanMarks(s).seatTiers || {}))) {
       if (!tiers.has(t.trim().toLowerCase())) {
@@ -461,6 +524,16 @@ export function validateSeating(mode: SeatingMode, sections: SeatSection[], tier
       }
     }
     if (sectionCapacity(s) <= 0) problems.push(`“${label}” has no seats or capacity.`);
+  }
+  // On a seat map every ticket category must be used by at least one seat (or standing area)
+  if (sections.length > 0) {
+    const caps = capacityByTier(sections);
+    const exempt = new Set(mayBeUnused.map((n) => n.trim().toLowerCase()));
+    for (const n of tierNames) {
+      if (n.trim() && !exempt.has(n.trim().toLowerCase()) && !caps.get(n.trim().toLowerCase())) {
+        problems.push(`Ticket category “${n.trim()}” has no seats. Paint some seats with it, or delete it.`);
+      }
+    }
   }
   return Array.from(new Set(problems));
 }
