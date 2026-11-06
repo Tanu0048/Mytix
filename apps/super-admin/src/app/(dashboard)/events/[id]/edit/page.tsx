@@ -14,6 +14,7 @@ import {
   fromApiConfig,
   renameTierInSections,
   removeTierFromSections,
+  healSections,
   toApiConfig,
   validateSeating,
 } from "@/lib/seating";
@@ -127,7 +128,9 @@ function EditEventForm() {
     : "This event uses custom row names from an older version of the seat builder, so the layout is shown read-only.";
 
   // Seated / standing categories get their quantity from the seat map
-  const mapCapacity = seatingMode === "GENERAL" ? new Map<string, number>() : capacityByTier(seatSections);
+  // Sections never point at a missing category (falls back to the first one)
+  const healedSections = healSections(seatSections, ticketTypes.map((t) => String(t.name || "")));
+  const mapCapacity = seatingMode === "GENERAL" ? new Map<string, number>() : capacityByTier(healedSections);
   const mappedQuantity = (name: string) => mapCapacity.get(String(name || "").trim().toLowerCase());
 
   const newTier = (name: string, priceCents = 5000) => ({
@@ -197,7 +200,7 @@ function EditEventForm() {
       const sendSeating = seatingTouched && !seatingLocked;
       if (sendSeating) {
         const savedTierNames = ticketTypes.filter((t) => t.id).map((t) => String(t.name || ""));
-        const problems = validateSeating(seatingMode, seatSections, tierNames, savedTierNames);
+        const problems = validateSeating(seatingMode, healedSections, tierNames, savedTierNames);
         if (problems.length > 0) throw new Error(problems[0]);
       }
 
@@ -212,7 +215,7 @@ function EditEventForm() {
         ...(formData.doorsOpenAt && { doorsOpenAt: new Date(formData.doorsOpenAt).toISOString() }),
         ...(sendSeating && {
           seatingType: seatingMode === "GENERAL" ? "GENERAL" : "RESERVED",
-          seatingConfig: toApiConfig(seatingMode, seatSections),
+          seatingConfig: toApiConfig(seatingMode, healedSections),
         }),
         ticketTypes: ticketTypes.map((t) => ({
           ...(t.id ? { id: t.id } : {}),
@@ -370,7 +373,7 @@ function EditEventForm() {
               setSeatingMode(m);
               setSeatingTouched(true);
             }}
-            sections={seatSections}
+            sections={healedSections}
             onSectionsChange={(next) => {
               setSeatSections(next);
               setSeatingTouched(true);

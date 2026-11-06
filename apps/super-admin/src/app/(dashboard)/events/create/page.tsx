@@ -29,6 +29,7 @@ import {
   capacityByTier,
   renameTierInSections,
   removeTierFromSections,
+  healSections,
   toApiConfig,
   validateSeating,
 } from "@/lib/seating";
@@ -97,8 +98,11 @@ export default function CreateEventPage() {
     tierLinkNames.current[index] = newName;
   };
 
+  // Sections never point at a missing category (falls back to the first one)
+  const healedSections = healSections(seatSections, ticketTypes.map((t) => t.name));
+
   // Seated / standing categories get their quantity from the seat map
-  const mapCapacity = seatingMode === "GENERAL" ? new Map<string, number>() : capacityByTier(seatSections);
+  const mapCapacity = seatingMode === "GENERAL" ? new Map<string, number>() : capacityByTier(healedSections);
   const mappedQuantity = (name: string) => mapCapacity.get(name.trim().toLowerCase());
 
   const emptyTier = (name: string, priceCents = 5000) => ({
@@ -166,7 +170,7 @@ export default function CreateEventPage() {
       if (new Set(tierNames.map((n) => n.toLowerCase())).size !== tierNames.length) {
         throw new Error("Each ticket category needs a different name.");
       }
-      const seatingProblems = validateSeating(seatingMode, seatSections, tierNames);
+      const seatingProblems = validateSeating(seatingMode, healedSections, tierNames);
       if (seatingProblems.length > 0) {
         throw new Error(seatingProblems[0]);
       }
@@ -190,7 +194,7 @@ export default function CreateEventPage() {
         category: formData.category.trim(),
         posterPath: formData.posterPath,
         seatingType: seatingMode === "GENERAL" ? "GENERAL" : "RESERVED",
-        seatingConfig: toApiConfig(seatingMode, seatSections),
+        seatingConfig: toApiConfig(seatingMode, healedSections),
         startsAt: new Date(formData.startsAt).toISOString(),
         doorsOpenAt: formData.doorsOpenAt ? new Date(formData.doorsOpenAt).toISOString() : undefined,
         artists: [],
@@ -523,7 +527,7 @@ export default function CreateEventPage() {
           <SeatingBuilder
             mode={seatingMode}
             onModeChange={setSeatingMode}
-            sections={seatSections}
+            sections={healedSections}
             onSectionsChange={setSeatSections}
             tiers={ticketTypes}
             onTierChange={handleTicketChange}

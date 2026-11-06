@@ -1,7 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Sparkles, Lock, Accessibility, Ban, Users, Armchair, UtensilsCrossed, PaintBucket, Layers } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Sparkles,
+  Lock,
+  Accessibility,
+  Ban,
+  Users,
+  Armchair,
+  UtensilsCrossed,
+  Layers,
+  Undo2,
+  X,
+  CheckCircle2,
+} from "lucide-react";
 import {
   type SeatingMode,
   type SeatSection,
@@ -23,10 +37,8 @@ import {
   rowIndex,
   tierOfSeat,
   paintSeat,
-  setRowTier,
   toggleAccessible,
   toggleBlocked,
-  fillSection,
 } from "@/lib/seating";
 
 export interface BuilderTier {
@@ -56,9 +68,6 @@ interface SeatingBuilderProps {
   lockedReason?: string;
 }
 
-/** The brush: what tapping a seat does. A category is found by name, else by position (survives renames). */
-type Brush = { type: "tier"; index: number; name?: string } | { type: "accessible" } | { type: "blocked" };
-
 const TIER_COLORS = [
   { seat: "bg-amber-400 text-slate-900", swatch: "bg-amber-400" },
   { seat: "bg-sky-400 text-slate-900", swatch: "bg-sky-400" },
@@ -74,6 +83,7 @@ const UNKNOWN_COLOR = { seat: "bg-slate-600 text-slate-200", swatch: "bg-slate-6
 const MAX_PREVIEW_ROWS = 40;
 const MAX_PREVIEW_SEATS = 50;
 const MAX_PREVIEW_TABLES = 80;
+const MAX_UNDO = 30;
 
 const inputCls =
   "w-full rounded-lg border border-slate-200 bg-white py-2 px-3 text-sm text-slate-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 disabled:bg-slate-50 disabled:text-slate-500";
@@ -98,45 +108,44 @@ function clampInt(value: string, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
-/** One seat on the map. Pointer-down paints (so you can also drag across seats). */
+/** All seat keys ("A-1") of a section, row by row. */
+function allKeys(section: SeatSection): string[] {
+  const keys: string[] = [];
+  const per = seatsPerRowOf(section);
+  for (const r of sectionRows(section)) for (let n = 1; n <= per; n++) keys.push(`${r}-${n}`);
+  return keys;
+}
+
+/** One seat. Tapping only selects it; nothing changes until an action is chosen. */
 function SeatDot({
   label,
   mark,
   colorCls,
-  onPaint,
+  selected,
+  onToggle,
   disabled,
   title,
 }: {
   label: string;
   mark: "normal" | "accessible" | "blocked";
   colorCls: string;
-  onPaint: () => void;
+  selected: boolean;
+  onToggle: () => void;
   disabled?: boolean;
   title: string;
 }) {
-  const cls =
-    mark === "blocked"
-      ? "border border-dashed border-slate-500 bg-transparent text-slate-500"
-      : `${colorCls} ${mark === "accessible" ? "ring-2 ring-white" : ""}`;
+  const base =
+    mark === "blocked" ? "border border-dashed border-slate-500 bg-transparent text-slate-500" : colorCls;
   return (
     <button
       type="button"
-      onPointerDown={(e) => {
-        if (disabled || e.button !== 0) return;
-        e.preventDefault();
-        onPaint();
-      }}
-      onPointerEnter={(e) => {
-        if (!disabled && e.buttons === 1) onPaint();
-      }}
-      onClick={(e) => {
-        if (!disabled && e.detail === 0) onPaint(); // keyboard
-      }}
+      onClick={onToggle}
       disabled={disabled}
       title={title}
-      className={`w-6 h-6 shrink-0 rounded-md text-[10px] font-semibold flex items-center justify-center select-none transition-transform ${cls} ${
-        disabled ? "cursor-default" : "cursor-pointer"
-      }`}
+      aria-pressed={selected}
+      className={`w-6 h-6 shrink-0 rounded-md text-[10px] font-semibold flex items-center justify-center select-none ${base} ${
+        selected ? "ring-2 ring-white ring-offset-2 ring-offset-slate-950" : mark === "accessible" ? "ring-1 ring-white/70" : ""
+      } ${disabled ? "cursor-default" : "cursor-pointer hover:brightness-110"}`}
     >
       {mark === "accessible" ? "♿" : mark === "blocked" ? "×" : label}
     </button>
@@ -145,20 +154,18 @@ function SeatDot({
 
 function SeatMap({
   section,
-  onChange,
+  selected,
+  onToggleSeat,
+  onToggleRow,
   locked,
-  paint,
-  paintRow,
   colorFor,
-  brushLabel,
 }: {
   section: SeatSection;
-  onChange: (s: SeatSection) => void;
+  selected: Set<string>;
+  onToggleSeat: (key: string) => void;
+  onToggleRow: (row: string) => void;
   locked?: boolean;
-  paint: (s: SeatSection, key: string) => SeatSection;
-  paintRow: ((s: SeatSection, row: string) => SeatSection) | null;
   colorFor: (tierName: string) => { seat: string; swatch: string };
-  brushLabel: string;
 }) {
   const s = cleanMarks(section);
   const rows = sectionRows(s);
@@ -169,7 +176,7 @@ function SeatMap({
     const mark = markOf(s, key);
     const place = isTables ? key.replace(/^T(\d+)-/, "Table $1, chair ") : key.replace("-", "");
     const what = mark === "blocked" ? "not for sale" : `${tierOfSeat(s, key)}${mark === "accessible" ? ", wheelchair space" : ""}`;
-    return locked ? `${place}: ${what}` : `${place}: ${what} — tap to apply “${brushLabel}”`;
+    return locked ? `${place}: ${what}` : `${place}: ${what} — tap to select`;
   };
   const dot = (key: string, label: string) => (
     <SeatDot
@@ -177,19 +184,19 @@ function SeatMap({
       label={label}
       mark={markOf(s, key)}
       colorCls={colorFor(tierOfSeat(s, key)).seat}
-      onPaint={() => !locked && onChange(paint(s, key))}
+      selected={selected.has(key)}
+      onToggle={() => !locked && onToggleSeat(key)}
       disabled={locked}
       title={title(key)}
     />
   );
-  const canPaintRow = !locked && !!paintRow;
   const rowButton = (row: string, children: React.ReactNode, className: string) => (
     <button
       type="button"
-      disabled={!canPaintRow}
-      onClick={() => paintRow && onChange(paintRow(s, row))}
-      title={canPaintRow ? `Make all of ${isTables ? row.replace("T", "table ") : `row ${row}`} “${brushLabel}”` : undefined}
-      className={`${className} ${canPaintRow ? "cursor-pointer hover:text-white hover:border-white" : "cursor-default"}`}
+      disabled={locked}
+      onClick={() => onToggleRow(row)}
+      title={locked ? undefined : `Select all of ${isTables ? row.replace("T", "table ") : `row ${row}`}`}
+      className={`${className} ${locked ? "cursor-default" : "cursor-pointer hover:text-white hover:border-white"}`}
     >
       {children}
     </button>
@@ -199,7 +206,7 @@ function SeatMap({
     <div className="bg-slate-950 rounded-lg px-3 py-4">
       <div className="mx-auto mb-4 w-2/3 max-w-sm">
         <div className="h-1.5 rounded-full bg-linear-to-r from-transparent via-amber-400 to-transparent" />
-        <p className="text-center text-[11px] font-medium text-slate-500 mt-1">Stage</p>
+        <p className="text-center text-[11px] font-medium uppercase tracking-widest text-slate-500 mt-1">Stage</p>
       </div>
       {isTables ? (
         <div className="flex flex-wrap gap-4 justify-center">
@@ -208,7 +215,7 @@ function SeatMap({
               {rowButton(
                 t,
                 t.replace("T", "Table "),
-                "absolute inset-7 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-[11px] font-semibold text-slate-200 transition-colors"
+                "absolute inset-7 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-[11px] font-semibold text-slate-200"
               )}
               {Array.from({ length: perRow }, (_, i) => {
                 const angle = (2 * Math.PI * i) / perRow - Math.PI / 2;
@@ -230,10 +237,10 @@ function SeatMap({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <div className="space-y-1 w-fit mx-auto">
+          <div className="space-y-1.5 w-fit mx-auto">
             {rows.slice(0, MAX_PREVIEW_ROWS).map((r) => (
-              <div key={r} className="flex items-center gap-1">
-                {rowButton(r, r, "w-7 shrink-0 text-right pr-1.5 text-xs font-semibold text-slate-400 transition-colors")}
+              <div key={r} className="flex items-center gap-1.5">
+                {rowButton(r, r, "w-7 shrink-0 text-right pr-1.5 text-xs font-semibold text-slate-400")}
                 {Array.from({ length: Math.min(perRow, MAX_PREVIEW_SEATS) }, (_, i) => dot(`${r}-${i + 1}`, String(i + 1)))}
                 {perRow > MAX_PREVIEW_SEATS && <span className="text-xs text-slate-500 ml-1">+{perRow - MAX_PREVIEW_SEATS}</span>}
               </div>
@@ -259,49 +266,89 @@ export default function SeatingBuilder({
   locked = false,
   lockedReason,
 }: SeatingBuilderProps) {
-  const [brush, setBrush] = useState<Brush>({ type: "tier", index: 0 });
+  // Selected seats per section id
+  const [selection, setSelection] = useState<Record<string, string[]>>({});
+  // Previous seat layouts, for Undo
+  const [history, setHistory] = useState<SeatSection[][]>([]);
+
   const allowedKinds = kindsForMode(mode);
   const tierNames = tiers.map((t) => String(t.name || "").trim());
+  const namedTiers = tierNames.map((name, index) => ({ name, index })).filter((t) => t.name);
   const caps = capacityByTier(sections);
   const totalCapacity = sections.reduce((sum, s) => sum + sectionCapacity(s), 0);
-  const hasSeats = sections.some((s) => s.kind !== "STANDING");
 
   const colorFor = (tierName: string) => {
     const idx = tierNames.findIndex((n) => n && n.toLowerCase() === tierName.trim().toLowerCase());
     return idx === -1 ? UNKNOWN_COLOR : TIER_COLORS[idx % TIER_COLORS.length];
   };
 
-  // Resolve the brush's category: by name first, else by position (keeps working while a name is retyped)
-  const brushTierIndex =
-    brush.type !== "tier"
-      ? -1
-      : (() => {
-          const byName = brush.name ? tierNames.findIndex((n) => n.toLowerCase() === brush.name!.toLowerCase()) : -1;
-          return byName !== -1 ? byName : Math.min(brush.index, tiers.length - 1);
-        })();
-  const brushTier = brushTierIndex >= 0 ? tierNames[brushTierIndex] : "";
-  const brushLabel = brush.type === "accessible" ? "Wheelchair space" : brush.type === "blocked" ? "Not for sale" : brushTier || "category";
-
-  const paint = (s: SeatSection, key: string): SeatSection => {
-    if (brush.type === "accessible") return toggleAccessible(s, key);
-    if (brush.type === "blocked") return toggleBlocked(s, key);
-    return brushTier ? paintSeat(s, key, brushTier) : s;
+  /** Applies a layout change and remembers the previous layout so it can be undone. */
+  const commit = (next: SeatSection[]) => {
+    setHistory((h) => [...h.slice(-(MAX_UNDO - 1)), sections]);
+    onSectionsChange(next);
   };
-  const paintRow = brush.type === "tier" && brushTier ? (s: SeatSection, row: string) => setRowTier(s, row, brushTier) : null;
+  const undo = () => {
+    const prev = history[history.length - 1];
+    if (!prev) return;
+    setHistory((h) => h.slice(0, -1));
+    setSelection({});
+    onSectionsChange(prev);
+  };
 
   const updateSection = (idx: number, next: SeatSection) => {
     const copy = [...sections];
     copy[idx] = cleanMarks(next);
-    onSectionsChange(copy);
+    commit(copy);
   };
 
+  // ---- selection ----
+  const selectedIn = (sec: SeatSection) => new Set(selection[sec.id] || []);
+  const setSelected = (sec: SeatSection, keys: Set<string>) => setSelection((prev) => ({ ...prev, [sec.id]: Array.from(keys) }));
+  // Functional updates so quick successive taps never overwrite each other
+  const toggleSeat = (sec: SeatSection, key: string) =>
+    setSelection((prev) => {
+      const set = new Set(prev[sec.id] || []);
+      if (set.has(key)) set.delete(key);
+      else set.add(key);
+      return { ...prev, [sec.id]: Array.from(set) };
+    });
+  const toggleRow = (sec: SeatSection, row: string) =>
+    setSelection((prev) => {
+      const set = new Set(prev[sec.id] || []);
+      const rowKeys = Array.from({ length: seatsPerRowOf(sec) }, (_, i) => `${row}-${i + 1}`);
+      const allIn = rowKeys.every((k) => set.has(k));
+      for (const k of rowKeys) {
+        if (allIn) set.delete(k);
+        else set.add(k);
+      }
+      return { ...prev, [sec.id]: Array.from(set) };
+    });
+
+  // ---- actions on the selected seats ----
+  const applyToSelection = (idx: number, change: (s: SeatSection, keys: string[]) => SeatSection) => {
+    const sec = sections[idx];
+    const keys = selection[sec.id] || [];
+    if (keys.length === 0) return;
+    updateSection(idx, change(sec, keys));
+    setSelected(sec, new Set());
+  };
+  const assignCategory = (idx: number, tier: string) =>
+    applyToSelection(idx, (s, keys) => keys.reduce((acc, k) => paintSeat(acc, k, tier), s));
+  const setWheelchair = (idx: number, on: boolean) =>
+    applyToSelection(idx, (s, keys) =>
+      keys.reduce((acc, k) => ((markOf(acc, k) === "accessible") === on ? acc : toggleAccessible(acc, k)), s)
+    );
+  const setNotForSale = (idx: number, on: boolean) =>
+    applyToSelection(idx, (s, keys) => keys.reduce((acc, k) => ((markOf(acc, k) === "blocked") === on ? acc : toggleBlocked(acc, k)), s));
+
+  // ---- sections / modes / templates ----
   const addSection = (kind: SectionKind) => {
     const base = kind === "STANDING" ? "Standing area" : kind === "TABLES" ? "Tables" : "Section";
     const taken = new Set(sections.map((s) => s.name.trim().toLowerCase()));
     let n = sections.filter((s) => s.kind === kind).length + 1;
     let name = `${base} ${n}`;
     while (taken.has(name.toLowerCase())) name = `${base} ${++n}`;
-    onSectionsChange([...sections, makeSection(kind, name, brushTier || tierNames[0] || "", nextStartRow(sections))]);
+    commit([...sections, makeSection(kind, name, namedTiers[0]?.name || "", nextStartRow(sections))]);
   };
 
   const chooseMode = (m: SeatingMode) => {
@@ -311,22 +358,18 @@ export default function SeatingBuilder({
     const kept = sections.filter((s) => allowed.includes(s.kind));
     if (m !== "GENERAL" && kept.length === 0) {
       const kind: SectionKind = m === "TABLES" ? "TABLES" : "ROWS";
-      kept.push(makeSection(kind, kind === "TABLES" ? "Tables 1" : "Section 1", tierNames[0] || ""));
+      kept.push(makeSection(kind, kind === "TABLES" ? "Tables 1" : "Section 1", namedTiers[0]?.name || ""));
     }
-    onSectionsChange(m === "GENERAL" ? [] : kept);
+    setSelection({});
+    commit(m === "GENERAL" ? [] : kept);
   };
 
   const applyTemplate = (tpl: SeatingTemplate) => {
     if (locked) return;
     if (sections.length > 0 && !window.confirm(`Replace your current layout with “${tpl.title}”?`)) return;
     onApplyTemplate(tpl);
-    onSectionsChange(tpl.build());
-    setBrush({ type: "tier", index: 0, name: tpl.tiers[0]?.name });
-  };
-
-  const addCategory = () => {
-    const name = onAddTier("New category");
-    setBrush({ type: "tier", index: tiers.length, name });
+    setSelection({});
+    commit(tpl.build());
   };
 
   return (
@@ -371,7 +414,6 @@ export default function SeatingBuilder({
 
       {mode !== "GENERAL" && (
         <>
-          {/* Ready-made layouts */}
           {!locked && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[13px] font-medium text-slate-600 mr-1">Quick start:</span>
@@ -389,35 +431,25 @@ export default function SeatingBuilder({
             </div>
           )}
 
-          {/* Categories = the paint palette */}
-          <div className="sticky top-16 z-10 rounded-xl border border-slate-200 bg-white/95 backdrop-blur p-4 shadow-xs">
+          {/* Step 1: categories and prices */}
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
             <div className="flex items-baseline justify-between gap-2 mb-1">
-              <p className="text-sm font-semibold text-slate-900">Ticket categories</p>
+              <p className="text-sm font-semibold text-slate-900">1. Ticket categories</p>
               <p className="text-[13px] text-slate-500">{totalCapacity} tickets in total</p>
             </div>
-            <p className="text-[13px] text-slate-500 mb-3">
-              {locked ? "You can still change names and prices." : "Pick a category, then tap seats (or a row letter) to give them that category."}
-            </p>
+            <p className="text-[13px] text-slate-500 mb-3">Name and price for each category. New seats start in the first category.</p>
 
             <div className="space-y-2">
               {tiers.map((t, i) => {
-                const active = !locked && brush.type === "tier" && brushTierIndex === i;
                 const count = caps.get(tierNames[i].toLowerCase()) || 0;
                 const canRemove = !locked && tiers.length > 1 && !(t.sold && t.sold > 0) && t.removable !== false;
                 return (
-                  <div
-                    key={i}
-                    onClick={() => !locked && setBrush({ type: "tier", index: i, name: tierNames[i] })}
-                    className={`flex items-center gap-2 sm:gap-3 rounded-lg border p-2 transition-colors ${
-                      active ? "border-slate-900 bg-slate-50" : "border-slate-200"
-                    } ${locked ? "" : "cursor-pointer"}`}
-                  >
-                    <span className={`w-5 h-5 rounded-md shrink-0 ${TIER_COLORS[i % TIER_COLORS.length].swatch} ${active ? "ring-2 ring-slate-900 ring-offset-1" : ""}`} />
+                  <div key={i} className="flex items-center gap-2 sm:gap-3 rounded-lg border border-slate-200 p-2">
+                    <span className={`w-5 h-5 rounded-md shrink-0 ${TIER_COLORS[i % TIER_COLORS.length].swatch}`} />
                     <input
                       type="text"
                       value={t.name}
                       onChange={(e) => onTierChange(i, "name", e.target.value)}
-                      onFocus={() => !locked && setBrush({ type: "tier", index: i, name: tierNames[i] })}
                       placeholder="Category name, e.g. VIP"
                       aria-label="Category name"
                       className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white py-1.5 px-2.5 text-sm text-slate-900 outline-none focus:border-amber-400"
@@ -430,7 +462,6 @@ export default function SeatingBuilder({
                         step="0.01"
                         value={Number(t.priceCents) / 100}
                         onChange={(e) => onTierChange(i, "priceCents", Math.round(Number(e.target.value || 0) * 100))}
-                        onClick={(e) => e.stopPropagation()}
                         aria-label="Price"
                         className="w-full rounded-md border border-slate-200 bg-white py-1.5 pl-6 pr-2 text-sm text-slate-900 outline-none focus:border-amber-400"
                       />
@@ -441,18 +472,15 @@ export default function SeatingBuilder({
                     {t.sold ? <span className="hidden sm:inline text-xs text-slate-500 shrink-0">{t.sold} sold</span> : null}
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (canRemove) onRemoveTier(i);
-                      }}
+                      onClick={() => canRemove && onRemoveTier(i)}
                       disabled={!canRemove}
                       title={
                         canRemove
-                          ? "Delete category"
+                          ? "Delete category (its seats move to the first category)"
                           : t.sold
                             ? "Has sold tickets"
                             : t.removable === false
-                              ? "Saved categories can't be deleted here — paint their seats with another category"
+                              ? "Saved categories can't be deleted here — move their seats to another category"
                               : undefined
                       }
                       className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 cursor-pointer disabled:cursor-default shrink-0"
@@ -465,43 +493,46 @@ export default function SeatingBuilder({
             </div>
 
             {!locked && (
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                <button
-                  type="button"
-                  onClick={addCategory}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-slate-300 text-[13px] text-slate-700 hover:border-amber-400 hover:text-amber-800 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add category
-                </button>
-                {hasSeats && (
-                  <>
-                    <span className="text-[13px] text-slate-400 ml-1">Other tools:</span>
-                    {([
-                      { type: "accessible", label: "Wheelchair space", icon: <Accessibility className="w-3.5 h-3.5" /> },
-                      { type: "blocked", label: "Not for sale", icon: <Ban className="w-3.5 h-3.5" /> },
-                    ] as const).map((b) => (
-                      <button
-                        key={b.type}
-                        type="button"
-                        onClick={() => setBrush({ type: b.type })}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[13px] cursor-pointer ${
-                          brush.type === b.type ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-700 hover:border-slate-300"
-                        }`}
-                      >
-                        {b.icon} {b.label}
-                      </button>
-                    ))}
-                  </>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => onAddTier("New category")}
+                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-slate-300 text-[13px] text-slate-700 hover:border-amber-400 hover:text-amber-800 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add category
+              </button>
             )}
           </div>
 
-          {/* Sections */}
+          {/* Step 2: seat map */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">2. Seat map</p>
+              {!locked && (
+                <p className="text-[13px] text-slate-500">
+                  Tap seats to select them (tap a row letter to select the whole row), then choose what they should be.
+                </p>
+              )}
+            </div>
+            {!locked && (
+              <button
+                type="button"
+                onClick={undo}
+                disabled={history.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[13px] text-slate-700 hover:border-slate-300 cursor-pointer disabled:opacity-40 disabled:cursor-default"
+              >
+                <Undo2 className="w-3.5 h-3.5" /> Undo
+              </button>
+            )}
+          </div>
+
           <div className="space-y-4">
             {sections.map((sec, idx) => {
               const rows = sectionRows(sec);
               const capacity = sectionCapacity(sec);
+              const selected = selectedIn(sec);
+              const selectedKeys = Array.from(selected);
+              const allWheelchair = selectedKeys.length > 0 && selectedKeys.every((k) => markOf(sec, k) === "accessible");
+              const allBlocked = selectedKeys.length > 0 && selectedKeys.every((k) => markOf(sec, k) === "blocked");
               const tierMissing = !tierNames.some((n) => n && n.toLowerCase() === sec.tierName.trim().toLowerCase());
               return (
                 <div key={sec.id} className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
@@ -574,8 +605,8 @@ export default function SeatingBuilder({
                             className={`${inputCls} ${tierMissing ? "border-red-300" : ""}`}
                           >
                             <option value="" disabled>Choose…</option>
-                            {tierNames.filter(Boolean).map((n) => (
-                              <option key={n} value={n}>{n}</option>
+                            {namedTiers.map((t) => (
+                              <option key={t.index} value={t.name}>{t.name}</option>
                             ))}
                           </select>
                         </div>
@@ -585,7 +616,7 @@ export default function SeatingBuilder({
                     {!locked && sections.length > 1 && (
                       <button
                         type="button"
-                        onClick={() => onSectionsChange(sections.filter((_, i) => i !== idx))}
+                        onClick={() => commit(sections.filter((_, i) => i !== idx))}
                         className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"
                         title="Remove section"
                       >
@@ -603,25 +634,85 @@ export default function SeatingBuilder({
                           {(sec.accessible?.length || 0) > 0 && ` · ${sec.accessible!.length} wheelchair`}
                           {(sec.blocked?.length || 0) > 0 && ` · ${sec.blocked!.length} not for sale`}
                         </span>
-                        {!locked && brush.type === "tier" && brushTier && (
-                          <button
-                            type="button"
-                            onClick={() => updateSection(idx, fillSection(sec, brushTier))}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-200 text-slate-700 hover:border-slate-300 cursor-pointer"
-                          >
-                            <PaintBucket className="w-3.5 h-3.5" /> Make whole section {brushTier}
-                          </button>
+                        {!locked && (
+                          <span className="flex items-center gap-2">
+                            <button type="button" onClick={() => setSelected(sec, new Set(allKeys(sec)))} className="text-slate-700 hover:underline cursor-pointer">
+                              Select all
+                            </button>
+                            {selected.size > 0 && (
+                              <button type="button" onClick={() => setSelected(sec, new Set())} className="text-slate-700 hover:underline cursor-pointer">
+                                Clear selection
+                              </button>
+                            )}
+                          </span>
                         )}
                       </div>
+
                       <SeatMap
                         section={sec}
-                        onChange={(s) => updateSection(idx, s)}
+                        selected={selected}
+                        onToggleSeat={(k) => toggleSeat(sec, k)}
+                        onToggleRow={(r) => toggleRow(sec, r)}
                         locked={locked}
-                        paint={paint}
-                        paintRow={paintRow}
                         colorFor={colorFor}
-                        brushLabel={brushLabel}
                       />
+
+                      {/* Legend */}
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                        {namedTiers.map((t) => (
+                          <span key={t.index} className="inline-flex items-center gap-1.5">
+                            <span className={`w-3 h-3 rounded-sm ${TIER_COLORS[t.index % TIER_COLORS.length].swatch}`} /> {t.name}
+                          </span>
+                        ))}
+                        <span className="inline-flex items-center gap-1.5">♿ Wheelchair</span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="w-3 h-3 rounded-sm border border-dashed border-slate-400" /> Not for sale
+                        </span>
+                      </div>
+
+                      {/* Action bar for the selected seats */}
+                      {!locked && selected.size > 0 && (
+                        <div className="sticky bottom-3 z-10 rounded-xl border border-slate-900 bg-slate-900 text-white p-3 shadow-lg">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold mr-1">
+                              <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                              {selected.size} {selected.size === 1 ? "seat" : "seats"} selected — make {selected.size === 1 ? "it" : "them"}:
+                            </span>
+                            {namedTiers.map((t) => (
+                              <button
+                                key={t.index}
+                                type="button"
+                                onClick={() => assignCategory(idx, t.name)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-slate-900 text-[13px] font-medium hover:bg-slate-100 cursor-pointer"
+                              >
+                                <span className={`w-3 h-3 rounded-sm ${TIER_COLORS[t.index % TIER_COLORS.length].swatch}`} /> {t.name}
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => setWheelchair(idx, !allWheelchair)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/30 text-[13px] hover:bg-white/10 cursor-pointer"
+                            >
+                              <Accessibility className="w-3.5 h-3.5" /> {allWheelchair ? "Remove wheelchair" : "Wheelchair space"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNotForSale(idx, !allBlocked)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/30 text-[13px] hover:bg-white/10 cursor-pointer"
+                            >
+                              <Ban className="w-3.5 h-3.5" /> {allBlocked ? "Make sellable again" : "Not for sale"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelected(sec, new Set())}
+                              className="ml-auto inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[13px] text-white/80 hover:text-white cursor-pointer"
+                              title="Clear selection"
+                            >
+                              <X className="w-4 h-4" /> Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>

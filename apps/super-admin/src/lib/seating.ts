@@ -488,6 +488,24 @@ export function fromApiConfig(
   return { mode, sections, customRows };
 }
 
+/**
+ * Sections whose main ticket category no longer exists (e.g. it was created while the
+ * category name was empty, or the category was deleted) are attached to the first category,
+ * so seats never end up without a category the organiser can't see or fix.
+ */
+export function healSections(sections: SeatSection[], tierNames: string[]): SeatSection[] {
+  const names = tierNames.map((n) => n.trim()).filter(Boolean);
+  if (names.length === 0) return sections;
+  const known = new Set(names.map((n) => n.toLowerCase()));
+  let changed = false;
+  const healed = sections.map((s) => {
+    if (s.tierName.trim() && known.has(s.tierName.trim().toLowerCase())) return s;
+    changed = true;
+    return { ...s, tierName: names[0] };
+  });
+  return changed ? healed : sections;
+}
+
 /** Human-readable problems that must be fixed before saving. Empty = OK. */
 export function validateSeating(
   mode: SeatingMode,
@@ -514,8 +532,8 @@ export function validateSeating(
     if (!s.tierName.trim() || !tiers.has(s.tierName.trim().toLowerCase())) {
       problems.push(
         s.kind === "STANDING"
-          ? `“${label}”: choose its ticket category in “Sold as ticket category” (Seating & Layout).`
-          : `“${label}”: choose its ticket category in “Default category (all seats)” (Seating & Layout).`
+          ? `“${label}”: choose its ticket category in “Ticket category” (Seating & Layout).`
+          : `“${label}”: some seats have no ticket category. Pick a category above the seat map and tap those seats.`
       );
     }
     for (const t of new Set(Object.values(cleanMarks(s).seatTiers || {}))) {
