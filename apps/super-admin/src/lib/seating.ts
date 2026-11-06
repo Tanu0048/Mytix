@@ -140,8 +140,8 @@ export function cleanMarks(section: SeatSection): SeatSection {
   const blockedSet = new Set(blocked);
   const seatTiers: Record<string, string> = {};
   for (const [key, tier] of Object.entries(section.seatTiers || {})) {
-    // Keep only real, sellable seats whose category differs from the section default
-    if (valid.has(key) && !blockedSet.has(key) && tier && tier.trim().toLowerCase() !== section.tierName.trim().toLowerCase()) {
+    // Keep only real, sellable seats (explicit choices are kept even when they equal the main category)
+    if (valid.has(key) && !blockedSet.has(key) && tier) {
       seatTiers[key] = tier;
     }
   }
@@ -167,8 +167,10 @@ export function tierOfSeat(section: SeatSection, key: string): string {
 
 /** Sets one seat's ticket category (removing the override when it equals the section default). */
 export function setSeatTier(section: SeatSection, key: string, tierName: string): SeatSection {
+  // Seats the organiser picks a category for keep it explicitly (even if it equals the section's
+  // main category) so they are shown in that category's colour; only untouched seats stay plain.
   const seatTiers = { ...(section.seatTiers || {}) };
-  if (!tierName || tierName.trim().toLowerCase() === section.tierName.trim().toLowerCase()) delete seatTiers[key];
+  if (!tierName) delete seatTiers[key];
   else seatTiers[key] = tierName;
   return { ...section, seatTiers };
 }
