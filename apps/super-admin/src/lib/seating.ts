@@ -461,6 +461,34 @@ export const TEMPLATES: Record<Exclude<SeatingMode, "GENERAL">, SeatingTemplate[
 // Conversion to / from the API format
 // ---------------------------------------------------------------------------
 
+/**
+ * Storage form: the category used by the most seats becomes the section's main category and
+ * only the other seats keep a per-seat category. (In the builder a section may start with no
+ * main category, i.e. every seat chosen by hand.)
+ */
+function compactCategories(s: SeatSection): SeatSection {
+  if (s.kind === "STANDING") return s;
+  const blocked = new Set(s.blocked || []);
+  const counts = new Map<string, number>();
+  const perSeat: Array<[string, string]> = [];
+  const per = seatsPerRowOf(s);
+  for (const r of sectionRows(s)) {
+    for (let n = 1; n <= per; n++) {
+      const key = `${r}-${n}`;
+      if (blocked.has(key)) continue;
+      const tier = tierOfSeat(s, key);
+      if (!tier) continue;
+      perSeat.push([key, tier]);
+      counts.set(tier, (counts.get(tier) || 0) + 1);
+    }
+  }
+  if (perSeat.length === 0) return s;
+  const main = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0][0];
+  const seatTiers: Record<string, string> = {};
+  for (const [key, tier] of perSeat) if (tier !== main) seatTiers[key] = tier;
+  return { ...s, tierName: main, seatTiers };
+}
+
 export function toApiConfig(mode: SeatingMode, sections: SeatSection[]): SeatingConfigPayload | null {
   if (mode === "GENERAL") return null;
   return {
@@ -468,7 +496,7 @@ export function toApiConfig(mode: SeatingMode, sections: SeatSection[]): Seating
     layout: mode,
     stageLabel: "Stage",
     sections: sections.map((raw) => {
-      const s = cleanMarks(raw);
+      const s = compactCategories(cleanMarks(raw));
       const base = { id: s.id, name: s.name.trim(), tierName: s.tierName.trim(), kind: s.kind };
       if (s.kind === "STANDING") return { ...base, capacity: s.capacity || 0 };
       const marks = { blocked: s.blocked || [], accessible: s.accessible || [], seatTiers: s.seatTiers || {} };
@@ -550,16 +578,37 @@ export function fromApiConfig(
  * so seats never end up without a category the organiser can't see or fix.
  */
 export function healSections(sections: SeatSection[], tierNames: string[]): SeatSection[] {
-  const names = tierNames.map((n) => n.trim()).filter(Boolean);
-  if (names.length === 0) return sections;
-  const known = new Set(names.map((n) => n.toLowerCase()));
+  const known = new Set(tierNames.map((n) => n.trim().toLowerCase()).filter(Boolean));
   let changed = false;
   const healed = sections.map((s) => {
-    if (s.tierName.trim() && known.has(s.tierName.trim().toLowerCase())) return s;
-    changed = true;
-    return { ...s, tierName: names[0] };
+    let next = s;
+    // A main category that no longer exists → seats become unassigned (grey) for the organiser to choose
+    if (s.tierName.trim() && !known.has(s.tierName.trim().toLowerCase())) next = { ...next, tierName: "" };
+    const overrides = Object.entries(s.seatTiers || {});
+    const kept = overrides.filter(([, t]) => known.has(t.trim().toLowerCase()));
+    if (kept.length !== overrides.length) next = { ...next, seatTiers: Object.fromEntries(kept) };
+    if (next !== s) changed = true;
+    return next;
   });
   return changed ? healed : sections;
+}
+
+/** Sellable seats in a section that don't have a (valid) ticket category yet. */
+export function unassignedSeats(section: SeatSection, tierNames: string[]): string[] {
+  if (section.kind === "STANDING") return [];
+  const known = new Set(tierNames.map((n) => n.trim().toLowerCase()).filter(Boolean));
+  const s = cleanMarks(section);
+  const blocked = new Set(s.blocked || []);
+  const out: string[] = [];
+  const per = seatsPerRowOf(s);
+  for (const r of sectionRows(s)) {
+    for (let n = 1; n <= per; n++) {
+      const key = `${r}-${n}`;
+      if (blocked.has(key)) continue;
+      if (!known.has(tierOfSeat(s, key).trim().toLowerCase())) out.push(key);
+    }
+  }
+  return out;
 }
 
 /** Human-readable problems that must be fixed before saving. Empty = OK. */
@@ -585,16 +634,17 @@ export function validateSeating(
     const key = s.name.trim().toLowerCase();
     if (key && names.has(key)) problems.push(`Two sections are called “${label}”. Use different names.`);
     names.add(key);
-    if (!s.tierName.trim() || !tiers.has(s.tierName.trim().toLowerCase())) {
-      problems.push(
-        s.kind === "STANDING"
-          ? `“${label}”: choose its ticket category in “Ticket category” (Seating & Layout).`
-          : `“${label}”: some seats have no ticket category. Pick a category above the seat map and tap those seats.`
-      );
-    }
-    for (const t of new Set(Object.values(cleanMarks(s).seatTiers || {}))) {
-      if (!tiers.has(t.trim().toLowerCase())) {
-        problems.push(`“${label}”: some seats use category “${t}”, which no longer exists. Repaint them.`);
+    if (s.kind === "STANDING") {
+      if (!s.tierName.trim() || !tiers.has(s.tierName.trim().toLowerCase())) {
+        problems.push(`“${label}”: choose its ticket category in “Ticket category” (Seating & Layout).`);
+      }
+    } else {
+      const missing = unassignedSeats(s, tierNames).length;
+      if (missing > 0) {
+        problems.push(
+          `“${label}”: ${missing} ${missing === 1 ? "seat doesn't" : "seats don't"} have a ticket category yet. ` +
+            `Select ${missing === 1 ? "it" : "them"} on the seat map and choose a category, or mark ${missing === 1 ? "it" : "them"} Not for sale.`
+        );
       }
     }
     if (sectionCapacity(s) <= 0) problems.push(`“${label}” has no seats or capacity.`);
@@ -605,7 +655,7 @@ export function validateSeating(
     const exempt = new Set(mayBeUnused.map((n) => n.trim().toLowerCase()));
     for (const n of tierNames) {
       if (n.trim() && !exempt.has(n.trim().toLowerCase()) && !caps.get(n.trim().toLowerCase())) {
-        problems.push(`Ticket category “${n.trim()}” has no seats. Paint some seats with it, or delete it.`);
+        problems.push(`Ticket category “${n.trim()}” has no seats. Select some seats and choose this category for them, or delete it.`);
       }
     }
   }

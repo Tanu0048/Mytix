@@ -150,8 +150,8 @@ export default function CreateEventPage() {
     updated.splice(index, 1);
     tierLinkNames.current.splice(index, 1);
     setTicketTypes(updated);
-    // Seats that used the deleted category fall back to the first remaining one
-    setSeatSections((prev) => removeTierFromSections(prev, removedName, updated[0]?.name || ""));
+    // Seats that used the deleted category go back to "no category"
+    setSeatSections((prev) => removeTierFromSections(prev, removedName, ""));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

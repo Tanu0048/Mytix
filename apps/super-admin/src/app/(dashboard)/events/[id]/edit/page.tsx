@@ -180,9 +180,9 @@ function EditEventForm() {
     updated.splice(index, 1);
     tierLinkNames.current.splice(index, 1);
     setTicketTypes(updated);
-    // Seats that used the deleted category fall back to the first remaining one
+    // Seats that used the deleted category go back to "no category"
     if (seatSections.length > 0) {
-      setSeatSections((prev) => removeTierFromSections(prev, removedName, updated[0]?.name || ""));
+      setSeatSections((prev) => removeTierFromSections(prev, removedName, ""));
       setSeatingTouched(true);
     }
   };

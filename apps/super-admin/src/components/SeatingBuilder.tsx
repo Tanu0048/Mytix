@@ -43,6 +43,7 @@ import {
   tableSize,
   setTableSize,
   setAllTableSizes,
+  unassignedSeats,
 } from "@/lib/seating";
 
 export interface BuilderTier {
@@ -182,7 +183,7 @@ function SeatMap({
   const title = (key: string) => {
     const mark = markOf(s, key);
     const place = isTables ? key.replace(/^T(\d+)-/, "Table $1, chair ") : key.replace("-", "");
-    const what = mark === "blocked" ? "not for sale" : `${tierOfSeat(s, key)}${mark === "accessible" ? ", wheelchair space" : ""}`;
+    const what = mark === "blocked" ? "not for sale" : `${tierOfSeat(s, key) || "no category yet"}${mark === "accessible" ? ", wheelchair space" : ""}`;
     return locked ? `${place}: ${what}` : `${place}: ${what} — tap to select`;
   };
   const dot = (key: string, label: string) => (
@@ -316,7 +317,8 @@ export default function SeatingBuilder({
   const tierNames = tiers.map((t) => String(t.name || "").trim());
   const namedTiers = tierNames.map((name, index) => ({ name, index })).filter((t) => t.name);
   const caps = capacityByTier(sections);
-  const totalCapacity = sections.reduce((sum, s) => sum + sectionCapacity(s), 0);
+  const totalCapacity = Array.from(caps.values()).reduce((sum, n) => sum + n, 0);
+  const totalUnassigned = sections.reduce((sum, s) => sum + unassignedSeats(s, tierNames).length, 0);
 
   const colorFor = (tierName: string) => {
     const idx = tierNames.findIndex((n) => n && n.toLowerCase() === tierName.trim().toLowerCase());
@@ -402,7 +404,7 @@ export default function SeatingBuilder({
     let n = sections.filter((s) => s.kind === kind).length + 1;
     let name = `${base} ${n}`;
     while (taken.has(name.toLowerCase())) name = `${base} ${++n}`;
-    commit([...sections, makeSection(kind, name, namedTiers[0]?.name || "", nextStartRow(sections))]);
+    commit([...sections, makeSection(kind, name, kind === "STANDING" ? namedTiers[0]?.name || "" : "", nextStartRow(sections))]);
   };
 
   const chooseMode = (m: SeatingMode) => {
@@ -412,7 +414,7 @@ export default function SeatingBuilder({
     const kept = sections.filter((s) => allowed.includes(s.kind));
     if (m !== "GENERAL" && kept.length === 0) {
       const kind: SectionKind = m === "TABLES" ? "TABLES" : "ROWS";
-      kept.push(makeSection(kind, kind === "TABLES" ? "Tables 1" : "Section 1", namedTiers[0]?.name || ""));
+      kept.push(makeSection(kind, kind === "TABLES" ? "Tables 1" : "Section 1", ""));
     }
     setSelection({});
     commit(m === "GENERAL" ? [] : kept);
@@ -489,9 +491,12 @@ export default function SeatingBuilder({
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <div className="flex items-baseline justify-between gap-2 mb-1">
               <p className="text-sm font-semibold text-slate-900">1. Ticket categories</p>
-              <p className="text-[13px] text-slate-500">{totalCapacity} tickets in total</p>
+              <p className="text-[13px] text-slate-500">
+                {totalCapacity} tickets
+                {totalUnassigned > 0 && <span className="text-amber-700"> · {totalUnassigned} seats without a category</span>}
+              </p>
             </div>
-            <p className="text-[13px] text-slate-500 mb-3">Name and price for each category. New seats start in the first category.</p>
+            <p className="text-[13px] text-slate-500 mb-3">Create your categories here (e.g. VIP, Normal). Then select seats on the map and choose a category for them.</p>
 
             <div className="space-y-2">
               {tiers.map((t, i) => {
@@ -513,20 +518,10 @@ export default function SeatingBuilder({
                           }
                         }}
                         onChange={(e) => onTierChange(i, "name", e.target.value)}
-                        placeholder={i === 0 ? "Main category, e.g. Standard" : "Category name, e.g. VIP"}
+                        placeholder="Category name, e.g. VIP"
                         aria-label="Category name"
-                        className={`w-full rounded-md border border-slate-200 bg-white py-1.5 px-2.5 text-sm text-slate-900 outline-none focus:border-amber-400 ${
-                          i === 0 ? "pr-28" : ""
-                        }`}
+                        className={`w-full rounded-md border border-slate-200 bg-white py-1.5 px-2.5 text-sm text-slate-900 outline-none focus:border-amber-400 `}
                       />
-                      {i === 0 && (
-                        <span
-                          title="Every seat starts in this category. Renaming it renames those seats' category too — use “Add category” for VIP etc."
-                          className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500"
-                        >
-                          All seats start here
-                        </span>
-                      )}
                     </div>
                     <div className="relative w-24 shrink-0">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
@@ -550,7 +545,7 @@ export default function SeatingBuilder({
                       disabled={!canRemove}
                       title={
                         canRemove
-                          ? "Delete category (its seats move to the first category)"
+                          ? "Delete category (its seats go back to no category)"
                           : t.sold
                             ? "Has sold tickets"
                             : t.removable === false
@@ -720,6 +715,9 @@ export default function SeatingBuilder({
                       <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-slate-500">
                         <span>
                           {capacity} seats
+                          {unassignedSeats(sec, tierNames).length > 0 && (
+                            <span className="text-amber-700"> · {unassignedSeats(sec, tierNames).length} without a category</span>
+                          )}
                           {sec.kind === "ROWS" && rows.length > 0 && ` · rows ${rows[0]}–${rows[rows.length - 1]}`}
                           {(sec.accessible?.length || 0) > 0 && ` · ${sec.accessible!.length} wheelchair`}
                           {notForSale > 0 && ` · ${notForSale} not for sale`}
@@ -763,6 +761,9 @@ export default function SeatingBuilder({
                         <span className="inline-flex items-center gap-1.5">
                           <span className="w-3 h-3 rounded-sm border border-dashed border-slate-400" /> Not for sale
                         </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="w-3 h-3 rounded-sm bg-slate-600" /> No category yet
+                        </span>
                       </div>
 
                       {/* Action bar for the selected seats */}
@@ -800,10 +801,10 @@ export default function SeatingBuilder({
                             <button
                               type="button"
                               onClick={() => resetToNormal(idx)}
-                              title={`Make the selected seats normal ${sec.tierName || "seats"} again (removes VIP / wheelchair / not for sale)`}
+                              title={sec.tierName ? `Back to ${sec.tierName}, and clear wheelchair / not for sale` : "Remove the category from these seats, and clear wheelchair / not for sale"}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 text-slate-900 text-[13px] font-semibold hover:bg-amber-300 cursor-pointer"
                             >
-                              <RotateCcw className="w-3.5 h-3.5" /> Reset to normal{sec.tierName ? ` (${sec.tierName})` : ""}
+                              <RotateCcw className="w-3.5 h-3.5" /> {sec.tierName ? `Reset to ${sec.tierName}` : "Remove category"}
                             </button>
                             <button
                               type="button"

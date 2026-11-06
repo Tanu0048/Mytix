@@ -271,25 +271,31 @@ export async function createHold(userId, body) {
     throw new AppError("VALIDATION_ERROR", 400, "All tickets in one booking must be for the same event.");
   }
 
-  // Prevent multiple concurrent active bookings by the same user on the same event
-  const existingHold = await prisma.inventoryHold.findFirst({
+  // One active booking per user per event. A new selection replaces an earlier unpaid
+  // reservation; only a reservation whose payment is already in progress is resumed instead.
+  const existingHolds = await prisma.inventoryHold.findMany({
     where: {
       userId,
       status: "ACTIVE",
       expiresAt: { gt: now },
       ticketType: { eventId: event.id }
     },
-    orderBy: { createdAt: "asc" }
+    orderBy: { createdAt: "asc" },
+    include: { orders: { where: { status: { in: ["PENDING", "PAID"] } }, select: { id: true } } }
   });
 
-  if (existingHold) {
+  const inPayment = existingHolds.find((h) => h.orders && h.orders.length > 0);
+  if (inPayment) {
     return {
-      holdId: existingHold.id,
+      holdId: inPayment.id,
       eventId: event.id,
-      quantity: existingHold.quantity,
-      expiresAt: existingHold.expiresAt,
+      quantity: inPayment.quantity,
+      expiresAt: inPayment.expiresAt,
       existing: true
     };
+  }
+  for (const h of existingHolds) {
+    await releaseHoldIfActive(h.id, "RELEASED");
   }
 
   // Seats across every category in this booking must be free
