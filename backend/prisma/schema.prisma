@@ -203,6 +203,8 @@ model InventoryHold {
   ticketTypeId String     @map("ticket_type_id") @db.Uuid
   quantity     Int
   selectedSeats Json?      @map("selected_seats")
+  /// Holds created together in one booking (e.g. 2 VIP + 2 Standard) share a group id. Null for single-category bookings.
+  groupId      String?    @map("group_id") @db.Uuid
   status       HoldStatus @default(ACTIVE)
   expiresAt    DateTime   @map("expires_at") @db.Timestamptz(6)
   createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -212,6 +214,7 @@ model InventoryHold {
 
   @@index([ticketTypeId, status, expiresAt])
   @@index([userId, status])
+  @@index([groupId])
   @@map("inventory_holds")
 }
 

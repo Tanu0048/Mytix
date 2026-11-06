@@ -7,7 +7,7 @@ import { Calendar, MapPin, Clock, Info, AlertCircle, User, Ticket, CheckCircle, 
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { EventDetailsSkeleton } from '@/components/ui/Skeleton';
-import SeatPicker, { seatedTierNamesOf } from '@/components/SeatPicker';
+import SeatPicker, { seatedTierNamesOf, formatSeatLabel } from '@/components/SeatPicker';
 import { API_BASE } from '@/config/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -102,14 +102,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
         : (event.ticketTypes || []).map((t: any) => tierKey(t.name))
   );
   const quantityTiers: any[] = (event?.ticketTypes || []).filter((t: any) => !seatedTierKeys.has(tierKey(t.name)));
-  const isSeatSelection = selectedSeats.length > 0;
 
   /** Picks a quantity-based category (clears any seats, since one booking covers one category). */
   const selectQuantityTier = (id: string) => {
-    if (selectedSeats.length > 0) {
-      setSelectedSeats([]);
-      setSeatTierMap({});
-    }
     setQuantities({ [id]: (quantities[id] || 0) || 1 });
   };
 
@@ -130,19 +125,12 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
         return copy;
       });
     } else {
-      if (selectedSeats.length >= 10) {
-        toast.error("Maximum 10 seats allowed per booking.");
+      const quantityTickets = Object.values(quantities).reduce((a, b) => a + b, 0);
+      if (selectedSeats.length + quantityTickets >= 10) {
+        toast.error("Maximum 10 tickets allowed per booking.");
         return;
       }
       const resolvedTierId = tierId || event?.ticketTypes?.[0]?.id || "";
-      // A hold covers exactly one ticket type, so every seat in a booking must share the same price tier.
-      const currentTierId = selectedSeats.length > 0 ? seatTierMap[selectedSeats[0]] : null;
-      if (currentTierId && currentTierId !== resolvedTierId) {
-        const currentTier = event?.ticketTypes?.find((t: any) => t.id === currentTierId);
-        toast.error(`Seats from different price tiers must be booked separately. Your current selection is ${currentTier?.name || 'another tier'}.`);
-        return;
-      }
-      setQuantities({});
       setSelectedSeats(prev => [...prev, seatKey]);
       setSeatTierMap(prev => ({
         ...prev,
@@ -182,22 +170,26 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
   let selectedCount = 0;
   let computedTotal = 0;
 
-  if (isSeatSelection) {
-    selectedCount = selectedSeats.length;
-    computedTotal = selectedSeats.reduce((sum, sKey) => {
-      const tierId = seatTierMap[sKey];
-      const tier = event.ticketTypes?.find((t: any) => t.id === tierId) || event.ticketTypes?.[0];
-      return sum + (tier ? tier.priceCents / 100 : 0);
-    }, 0);
-  } else {
-    const selectedId = Object.keys(quantities).find(id => quantities[id] > 0);
-    if (selectedId) {
-      const q = quantities[selectedId];
-      selectedCount = q;
-      const tt = event?.ticketTypes?.find((t: any) => t.id === selectedId);
-      computedTotal = ((tt?.priceCents || 0) / 100) * q;
+  /** What's in the basket: one line per ticket category (seats grouped by category, plus quantity tickets). */
+  const basketLines: Array<{ ticketTypeId: string; name: string; quantity: number; unitCents: number; seats: string[] }> = [];
+  for (const sKey of selectedSeats) {
+    const tierId = seatTierMap[sKey] || event?.ticketTypes?.[0]?.id;
+    let line = basketLines.find((l) => l.ticketTypeId === tierId);
+    if (!line) {
+      const tier = event?.ticketTypes?.find((t: any) => t.id === tierId);
+      line = { ticketTypeId: tierId, name: tier?.name || 'Seat', quantity: 0, unitCents: tier?.priceCents || 0, seats: [] };
+      basketLines.push(line);
     }
+    line.quantity += 1;
+    line.seats.push(sKey);
   }
+  for (const [id, q] of Object.entries(quantities)) {
+    if (q <= 0) continue;
+    const tt = event?.ticketTypes?.find((t: any) => t.id === id);
+    basketLines.push({ ticketTypeId: id, name: tt?.name || 'General admission', quantity: q, unitCents: tt?.priceCents || 0, seats: [] });
+  }
+  selectedCount = basketLines.reduce((sum, l) => sum + l.quantity, 0);
+  computedTotal = basketLines.reduce((sum, l) => sum + (l.unitCents / 100) * l.quantity, 0);
 
   /** Creates a hold; sends the user to log in first (and back here afterwards) if needed. */
   const createHold = async (body: Record<string, unknown>, failMessage: string) => {
@@ -237,42 +229,24 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
       return;
     }
 
-    if (selectedSeats.length > 0) {
-      setHolding(true);
-      try {
-        const primaryTierId = seatTierMap[selectedSeats[0]] || event.ticketTypes?.[0]?.id;
-        const hold = await createHold(
-          { ticketTypeId: primaryTierId, quantity: selectedSeats.length, selectedSeats },
-          'Failed to hold seats.'
-        );
-        if (!hold) return;
-        toast.success('Seats held successfully! Proceeding to payment...');
-        router.push(`/checkout?holdId=${hold.holdId}`);
-      } catch(err: any) {
-        toast.error(err.message);
-      } finally {
-        setHolding(false);
-      }
-      return;
-    }
-
-    // Quantity-based (general admission / standing) hold flow
-    const selectedTypeId = Object.keys(quantities).find(id => quantities[id] > 0);
-    if (!selectedTypeId) {
+    if (basketLines.length === 0) {
       toast.error(hasSeatMap ? 'Please pick your seats or choose a ticket.' : 'Please select a ticket.');
       return;
     }
+    const items = basketLines.map((l) => ({
+      ticketTypeId: l.ticketTypeId,
+      quantity: l.quantity,
+      ...(l.seats.length > 0 ? { selectedSeats: l.seats } : {}),
+    }));
     setHolding(true);
     try {
-      const hold = await createHold(
-        { ticketTypeId: selectedTypeId, quantity: quantities[selectedTypeId] },
-        'Failed to hold tickets.'
-      );
+      // A single category uses the classic body; several categories go together as `items`
+      const hold = await createHold(items.length === 1 ? items[0] : { items }, 'Failed to reserve your tickets.');
       if (!hold) return;
       if (hold.existing) {
         toast.success('Resuming your active ticket reservation...');
       } else {
-        toast.success('Tickets held successfully! Proceeding to payment...');
+        toast.success(selectedSeats.length > 0 ? 'Seats held! Proceeding to payment...' : 'Tickets held! Proceeding to payment...');
       }
       router.push(`/checkout?holdId=${hold.holdId}`);
     } catch(err: any) {
@@ -574,50 +548,32 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                 </>
               )}
 
-              {/* Reserved Total Summary */}
-              {isSeatSelection && (() => {
-                return (
-                  <div className="border-t border-slate-100 pt-6 mt-6">
-                    <div className="flex items-center justify-between text-sm text-slate-500 mb-2">
-                      <span>{selectedSeats.length} × Reserved Seat{selectedSeats.length > 1 ? 's' : ''}</span>
-                      <span>${computedTotal.toFixed(2)}</span>
+              {/* Basket summary (seats and/or tickets, one line per category) */}
+              {basketLines.length > 0 && (
+                <div className="border-t border-slate-100 pt-6 mt-6">
+                  {basketLines.map((l) => (
+                    <div key={l.ticketTypeId} className="flex items-start justify-between gap-4 text-sm text-slate-500 mb-2">
+                      <span>
+                        {l.quantity} × {l.name}
+                        {l.seats.length > 0 && (
+                          <span className="block text-xs text-slate-400">
+                            {l.seats.map((k) => formatSeatLabel(k)).join(', ')}
+                          </span>
+                        )}
+                      </span>
+                      <span className="tabular-nums">${((l.unitCents / 100) * l.quantity).toFixed(2)}</span>
                     </div>
-                    <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
-                      <span>Booking fee</span>
-                      <span>Calculated at checkout</span>
-                    </div>
-                    <div className="flex items-center justify-between text-lg font-bold text-ink mb-6 border-t border-dashed border-slate-200 pt-4">
-                      <span>Subtotal</span>
-                      <span>${computedTotal.toFixed(2)}</span>
-                    </div>
+                  ))}
+                  <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
+                    <span>Booking fee</span>
+                    <span>Calculated at checkout</span>
                   </div>
-                );
-              })()}
-
-              {/* General Admission Total Summary */}
-              {!isSeatSelection && Object.keys(quantities).some(id => quantities[id] > 0) && (() => {
-                 const selectedId = Object.keys(quantities).find(id => quantities[id] > 0)!;
-                 const q = quantities[selectedId];
-                 const tt = event.ticketTypes.find((t: any) => t.id === selectedId);
-                 const subtotal = computedTotal;
-
-                 return (
-                   <div className="border-t border-slate-100 pt-6">
-                     <div className="flex items-center justify-between text-sm text-slate-500 mb-2">
-                       <span>{q} × {tt?.name || 'General admission'}</span>
-                       <span>${subtotal.toFixed(2)}</span>
-                     </div>
-                     <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
-                       <span>Booking fee</span>
-                       <span>Calculated at checkout</span>
-                     </div>
-                     <div className="flex items-center justify-between text-lg font-bold text-ink mb-6 border-t border-dashed border-slate-200 pt-4">
-                       <span>Subtotal</span>
-                       <span>${subtotal.toFixed(2)}</span>
-                     </div>
-                   </div>
-                 );
-              })()}
+                  <div className="flex items-center justify-between text-lg font-bold text-ink mb-6 border-t border-dashed border-slate-200 pt-4">
+                    <span>Subtotal</span>
+                    <span className="tabular-nums">${computedTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
 
               {/* Action Button */}
               <button 
@@ -635,8 +591,8 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                     ? 'Online booking closed'
                     : isEventSoldOut
                       ? 'Sold Out'
-                      : isSeatSelection
-                        ? `Reserve ${selectedSeats.length} seat${selectedSeats.length > 1 ? 's' : ''}`
+                      : selectedCount > 0
+                        ? `Continue with ${selectedCount} ticket${selectedCount > 1 ? 's' : ''}`
                         : hasSeatMap && quantityTiers.length === 0
                           ? 'Reserve seats'
                           : 'Get tickets'}
@@ -721,7 +677,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
         <div className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] z-40 flex items-center justify-between gap-3">
           <div>
             <span className="text-[11px] font-bold text-slate-500 block leading-tight">
-              {selectedCount} {isSeatSelection ? (selectedCount > 1 ? 'Seats' : 'Seat') : (selectedCount > 1 ? 'Tickets' : 'Ticket')}
+              {selectedCount} {selectedCount > 1 ? 'Tickets' : 'Ticket'}
             </span>
             <span className="text-lg font-bold text-ink leading-tight tabular-nums">
               ${computedTotal.toFixed(2)} <span className="text-xs font-semibold text-slate-500">AUD + fees</span>
@@ -732,7 +688,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
             onClick={handleHoldTickets}
             className="h-11 px-6 bg-brand-400 hover:bg-brand-300 text-ink font-semibold rounded-full text-sm transition-colors cursor-pointer disabled:opacity-50"
           >
-            {holding ? 'Holding...' : isSeatSelection ? 'Reserve Seats' : 'Continue'}
+            {holding ? 'Holding...' : 'Continue'}
           </button>
         </div>
       )}

@@ -299,22 +299,11 @@ export default function EventDetailScreen() {
         return copy;
       });
     } else {
-      if (selectedSeats.length >= 10) {
-        Alert.alert('Limit Reached', 'Maximum 10 seats allowed per booking.');
+      const quantityTickets = selectedTierId && hasSeatMap ? selectedQuantity : 0;
+      if (selectedSeats.length + quantityTickets >= 10) {
+        Alert.alert('Limit Reached', 'Maximum 10 tickets allowed per booking.');
         return;
       }
-      // A hold covers exactly one ticket type, so every seat in a booking must share the same price tier.
-      const currentTierId = selectedSeats.length > 0 ? seatTierMap[selectedSeats[0]] : null;
-      if (currentTierId && currentTierId !== tierId) {
-        const currentTier = event?.ticketTypes?.find((t: any) => t.id === currentTierId);
-        Alert.alert(
-          'One Price Tier Per Booking',
-          `Seats from different price tiers must be booked separately. Your current selection is ${currentTier?.name || 'another tier'}.`
-        );
-        return;
-      }
-      // One booking covers one category: picking a seat clears any quantity ticket choice
-      setSelectedTierId('');
       setSelectedSeats((prev) => [...prev, seatKey]);
       setSeatTierMap((prev) => ({ ...prev, [seatKey]: tierId }));
     }
@@ -332,6 +321,22 @@ export default function EventDetailScreen() {
     (!hasSeatMap ? quantityTiers.find((t: any) => (t.available ?? 0) > 0) || quantityTiers[0] : undefined);
   const gaUnitPrice = activeTier ? (activeTier.priceCents || 0) / 100 : 0;
   const gaTotalPrice = gaUnitPrice * selectedQuantity;
+
+  /** One booking can mix seats from several categories and a standing/general ticket. */
+  const basketItems: Array<{ ticketTypeId: string; quantity: number; selectedSeats?: string[] }> = [];
+  for (const sKey of selectedSeats) {
+    const tierId = seatTierMap[sKey] || event.ticketTypes?.[0]?.id;
+    const line = basketItems.find((l) => l.ticketTypeId === tierId);
+    if (line) {
+      line.quantity += 1;
+      line.selectedSeats!.push(sKey);
+    } else {
+      basketItems.push({ ticketTypeId: tierId, quantity: 1, selectedSeats: [sKey] });
+    }
+  }
+  if (activeTier) basketItems.push({ ticketTypeId: activeTier.id, quantity: selectedQuantity });
+  const basketCount = basketItems.reduce((sum, l) => sum + l.quantity, 0);
+  const basketTotal = reservedTotalPrice + (activeTier ? gaTotalPrice : 0);
 
   const promptLogin = (message = 'Please sign in or create an account to book tickets.') => {
     Alert.alert('Login Required', message, [
@@ -393,8 +398,12 @@ export default function EventDetailScreen() {
     }
 
     if (selectedSeats.length > 0) {
-      const primaryTierId = seatTierMap[selectedSeats[0]] || event.ticketTypes?.[0]?.id;
-      await reserveAndCheckout({ ticketTypeId: primaryTierId, quantity: selectedSeats.length, selectedSeats });
+      if (activeTier && selectedQuantity > (activeTier.available ?? 0)) {
+        Alert.alert('Insufficient Tickets', `Only ${activeTier.available ?? 0} ${activeTier.name} tickets available.`);
+        return;
+      }
+      // Single category keeps the classic body; several categories are reserved together as `items`
+      await reserveAndCheckout(basketItems.length === 1 ? basketItems[0] : { items: basketItems });
       return;
     }
 
@@ -586,11 +595,12 @@ export default function EventDetailScreen() {
                         tierSoldOut && styles.ticketTierCardDisabled,
                       ]}
                       onPress={() => {
+                        if (!tierSoldOut && isSelected && hasSeatMap) {
+                          // With a seat map the standing/general ticket is optional: tap again to remove it
+                          setSelectedTierId('');
+                          return;
+                        }
                         if (!tierSoldOut && !isSelected) {
-                          if (selectedSeats.length > 0) {
-                            setSelectedSeats([]);
-                            setSeatTierMap({});
-                          }
                           setSelectedTierId(tier.id);
                           // A quantity picked for another tier may exceed what this one allows.
                           setSelectedQuantity((q) => Math.min(q, Math.max(1, Math.min(10, tier.maxPerOrder || 10, tierAvailable))));
@@ -750,10 +760,8 @@ export default function EventDetailScreen() {
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View>
           <Text style={styles.bottomPriceLabel}>
-            {isSeatSelection
-              ? `${selectedSeats.length} SEAT${selectedSeats.length > 1 ? 'S' : ''} SELECTED`
-              : activeTier
-              ? `${selectedQuantity} TICKET${selectedQuantity > 1 ? 'S' : ''} SELECTED`
+            {basketCount > 0
+              ? `${basketCount} TICKET${basketCount > 1 ? 'S' : ''} SELECTED`
               : 'TICKETS FROM'}
           </Text>
           <Text style={styles.bottomPriceValue}>
@@ -761,10 +769,8 @@ export default function EventDetailScreen() {
               ? 'Closed'
               : isSoldOut
               ? 'Sold Out'
-              : isSeatSelection
-              ? `$${reservedTotalPrice.toFixed(2)} + fees`
-              : activeTier
-              ? `$${gaTotalPrice.toFixed(2)} + fees`
+              : basketCount > 0
+              ? `$${basketTotal.toFixed(2)} + fees`
               : minPrice > 0
               ? `$${minPrice.toFixed(2)} AUD`
               : 'Free'}
@@ -796,10 +802,8 @@ export default function EventDetailScreen() {
                 ? 'Booking Closed'
                 : isSoldOut
                 ? 'Sold Out'
-                : isSeatSelection
-                ? `Book ${selectedSeats.length} Seat${selectedSeats.length > 1 ? 's' : ''}`
-                : activeTier
-                ? `Book ${selectedQuantity} Ticket${selectedQuantity > 1 ? 's' : ''}`
+                : basketCount > 0
+                ? `Book ${basketCount} Ticket${basketCount > 1 ? 's' : ''}`
                 : 'Select Seats'}
             </Text>
           )}

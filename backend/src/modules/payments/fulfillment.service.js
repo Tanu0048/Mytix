@@ -63,10 +63,16 @@ export async function fulfillOrderAfterPayment(paymentIntent) {
       data: { status: "PAID" }
     });
 
-    // 2. Mark InventoryHold as CONVERTED (if attached)
+    // 2. Mark the booking's InventoryHold(s) as CONVERTED (a booking can span several categories)
     if (order.holdId) {
+      const primaryHold = await tx.inventoryHold.findUnique({
+        where: { id: order.holdId },
+        select: { groupId: true }
+      });
       await tx.inventoryHold.updateMany({
-        where: { id: order.holdId, status: "ACTIVE" },
+        where: primaryHold?.groupId
+          ? { groupId: primaryHold.groupId, status: "ACTIVE" }
+          : { id: order.holdId, status: "ACTIVE" },
         data: { status: "CONVERTED" }
       });
     }
@@ -181,19 +187,27 @@ export async function handleFailedPayment(paymentIntent) {
       });
 
       if (order.holdId) {
-        // Release inventory hold back to stock
-        const hold = await tx.inventoryHold.findUnique({
+        // Release every hold in the booking back to stock
+        const primaryHold = await tx.inventoryHold.findUnique({
           where: { id: order.holdId }
         });
-        if (hold && hold.status === "ACTIVE") {
-          await tx.inventoryHold.update({
-            where: { id: hold.id },
+        const holds = primaryHold?.groupId
+          ? await tx.inventoryHold.findMany({ where: { groupId: primaryHold.groupId } })
+          : primaryHold
+            ? [primaryHold]
+            : [];
+        for (const hold of holds) {
+          if (hold.status !== "ACTIVE") continue;
+          const released = await tx.inventoryHold.updateMany({
+            where: { id: hold.id, status: "ACTIVE" },
             data: { status: "RELEASED" }
           });
-          await tx.ticketType.update({
-            where: { id: hold.ticketTypeId },
-            data: { available: { increment: hold.quantity } }
-          });
+          if (released.count === 1) {
+            await tx.ticketType.update({
+              where: { id: hold.ticketTypeId },
+              data: { available: { increment: hold.quantity } }
+            });
+          }
         }
       }
     }

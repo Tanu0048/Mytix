@@ -116,7 +116,9 @@ export async function generateTicketsForOrder(orderId, attendeesList = []) {
       timeZone: "Australia/Sydney"
     }).format(order.event.startsAt);
 
-    const firstTierName = order.items[0]?.ticketType?.name || "General Admission";
+    // e.g. "VIP" or "VIP + Standard" when one booking has several categories
+    const firstTierName =
+      Array.from(new Set(order.items.map((i) => i.ticketType?.name).filter(Boolean))).join(" + ") || "General Admission";
     const totalAud = (order.totalCents / 100).toFixed(2);
     const viewTicketsUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/me/tickets`;
 

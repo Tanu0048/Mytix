@@ -250,12 +250,18 @@ export default function CheckoutScreen() {
 
               <View style={styles.divider} />
 
-              <View style={styles.lineRow}>
-                <Text style={styles.lineLabel}>
-                  {hold.quantity} × {hold.ticketTypeName || 'General Admission'}
-                </Text>
-                <Text style={styles.lineValue}>{formatAud(pricing.ticketTotalCents)}</Text>
-              </View>
+              {/* One line per ticket category (a booking can mix e.g. VIP + Standard) */}
+              {(Array.isArray(hold.items) && hold.items.length > 1
+                ? hold.items
+                : [{ ticketTypeId: hold.ticketTypeId, ticketTypeName: hold.ticketTypeName, quantity: hold.quantity, totalCents: pricing.ticketTotalCents }]
+              ).map((item: any) => (
+                <View key={item.ticketTypeId || 'single'} style={styles.lineRow}>
+                  <Text style={styles.lineLabel}>
+                    {item.quantity} × {item.ticketTypeName || 'General Admission'}
+                  </Text>
+                  <Text style={styles.lineValue}>{formatAud(item.totalCents)}</Text>
+                </View>
+              ))}
               {seatLabels.length > 0 ? (
                 <View style={styles.seatChips}>
                   {seatLabels.map((label) => (

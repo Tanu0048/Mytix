@@ -4,6 +4,7 @@ import { getPaymentProvider } from "../../providers/payment/index.js";
 import { calculateOrderPricing } from "./pricing.service.js";
 import { AppError } from "../../utils/errors.js";
 import { env } from "../../config/env.js";
+import { findHoldGroup } from "../holds/hold.service.js";
 
 /**
  * Initiates the checkout pipeline for an active inventory hold.
@@ -50,6 +51,15 @@ export async function createCheckoutSession(userId, { holdId, attendees = [] }, 
     );
   }
 
+  // A booking can span several ticket categories (one hold each, sharing a groupId)
+  const group = await findHoldGroup(prisma, hold, {
+    ticketType: { select: { id: true, name: true, priceCents: true } }
+  });
+  if (group.some((h) => h.status !== "ACTIVE" || now > h.expiresAt)) {
+    throw new AppError("HOLD_EXPIRED", 410, "Your ticket reservation has expired. Please select tickets again.");
+  }
+  const totalQuantity = group.reduce((sum, h) => sum + h.quantity, 0);
+
   // Auto-populate attendees from buyer account if not provided or empty
   let finalAttendees = Array.isArray(attendees) ? [...attendees] : [];
   if (finalAttendees.length === 0) {
@@ -57,15 +67,15 @@ export async function createCheckoutSession(userId, { holdId, attendees = [] }, 
       where: { id: userId },
       select: { name: true, email: true }
     });
-    finalAttendees = Array(hold.quantity).fill(null).map(() => ({
+    finalAttendees = Array(totalQuantity).fill(null).map(() => ({
       name: buyer?.name || "Event Attendee",
       email: buyer?.email || "attendee@mytix.com"
     }));
-  } else if (finalAttendees.length !== hold.quantity) {
+  } else if (finalAttendees.length !== totalQuantity) {
     throw new AppError(
       "ATTENDEE_COUNT_MISMATCH",
       400,
-      `Exactly ${hold.quantity} attendee(s) must be specified for this reservation.`
+      `Exactly ${totalQuantity} attendee(s) must be specified for this reservation.`
     );
   }
 
@@ -76,7 +86,7 @@ export async function createCheckoutSession(userId, { holdId, attendees = [] }, 
   }
 
   // Calculate whole-cents pricing with Australian domestic surcharge
-  const ticketTotalCents = hold.ticketType.priceCents * hold.quantity;
+  const ticketTotalCents = group.reduce((sum, h) => sum + h.ticketType.priceCents * h.quantity, 0);
   const pricing = await calculateOrderPricing(ticketTotalCents);
 
   // Re-use an existing pending order if created moments earlier, or create a new one
@@ -101,15 +111,18 @@ export async function createCheckoutSession(userId, { holdId, attendees = [] }, 
         }
       });
 
-      await tx.orderItem.create({
-        data: {
-          orderId: createdOrder.id,
-          ticketTypeId: hold.ticketTypeId,
-          quantity: hold.quantity,
-          unitPriceCents: hold.ticketType.priceCents,
-          selectedSeats: hold.selectedSeats || null
-        }
-      });
+      // One order item per ticket category in the booking
+      for (const h of group) {
+        await tx.orderItem.create({
+          data: {
+            orderId: createdOrder.id,
+            ticketTypeId: h.ticketTypeId,
+            quantity: h.quantity,
+            unitPriceCents: h.ticketType.priceCents,
+            selectedSeats: h.selectedSeats || null
+          }
+        });
+      }
 
       return createdOrder;
     });
@@ -175,8 +188,8 @@ export async function createCheckoutSession(userId, { holdId, attendees = [] }, 
     eventId: hold.ticketType.event.id,
     eventTitle: hold.ticketType.event.title,
     ticketTypeId: hold.ticketTypeId,
-    ticketTypeName: hold.ticketType.name,
-    quantity: hold.quantity,
+    ticketTypeName: group.map((h) => h.ticketType.name).join(" + "),
+    quantity: totalQuantity,
     pricing: {
       ticketTotalCents: order.ticketTotalCents,
       buyerFeeCents: order.buyerFeeCents,

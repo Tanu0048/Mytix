@@ -187,7 +187,10 @@ function CheckoutContent() {
               </div>
               <h3 className="text-base font-black text-white leading-snug truncate">{hold.eventTitle}</h3>
               <p className="text-xs text-slate-400 mt-1">
-                {hold.quantity} × {hold.ticketTypeName} • Includes AUD processing fee
+                {Array.isArray(hold.items) && hold.items.length > 1
+                  ? hold.items.map((i: any) => `${i.quantity} × ${i.ticketTypeName}`).join(', ')
+                  : `${hold.quantity} × ${hold.ticketTypeName}`}{' '}
+                • Includes AUD processing fee
               </p>
             </div>
 
@@ -364,10 +367,18 @@ function CheckoutContent() {
                   <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Order Summary (AUD)</h4>
                   
                   <div className="space-y-3 mb-6">
-                    <div className="flex justify-between text-sm text-slate-600">
-                      <span className="font-semibold">{hold.quantity} × {hold.ticketTypeName}</span>
-                      <span className="font-bold text-slate-900">${totalAmount.toFixed(2)} AUD</span>
-                    </div>
+                    {/* One line per ticket category (a booking can mix e.g. VIP + Standard) */}
+                    {(Array.isArray(hold.items) && hold.items.length > 0
+                      ? hold.items
+                      : [{ ticketTypeId: hold.ticketTypeId, ticketTypeName: hold.ticketTypeName, quantity: hold.quantity, totalCents: hold.totalCents }]
+                    ).map((item: any) => (
+                      <div key={item.ticketTypeId} className="flex justify-between text-sm text-slate-600">
+                        <span className="font-semibold">{item.quantity} × {item.ticketTypeName}</span>
+                        <span className="font-bold text-slate-900">
+                          ${((item.totalCents ?? (item.unitPriceCents || 0) * item.quantity) / 100).toFixed(2)} AUD
+                        </span>
+                      </div>
+                    ))}
                     <div className="flex justify-between text-sm text-slate-600">
                       <span className="font-semibold">Processing & Booking Fee</span>
                       <span className="font-bold text-slate-900">${fee.toFixed(2)} AUD</span>

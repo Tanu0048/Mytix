@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { prisma } from "../../lib/prisma.js";
 import { pgboss } from "../../lib/pgboss.js";
 import { logger } from "../../lib/logger.js";
@@ -80,8 +81,14 @@ export async function getActiveHolds(userId) {
   }));
 }
 
-export async function createHold(userId, { ticketTypeId, quantity, selectedSeats: requestedSeatList }) {
-  const now = new Date();
+/** Max number of different ticket categories in one booking. */
+const MAX_ITEMS_PER_BOOKING = 10;
+
+/**
+ * Loads a ticket category and checks that the requested quantity (and seats, for seat maps)
+ * can be held right now. Returns the validated item.
+ */
+async function prepareHoldItem({ ticketTypeId, quantity, selectedSeats: requestedSeatList }, now) {
   let selectedSeats = requestedSeatList;
 
   const ticketType = await prisma.ticketType.findUnique({
@@ -124,13 +131,12 @@ export async function createHold(userId, { ticketTypeId, quantity, selectedSeats
     }
   }
 
-  // Sold Out check
   if (ticketType.available <= 0) {
-    throw new AppError("SOLD_OUT", 400, "All tickets for this tier are sold out.");
+    throw new AppError("SOLD_OUT", 400, `All “${ticketType.name}” tickets are sold out.`);
   }
 
   if (ticketType.available < quantity) {
-    throw new AppError("NOT_ENOUGH_TICKETS", 400, `Only ${ticketType.available} tickets available in this category.`);
+    throw new AppError("NOT_ENOUGH_TICKETS", 400, `Only ${ticketType.available} “${ticketType.name}” tickets are available.`);
   }
 
   // Only check SALE_NOT_STARTED if saleStartsAt is explicitly before the event start and hasn't arrived
@@ -145,7 +151,7 @@ export async function createHold(userId, { ticketTypeId, quantity, selectedSeats
   if (ticketType.saleEndsAt && now > ticketType.saleEndsAt) {
     const eventStartsAt = ticketType.event?.startsAt ? new Date(ticketType.event.startsAt) : null;
     if (eventStartsAt && ticketType.saleEndsAt < eventStartsAt) {
-      throw new AppError("SALE_ENDED", 400, "Ticket sales for this tier have ended.");
+      throw new AppError("SALE_ENDED", 400, `Ticket sales for “${ticketType.name}” have ended.`);
     }
   }
 
@@ -153,7 +159,7 @@ export async function createHold(userId, { ticketTypeId, quantity, selectedSeats
     throw new AppError(
       "QUANTITY_BELOW_MINIMUM",
       400,
-      `Minimum quantity per order for this ticket is ${ticketType.minPerOrder}.`
+      `Minimum quantity per order for “${ticketType.name}” is ${ticketType.minPerOrder}.`
     );
   }
 
@@ -161,182 +167,220 @@ export async function createHold(userId, { ticketTypeId, quantity, selectedSeats
     throw new AppError(
       "QUANTITY_EXCEEDS_MAXIMUM",
       400,
-      `Maximum quantity per order for this ticket is ${ticketType.maxPerOrder}.`
+      `Maximum quantity per order for “${ticketType.name}” is ${ticketType.maxPerOrder}.`
     );
   }
 
-  // Prevent multiple concurrent active holds by the same user on the same event
+  return { ticketType, quantity, selectedSeats };
+}
+
+/** Throws if any requested seat is already booked, or currently held by another user. */
+async function assertSeatsFree(userId, eventId, seatKeys, now) {
+  if (seatKeys.length === 0) return;
+  const requestedSeats = seatKeys.map((key) => ({ key, seat: parseSeat(key) }));
+
+  // 1. Already booked?
+  const existingTickets = await prisma.ticket.findMany({
+    where: {
+      order: { eventId, status: { in: ["PAID", "PENDING"] } },
+      status: { not: "CANCELLED" }
+    },
+    select: { seatRow: true, seatNumber: true, sectionName: true }
+  });
+
+  for (const t of existingTickets) {
+    if (!t.seatRow || !t.seatNumber) continue;
+    // Older tickets stored the section inside seatRow ("Section:A"), so split it back out.
+    const rowHasSection = t.seatRow.includes(":");
+    const ticketSeat = {
+      section: t.sectionName || (rowHasSection ? t.seatRow.split(":")[0] : null),
+      row: rowHasSection ? t.seatRow.split(":")[1] : t.seatRow,
+      num: String(t.seatNumber)
+    };
+    for (const { key, seat } of requestedSeats) {
+      if (isSameSeat(seat, ticketSeat)) {
+        throw new AppError("SEAT_ALREADY_BOOKED", 409, `Seat ${key} has already been booked. Please choose another seat.`);
+      }
+    }
+  }
+
+  // 2. Held by someone else?
+  const otherHolds = await prisma.inventoryHold.findMany({
+    where: {
+      ticketType: { eventId },
+      status: "ACTIVE",
+      expiresAt: { gt: now },
+      userId: { not: userId }
+    },
+    select: { selectedSeats: true }
+  });
+
+  for (const h of otherHolds) {
+    if (!Array.isArray(h.selectedSeats)) continue;
+    for (const heldSeat of h.selectedSeats) {
+      const held = parseSeat(heldSeat);
+      const clash = requestedSeats.find(({ seat }) => isSameSeat(seat, held));
+      if (clash) {
+        throw new AppError("SEAT_HELD", 409, `Seat ${clash.key} is currently held by another user. Please choose another seat.`);
+      }
+    }
+  }
+}
+
+/**
+ * All holds that belong to the same booking as `hold` (itself first), using the given
+ * Prisma client or transaction. Single-category bookings return just [hold].
+ */
+export async function findHoldGroup(db, hold, include) {
+  if (!hold?.groupId) return [hold];
+  const group = await db.inventoryHold.findMany({
+    where: { groupId: hold.groupId },
+    orderBy: { createdAt: "asc" },
+    ...(include ? { include } : {})
+  });
+  // Keep the requested hold first so callers can treat it as the "primary" one
+  return [hold, ...group.filter((h) => h.id !== hold.id)];
+}
+
+/**
+ * Reserves tickets for one booking. Accepts either a single category
+ * ({ ticketTypeId, quantity, selectedSeats }) or several at once
+ * ({ items: [{ ticketTypeId, quantity, selectedSeats }, ...] }), e.g. 2 VIP + 2 Standard seats.
+ * All categories are reserved together or not at all.
+ */
+export async function createHold(userId, body) {
+  const now = new Date();
+  const rawItems = Array.isArray(body?.items) && body.items.length > 0 ? body.items : [body];
+
+  if (rawItems.length > MAX_ITEMS_PER_BOOKING) {
+    throw new AppError("VALIDATION_ERROR", 400, `A booking can include at most ${MAX_ITEMS_PER_BOOKING} ticket categories.`);
+  }
+  const seenTypes = new Set();
+  for (const item of rawItems) {
+    if (seenTypes.has(item.ticketTypeId)) {
+      throw new AppError("VALIDATION_ERROR", 400, "Each ticket category can only appear once in a booking.");
+    }
+    seenTypes.add(item.ticketTypeId);
+  }
+
+  const items = [];
+  for (const raw of rawItems) items.push(await prepareHoldItem(raw, now));
+
+  const event = items[0].ticketType.event;
+  if (items.some((i) => i.ticketType.event.id !== event.id)) {
+    throw new AppError("VALIDATION_ERROR", 400, "All tickets in one booking must be for the same event.");
+  }
+
+  // Prevent multiple concurrent active bookings by the same user on the same event
   const existingHold = await prisma.inventoryHold.findFirst({
     where: {
       userId,
       status: "ACTIVE",
       expiresAt: { gt: now },
-      ticketType: {
-        eventId: ticketType.event.id
-      }
-    }
+      ticketType: { eventId: event.id }
+    },
+    orderBy: { createdAt: "asc" }
   });
 
   if (existingHold) {
     return {
       holdId: existingHold.id,
-      eventId: ticketType.event.id,
+      eventId: event.id,
       quantity: existingHold.quantity,
       expiresAt: existingHold.expiresAt,
       existing: true
     };
   }
 
-  // Validate selectedSeats against already booked or currently held seats
-  if (Array.isArray(selectedSeats) && selectedSeats.length > 0) {
-    const seatKeys = selectedSeats.map((s) => (typeof s === "string" ? s : `${s.row}-${s.seatNumber}`));
-
-    // 1. Check if any seat is already booked
-    const existingTickets = await prisma.ticket.findMany({
-      where: {
-        order: { eventId: ticketType.event.id, status: { in: ["PAID", "PENDING"] } },
-        status: { not: "CANCELLED" }
-      },
-      select: { seatRow: true, seatNumber: true, sectionName: true }
-    });
-
-    const requestedSeats = seatKeys.map((key) => ({ key, seat: parseSeat(key) }));
-
-    for (const t of existingTickets) {
-      if (!t.seatRow || !t.seatNumber) continue;
-      // Older tickets stored the section inside seatRow ("Section:A"), so split it back out.
-      const rowHasSection = t.seatRow.includes(":");
-      const ticketSeat = {
-        section: t.sectionName || (rowHasSection ? t.seatRow.split(":")[0] : null),
-        row: rowHasSection ? t.seatRow.split(":")[1] : t.seatRow,
-        num: String(t.seatNumber)
-      };
-
-      for (const { key, seat } of requestedSeats) {
-        if (isSameSeat(seat, ticketSeat)) {
-          throw new AppError("SEAT_ALREADY_BOOKED", 409, `Seat ${key} has already been booked. Please choose another seat.`);
-        }
-      }
-    }
-
-    // 2. Check if any seat is held by another user
-    const otherHolds = await prisma.inventoryHold.findMany({
-      where: {
-        ticketType: { eventId: ticketType.event.id },
-        status: "ACTIVE",
-        expiresAt: { gt: now },
-        userId: { not: userId }
-      },
-      select: { selectedSeats: true }
-    });
-
-    for (const h of otherHolds) {
-      if (Array.isArray(h.selectedSeats)) {
-        for (const heldSeat of h.selectedSeats) {
-          const held = parseSeat(heldSeat);
-          const clash = requestedSeats.find(({ seat }) => isSameSeat(seat, held));
-          if (clash) {
-            throw new AppError("SEAT_HELD", 409, `Seat ${clash.key} is currently held by another user. Please choose another seat.`);
-          }
-        }
-      }
-    }
+  // Seats across every category in this booking must be free
+  const seatKeys = items.flatMap((i) =>
+    Array.isArray(i.selectedSeats) ? i.selectedSeats.map((s) => (typeof s === "string" ? s : `${s.row}-${s.seatNumber}`)) : []
+  );
+  if (new Set(seatKeys).size !== seatKeys.length) {
+    throw new AppError("VALIDATION_ERROR", 400, "The same seat was selected twice.");
   }
+  await assertSeatsFree(userId, event.id, seatKeys, now);
 
   const expiresAt = new Date(now.getTime() + HOLD_DURATION_MINUTES * 60 * 1000);
+  const groupId = items.length > 1 ? crypto.randomUUID() : null;
 
-  // Atomic Compare-And-Swap stock decrement and hold creation in one transaction
-  const hold = await prisma.$transaction(async (tx) => {
-    const updateResult = await tx.ticketType.updateMany({
-      where: {
-        id: ticketTypeId,
-        available: { gte: quantity }
-      },
-      data: {
-        available: { decrement: quantity }
+  // Atomic compare-and-swap stock decrement for every category, then the holds — all or nothing
+  const holds = await prisma.$transaction(async (tx) => {
+    const created = [];
+    for (const item of items) {
+      const updateResult = await tx.ticketType.updateMany({
+        where: { id: item.ticketType.id, available: { gte: item.quantity } },
+        data: { available: { decrement: item.quantity } }
+      });
+
+      if (updateResult.count === 0) {
+        throw new AppError("SOLD_OUT", 409, `“${item.ticketType.name}” tickets are sold out or the requested quantity is unavailable.`);
       }
-    });
 
-    if (updateResult.count === 0) {
-      throw new AppError("SOLD_OUT", 409, "Tickets are sold out or requested quantity is unavailable.");
-    }
-
-    return tx.inventoryHold.create({
-      data: {
-        userId,
-        ticketTypeId,
-        quantity,
-        selectedSeats: selectedSeats || null,
-        status: "ACTIVE",
-        expiresAt
-      },
-      include: {
-        ticketType: {
-          select: {
-            id: true,
-            name: true,
-            priceCents: true,
-            event: {
-              select: {
-                id: true,
-                title: true,
-                slug: true
-              }
-            }
+      created.push(
+        await tx.inventoryHold.create({
+          data: {
+            userId,
+            ticketTypeId: item.ticketType.id,
+            quantity: item.quantity,
+            selectedSeats: item.selectedSeats || null,
+            groupId,
+            status: "ACTIVE",
+            expiresAt
+          },
+          include: {
+            ticketType: { select: { id: true, name: true, priceCents: true } }
           }
-        }
-      }
-    });
+        })
+      );
+    }
+    return created;
   });
 
   // Bust availability cache for real-time responsiveness
-  if (ticketType.event?.slug) {
-    deleteCached(`availability:${ticketType.event.slug}`);
+  if (event.slug) {
+    deleteCached(`availability:${event.slug}`);
   }
 
-  // Schedule background delayed job for automatic hold release after TTL
-  try {
-    await pgboss.send(
-      "hold.release",
-      { holdId: hold.id },
-      { startAfter: HOLD_DURATION_MINUTES * 60 }
-    );
-  } catch (err) {
-    logger.error("Failed to enqueue delayed hold release job", {
-      holdId: hold.id,
-      error: err.message
-    });
+  // Schedule background delayed jobs for automatic release after TTL
+  for (const hold of holds) {
+    try {
+      await pgboss.send("hold.release", { holdId: hold.id }, { startAfter: HOLD_DURATION_MINUTES * 60 });
+    } catch (err) {
+      logger.error("Failed to enqueue delayed hold release job", { holdId: hold.id, error: err.message });
+    }
   }
 
-  const secondsRemaining = Math.max(0, Math.floor((hold.expiresAt.getTime() - Date.now()) / 1000));
+  const primary = holds[0];
+  const totalQuantity = holds.reduce((sum, h) => sum + h.quantity, 0);
+  const totalCents = holds.reduce((sum, h) => sum + h.ticketType.priceCents * h.quantity, 0);
+  const secondsRemaining = Math.max(0, Math.floor((primary.expiresAt.getTime() - Date.now()) / 1000));
 
   return {
-    holdId: hold.id,
-    eventId: hold.ticketType.event.id,
-    eventTitle: hold.ticketType.event.title,
-    ticketTypeId: hold.ticketTypeId,
-    ticketTypeName: hold.ticketType.name,
-    quantity: hold.quantity,
-    unitPriceCents: hold.ticketType.priceCents,
-    totalCents: hold.ticketType.priceCents * hold.quantity,
-    expiresAt: hold.expiresAt,
+    holdId: primary.id,
+    groupId,
+    eventId: event.id,
+    eventTitle: event.title,
+    ticketTypeId: primary.ticketTypeId,
+    ticketTypeName: holds.map((h) => h.ticketType.name).join(" + "),
+    quantity: totalQuantity,
+    unitPriceCents: primary.ticketType.priceCents,
+    totalCents,
+    items: holds.map((h) => ({
+      holdId: h.id,
+      ticketTypeId: h.ticketTypeId,
+      ticketTypeName: h.ticketType.name,
+      quantity: h.quantity,
+      unitPriceCents: h.ticketType.priceCents,
+      selectedSeats: h.selectedSeats || null
+    })),
+    expiresAt: primary.expiresAt,
     secondsRemaining
   };
 }
 
 export async function releaseHold(holdId, userId, userRole) {
-  const hold = await prisma.inventoryHold.findUnique({
-    where: { id: holdId },
-    include: {
-      ticketType: {
-        include: {
-          event: {
-            select: { slug: true }
-          }
-        }
-      }
-    }
-  });
+  const hold = await prisma.inventoryHold.findUnique({ where: { id: holdId } });
 
   if (!hold) {
     throw new AppError("NOT_FOUND", 404, "Hold not found.");
@@ -346,7 +390,8 @@ export async function releaseHold(holdId, userId, userRole) {
     throw new AppError("FORBIDDEN", 403, "Not authorized to release this hold.");
   }
 
-  if (hold.status !== "ACTIVE") {
+  const group = await findHoldGroup(prisma, hold);
+  if (group.every((h) => h.status !== "ACTIVE")) {
     return {
       holdId,
       status: hold.status,
@@ -354,37 +399,32 @@ export async function releaseHold(holdId, userId, userRole) {
     };
   }
 
-  const result = await releaseHoldIfActive(holdId, "RELEASED");
+  let releasedQuantity = 0;
+  for (const h of group) {
+    const result = await releaseHoldIfActive(h.id, "RELEASED");
+    if (result.released) releasedQuantity += result.quantity || 0;
+  }
 
   return {
     holdId,
     status: "RELEASED",
-    releasedQuantity: result.quantity || hold.quantity,
+    releasedQuantity,
     message: "Hold released successfully."
   };
 }
 
 export async function getHoldById(holdId, userId, userRole) {
-  const hold = await prisma.inventoryHold.findUnique({
-    where: { id: holdId },
-    include: {
-      ticketType: {
-        select: {
-          id: true,
-          name: true,
-          priceCents: true,
-          event: {
-            select: {
-              id: true,
-              title: true,
-              slug: true,
-              startsAt: true
-            }
-          }
-        }
+  const ticketTypeInclude = {
+    ticketType: {
+      select: {
+        id: true,
+        name: true,
+        priceCents: true,
+        event: { select: { id: true, title: true, slug: true, startsAt: true } }
       }
     }
-  });
+  };
+  const hold = await prisma.inventoryHold.findUnique({ where: { id: holdId }, include: ticketTypeInclude });
 
   if (!hold) {
     throw new AppError("NOT_FOUND", 404, "Hold not found.");
@@ -394,30 +434,45 @@ export async function getHoldById(holdId, userId, userRole) {
     throw new AppError("FORBIDDEN", 403, "Not authorized to view this hold.");
   }
 
+  const group = await findHoldGroup(prisma, hold, ticketTypeInclude);
+
   const now = new Date();
   if (hold.status === "ACTIVE" && now > hold.expiresAt) {
-    await releaseHoldIfActive(holdId, "EXPIRED");
+    for (const h of group) await releaseHoldIfActive(h.id, "EXPIRED");
     hold.status = "EXPIRED";
   }
 
   const secondsRemaining = Math.max(0, Math.floor((hold.expiresAt.getTime() - Date.now()) / 1000));
+  const totalQuantity = group.reduce((sum, h) => sum + h.quantity, 0);
+  const totalCents = group.reduce((sum, h) => sum + h.ticketType.priceCents * h.quantity, 0);
+  const allSeats = group.flatMap((h) => (Array.isArray(h.selectedSeats) ? h.selectedSeats : []));
 
   // Same pricing the checkout will charge, so the UI never has to guess the booking fee.
-  const pricing = await calculateOrderPricing(hold.ticketType.priceCents * hold.quantity);
+  const pricing = await calculateOrderPricing(totalCents);
 
   return {
     holdId: hold.id,
+    groupId: hold.groupId || null,
     eventId: hold.ticketType.event.id,
     eventTitle: hold.ticketType.event.title,
     eventSlug: hold.ticketType.event.slug,
     eventStartsAt: hold.ticketType.event.startsAt,
     pricing,
-    selectedSeats: hold.selectedSeats || null,
+    selectedSeats: allSeats.length > 0 ? allSeats : null,
     ticketTypeId: hold.ticketTypeId,
-    ticketTypeName: hold.ticketType.name,
-    quantity: hold.quantity,
+    ticketTypeName: group.map((h) => h.ticketType.name).join(" + "),
+    quantity: totalQuantity,
     unitPriceCents: hold.ticketType.priceCents,
-    totalCents: hold.ticketType.priceCents * hold.quantity,
+    totalCents,
+    items: group.map((h) => ({
+      holdId: h.id,
+      ticketTypeId: h.ticketTypeId,
+      ticketTypeName: h.ticketType.name,
+      quantity: h.quantity,
+      unitPriceCents: h.ticketType.priceCents,
+      totalCents: h.ticketType.priceCents * h.quantity,
+      selectedSeats: h.selectedSeats || null
+    })),
     status: hold.status,
     expiresAt: hold.expiresAt,
     secondsRemaining: hold.status === "ACTIVE" ? secondsRemaining : 0
