@@ -303,17 +303,18 @@ export default function SeatPicker({
                           <View style={styles.tableTop}>
                             <Text style={styles.tableLabel}>{tableName.replace(/^T/, 'Table ')}</Text>
                           </View>
-                          {Array.from({ length: chairs }, (_, i) => {
-                            const seatNum = i + 1;
-                            if (blocked.has(`${tableName}-${seatNum}`)) return null;
-                            const angle = (2 * Math.PI * i) / chairs - Math.PI / 2;
-                            const center = TABLE_BOX / 2 - SEAT_SIZE / 2;
-                            return renderSeat(tableName, seatNum, {
-                              position: 'absolute',
-                              left: center + Math.cos(angle) * TABLE_RADIUS,
-                              top: center + Math.sin(angle) * TABLE_RADIUS,
-                            });
-                          })}
+                          {Array.from({ length: chairs }, (_, i) => i + 1)
+                            // Only the table's real chairs, spaced evenly (smaller tables have their extra chairs removed)
+                            .filter((n) => !blocked.has(`${tableName}-${n}`))
+                            .map((seatNum, i, visible) => {
+                              const angle = (2 * Math.PI * i) / visible.length - Math.PI / 2;
+                              const center = TABLE_BOX / 2 - SEAT_SIZE / 2;
+                              return renderSeat(tableName, seatNum, {
+                                position: 'absolute',
+                                left: center + Math.cos(angle) * TABLE_RADIUS,
+                                top: center + Math.sin(angle) * TABLE_RADIUS,
+                              });
+                            })}
                         </View>
                       );
                     })}

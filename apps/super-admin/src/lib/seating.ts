@@ -265,6 +265,62 @@ export function toggleBlocked(section: SeatSection, key: string): SeatSection {
   };
 }
 
+/**
+ * Chairs at one table. Tables in a section share a maximum (`seatsPerTable`); a smaller
+ * table is stored by marking its extra chairs (the highest numbers) as not for sale.
+ */
+export function tableSize(section: SeatSection, table: string): number {
+  const max = seatsPerRowOf(section);
+  const blocked = new Set(section.blocked || []);
+  let size = max;
+  while (size > 0 && blocked.has(`${table}-${size}`)) size--;
+  return size;
+}
+
+/** Sets how many chairs one table has (1–30). Other tables keep their current size. */
+export function setTableSize(section: SeatSection, table: string, chairs: number): SeatSection {
+  const n = Math.max(1, Math.min(30, Math.floor(chairs) || 1));
+  const max = seatsPerRowOf(section);
+  const tables = sectionRows(section);
+  const sizes = new Map(tables.map((t) => [t, tableSize(section, t)]));
+  sizes.set(table, n);
+  const newMax = Math.max(max, n);
+  const blocked = new Set(section.blocked || []);
+  for (const t of tables) {
+    const size = sizes.get(t)!;
+    for (let c = 1; c <= newMax; c++) {
+      const key = `${t}-${c}`;
+      if (c > size) blocked.add(key);
+      else if (t === table) blocked.delete(key); // re-added chairs become sellable
+    }
+  }
+  const seatTiers = { ...(section.seatTiers || {}) };
+  for (const k of blocked) delete seatTiers[k];
+  return {
+    ...section,
+    seatsPerTable: newMax,
+    blocked: Array.from(blocked),
+    accessible: (section.accessible || []).filter((k) => !blocked.has(k)),
+    seatTiers,
+  };
+}
+
+/** Gives every table in a section the same number of chairs. */
+export function setAllTableSizes(section: SeatSection, chairs: number): SeatSection {
+  const n = Math.max(1, Math.min(30, Math.floor(chairs) || 1));
+  let next: SeatSection = section;
+  for (const t of sectionRows(section)) next = setTableSize(next, t, n);
+  // Drop chair numbers above the new size entirely
+  const inRange = (k: string) => Number(k.slice(k.lastIndexOf("-") + 1)) <= n;
+  return {
+    ...next,
+    seatsPerTable: n,
+    blocked: (next.blocked || []).filter(inRange),
+    accessible: (next.accessible || []).filter(inRange),
+    seatTiers: Object.fromEntries(Object.entries(next.seatTiers || {}).filter(([k]) => inRange(k))),
+  };
+}
+
 /** Makes every seat in a section one ticket category (blocked seats stay blocked). */
 export function fillSection(section: SeatSection, tierName: string): SeatSection {
   return { ...section, tierName, seatTiers: {} };

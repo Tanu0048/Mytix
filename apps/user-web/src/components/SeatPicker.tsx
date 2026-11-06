@@ -279,16 +279,18 @@ export default function SeatPicker({
                         <div className="absolute inset-8 sm:inset-9 rounded-full bg-slate-700/80 border border-slate-600 flex items-center justify-center text-[11px] font-black text-slate-200">
                           {tableName.replace(/^T/, "Table ")}
                         </div>
-                        {Array.from({ length: chairs }, (_, i) => {
-                          const seatNum = i + 1;
-                          if (blocked.has(`${tableName}-${seatNum}`)) return null;
-                          const angle = (2 * Math.PI * i) / chairs - Math.PI / 2;
+                        {(() => {
+                          // Only the table's real chairs, spaced evenly (smaller tables have their extra chairs removed)
+                          const visible = Array.from({ length: chairs }, (_, i) => i + 1).filter((n) => !blocked.has(`${tableName}-${n}`));
+                          return visible.map((seatNum, i) => {
+                          const angle = (2 * Math.PI * i) / visible.length - Math.PI / 2;
                           return renderSeat(tableName, seatNum, {
                             position: "absolute",
                             left: `calc(50% + ${Math.cos(angle) * radius}px - 14px)`,
                             top: `calc(50% + ${Math.sin(angle) * radius}px - 14px)`,
                           });
-                        })}
+                          });
+                        })()}
                       </div>
                     );
                   })}

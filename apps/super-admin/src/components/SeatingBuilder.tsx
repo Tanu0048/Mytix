@@ -40,6 +40,9 @@ import {
   paintSeat,
   toggleAccessible,
   toggleBlocked,
+  tableSize,
+  setTableSize,
+  setAllTableSizes,
 } from "@/lib/seating";
 
 export interface BuilderTier {
@@ -160,6 +163,7 @@ function SeatMap({
   onToggleRow,
   locked,
   colorFor,
+  onSetTableSize,
 }: {
   section: SeatSection;
   selected: Set<string>;
@@ -167,6 +171,8 @@ function SeatMap({
   onToggleRow: (row: string) => void;
   locked?: boolean;
   colorFor: (tierName: string) => { seat: string; swatch: string };
+  /** Tables only: change how many chairs one table has. */
+  onSetTableSize?: (table: string, chairs: number) => void;
 }) {
   const s = cleanMarks(section);
   const rows = sectionRows(s);
@@ -210,28 +216,60 @@ function SeatMap({
         <p className="text-center text-[11px] font-medium uppercase tracking-widest text-slate-500 mt-1">Stage</p>
       </div>
       {isTables ? (
-        <div className="flex flex-wrap gap-4 justify-center">
-          {rows.slice(0, MAX_PREVIEW_TABLES).map((t) => (
-            <div key={t} className="relative w-28 h-28">
-              {rowButton(
-                t,
-                t.replace("T", "Table "),
-                "absolute inset-7 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-[11px] font-semibold text-slate-200"
-              )}
-              {Array.from({ length: perRow }, (_, i) => {
-                const angle = (2 * Math.PI * i) / perRow - Math.PI / 2;
-                return (
-                  <div
-                    key={i}
-                    className="absolute"
-                    style={{ left: `calc(50% + ${Math.cos(angle) * 44}px - 12px)`, top: `calc(50% + ${Math.sin(angle) * 44}px - 12px)` }}
-                  >
-                    {dot(`${t}-${i + 1}`, String(i + 1))}
+        <div className="flex flex-wrap gap-x-5 gap-y-4 justify-center">
+          {rows.slice(0, MAX_PREVIEW_TABLES).map((t) => {
+            // Each table shows only its own chairs, spaced evenly around it
+            const chairs = tableSize(s, t);
+            return (
+              <div key={t} className="flex flex-col items-center gap-1.5">
+                <div className="relative w-28 h-28">
+                  {rowButton(
+                    t,
+                    t.replace("T", "Table "),
+                    "absolute inset-7 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-[11px] font-semibold text-slate-200"
+                  )}
+                  {Array.from({ length: chairs }, (_, i) => {
+                    const angle = (2 * Math.PI * i) / chairs - Math.PI / 2;
+                    return (
+                      <div
+                        key={i}
+                        className="absolute"
+                        style={{ left: `calc(50% + ${Math.cos(angle) * 44}px - 12px)`, top: `calc(50% + ${Math.sin(angle) * 44}px - 12px)` }}
+                      >
+                        {dot(`${t}-${i + 1}`, String(i + 1))}
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Chairs at this table */}
+                {onSetTableSize ? (
+                  <div className="flex items-center rounded-md border border-slate-700 bg-slate-900 text-slate-200" title={`Chairs at ${t.replace("T", "table ")}`}>
+                    <button
+                      type="button"
+                      onClick={() => onSetTableSize(t, chairs - 1)}
+                      disabled={chairs <= 1}
+                      aria-label={`One chair fewer at ${t}`}
+                      className="w-6 h-6 text-sm leading-none hover:bg-slate-800 rounded-l-md disabled:opacity-30 cursor-pointer disabled:cursor-default"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-14 text-center text-[11px] tabular-nums">{chairs} chairs</span>
+                    <button
+                      type="button"
+                      onClick={() => onSetTableSize(t, chairs + 1)}
+                      disabled={chairs >= 30}
+                      aria-label={`One chair more at ${t}`}
+                      className="w-6 h-6 text-sm leading-none hover:bg-slate-800 rounded-r-md disabled:opacity-30 cursor-pointer disabled:cursor-default"
+                    >
+                      +
+                    </button>
                   </div>
-                );
-              })}
-            </div>
-          ))}
+                ) : (
+                  <span className="text-[11px] text-slate-400">{chairs} chairs</span>
+                )}
+              </div>
+            );
+          })}
           {rows.length > MAX_PREVIEW_TABLES && (
             <p className="w-full text-center text-xs text-slate-500">+ {rows.length - MAX_PREVIEW_TABLES} more tables</p>
           )}
@@ -271,6 +309,8 @@ export default function SeatingBuilder({
   const [selection, setSelection] = useState<Record<string, string[]>>({});
   // Previous seat layouts, for Undo
   const [history, setHistory] = useState<SeatSection[][]>([]);
+  // Category name box to focus after "Add category"
+  const [focusTier, setFocusTier] = useState<number | null>(null);
 
   const allowedKinds = kindsForMode(mode);
   const tierNames = tiers.map((t) => String(t.name || "").trim());
@@ -460,14 +500,34 @@ export default function SeatingBuilder({
                 return (
                   <div key={i} className="flex items-center gap-2 sm:gap-3 rounded-lg border border-slate-200 p-2">
                     <span className={`w-5 h-5 rounded-md shrink-0 ${TIER_COLORS[i % TIER_COLORS.length].swatch}`} />
-                    <input
-                      type="text"
-                      value={t.name}
-                      onChange={(e) => onTierChange(i, "name", e.target.value)}
-                      placeholder="Category name, e.g. VIP"
-                      aria-label="Category name"
-                      className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white py-1.5 px-2.5 text-sm text-slate-900 outline-none focus:border-amber-400"
-                    />
+                    <div className="relative min-w-0 flex-1">
+                      <input
+                        type="text"
+                        value={t.name}
+                        ref={(el) => {
+                          // A just-added category gets focus with its name selected, so typing replaces it
+                          if (el && i === focusTier) {
+                            el.focus();
+                            el.select();
+                            queueMicrotask(() => setFocusTier(null));
+                          }
+                        }}
+                        onChange={(e) => onTierChange(i, "name", e.target.value)}
+                        placeholder={i === 0 ? "Main category, e.g. Standard" : "Category name, e.g. VIP"}
+                        aria-label="Category name"
+                        className={`w-full rounded-md border border-slate-200 bg-white py-1.5 px-2.5 text-sm text-slate-900 outline-none focus:border-amber-400 ${
+                          i === 0 ? "pr-28" : ""
+                        }`}
+                      />
+                      {i === 0 && (
+                        <span
+                          title="Every seat starts in this category. Renaming it renames those seats' category too — use “Add category” for VIP etc."
+                          className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500"
+                        >
+                          All seats start here
+                        </span>
+                      )}
+                    </div>
                     <div className="relative w-24 shrink-0">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
                       <input
@@ -509,7 +569,10 @@ export default function SeatingBuilder({
             {!locked && (
               <button
                 type="button"
-                onClick={() => onAddTier("New category")}
+                onClick={() => {
+                  onAddTier("New category");
+                  setFocusTier(tiers.length);
+                }}
                 className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-slate-300 text-[13px] text-slate-700 hover:border-amber-400 hover:text-amber-800 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" /> Add category
@@ -543,6 +606,12 @@ export default function SeatingBuilder({
             {sections.map((sec, idx) => {
               const rows = sectionRows(sec);
               const capacity = sectionCapacity(sec);
+              // Chairs removed to make a table smaller aren't "not for sale" seats, so don't count them
+              const notForSale = (sec.blocked || []).filter((k) => {
+                if (sec.kind !== "TABLES") return true;
+                const dash = k.lastIndexOf("-");
+                return Number(k.slice(dash + 1)) <= tableSize(sec, k.slice(0, dash));
+              }).length;
               const selected = selectedIn(sec);
               const selectedKeys = Array.from(selected);
               const allWheelchair = selectedKeys.length > 0 && selectedKeys.every((k) => markOf(sec, k) === "accessible");
@@ -596,9 +665,16 @@ export default function SeatingBuilder({
                             onChange={(e) => updateSection(idx, { ...sec, tables: clampInt(e.target.value, 1, 300) })} className={inputCls} />
                         </div>
                         <div className="w-28">
-                          <label className={labelCls}>Chairs per table</label>
-                          <input type="number" min={1} max={30} disabled={locked} value={sec.seatsPerTable ?? 0}
-                            onChange={(e) => updateSection(idx, { ...sec, seatsPerTable: clampInt(e.target.value, 1, 30) })} className={inputCls} />
+                          <label className={labelCls} title="Sets every table to this many chairs. Use − / + under a table to change just that one.">Chairs (all tables)</label>
+                          {(() => {
+                            // Show one number when every table matches, otherwise "Mixed"
+                            const sizes = new Set(rows.map((t) => tableSize(sec, t)));
+                            const uniform = sizes.size === 1 ? Array.from(sizes)[0] : null;
+                            return (
+                              <input type="number" min={1} max={30} disabled={locked} value={uniform ?? ""} placeholder="Mixed"
+                                onChange={(e) => e.target.value && updateSection(idx, setAllTableSizes(sec, clampInt(e.target.value, 1, 30)))} className={inputCls} />
+                            );
+                          })()}
                         </div>
                       </>
                     )}
@@ -646,7 +722,7 @@ export default function SeatingBuilder({
                           {capacity} seats
                           {sec.kind === "ROWS" && rows.length > 0 && ` · rows ${rows[0]}–${rows[rows.length - 1]}`}
                           {(sec.accessible?.length || 0) > 0 && ` · ${sec.accessible!.length} wheelchair`}
-                          {(sec.blocked?.length || 0) > 0 && ` · ${sec.blocked!.length} not for sale`}
+                          {notForSale > 0 && ` · ${notForSale} not for sale`}
                         </span>
                         {!locked && (
                           <span className="flex items-center gap-2">
@@ -669,6 +745,11 @@ export default function SeatingBuilder({
                         onToggleRow={(r) => toggleRow(sec, r)}
                         locked={locked}
                         colorFor={colorFor}
+                        onSetTableSize={
+                          sec.kind === "TABLES" && !locked
+                            ? (table, chairs) => updateSection(idx, setTableSize(sec, table, chairs))
+                            : undefined
+                        }
                       />
 
                       {/* Legend */}
