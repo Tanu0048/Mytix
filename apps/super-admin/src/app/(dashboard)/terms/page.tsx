@@ -1,18 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  FileText, 
-  Save, 
-  Plus, 
-  Trash2, 
-  RefreshCw, 
-  Eye, 
-  EyeOff, 
-  ShieldAlert, 
-  CheckCircle2, 
+import {
+  Save,
+  Plus,
+  Trash2,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  ShieldAlert,
+  CheckCircle2,
   Sparkles,
-  HelpCircle
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/api";
@@ -187,15 +185,12 @@ export default function SuperAdminTermsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-              <FileText className="w-5 h-5" />
-            </div>
             <div>
               <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
-                Terms & Conditions Management
+                Terms & conditions
               </h1>
               <p className="text-[13px] sm:text-sm text-slate-500">
-                Super-Admin Control Panel: Edit and publish live legal terms displayed across Mytix.
+                Legal terms shown across the Mytix website and app.
               </p>
             </div>
           </div>
@@ -215,7 +210,7 @@ export default function SuperAdminTermsPage() {
             type="button"
             onClick={() => handleSave()}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[13px] font-semibold transition shadow-sm hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[13px] font-semibold transition shadow-sm disabled:opacity-60 cursor-pointer"
           >
             {saving ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -270,7 +265,7 @@ export default function SuperAdminTermsPage() {
         <div className="space-y-6">
           {/* Header Metadata */}
           <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">
+            <h3 className="text-sm font-semibold text-slate-900">
               General Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -344,7 +339,7 @@ export default function SuperAdminTermsPage() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1">
-                    <label className="block text-[13px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                    <label className="block text-[13px] font-semibold text-slate-400 mb-1">
                       Clause {index + 1} Heading
                     </label>
                     <input
@@ -366,7 +361,7 @@ export default function SuperAdminTermsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[13px] font-semibold text-slate-400 mb-1">
                     Clause Text & Rules
                   </label>
                   <textarea
@@ -398,7 +393,7 @@ export default function SuperAdminTermsPage() {
               type="button"
               onClick={() => handleSave()}
               disabled={saving}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-semibold transition shadow-sm hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-semibold transition shadow-sm disabled:opacity-60 cursor-pointer"
             >
               {saving ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />

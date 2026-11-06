@@ -1,21 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Share2, 
-  Save, 
-  Plus, 
-  Trash2, 
-  RefreshCw, 
-  CheckCircle2, 
-  AlertCircle, 
-  Sparkles, 
+import {
+  Share2,
+  Save,
+  Plus,
+  Trash2,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
   ExternalLink,
   ArrowUp,
   ArrowDown,
-  Eye,
-  Check,
-  Globe
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/api";
@@ -161,15 +157,12 @@ export default function SocialLinksAdminPage() {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
-              Social Media Links
+            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+              Social links
             </h1>
-            <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-[13px] font-semibold uppercase tracking-wider">
-              Footer Config
-            </span>
           </div>
-          <p className="mt-1 text-sm font-semibold text-slate-500">
-            Add and manage dynamic social media icons and links displayed in the user-facing website footer.
+          <p className="mt-1 text-sm text-slate-500">
+            Social icons shown in the website footer.
           </p>
         </div>
 
@@ -186,7 +179,7 @@ export default function SocialLinksAdminPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-semibold shadow-md shadow-amber-500/25 transition-all cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold shadow-md shadow-amber-500/25 transition-all cursor-pointer disabled:opacity-50"
           >
             {saving ? (
               <>
@@ -222,7 +215,7 @@ export default function SocialLinksAdminPage() {
         <div className="flex items-center justify-between pb-6 border-b border-slate-700/60 mb-6">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-[13px] font-semibold uppercase tracking-wider text-slate-400">
+            <span className="text-[13px] font-semibold text-slate-400">
               Live User-Side Footer Preview
             </span>
           </div>
@@ -247,7 +240,7 @@ export default function SocialLinksAdminPage() {
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex flex-col items-center transition-transform hover:-translate-y-1"
+                  className="group flex flex-col items-center transition-transform"
                 >
                   {/* Circle Icon with first letter */}
                   <div className="w-11 h-11 rounded-full border border-gray-600 bg-[#2d2d34] flex items-center justify-center font-semibold text-white text-base shadow-md group-hover:bg-white group-hover:text-[#1e1e24] group-hover:border-white transition-all">
@@ -288,7 +281,7 @@ export default function SocialLinksAdminPage() {
         {showAddForm && (
           <form onSubmit={handleAddLink} className="p-5 rounded-xl bg-amber-50/60 border border-amber-200/80 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold uppercase tracking-wider text-amber-900">
+              <span className="text-[13px] font-semibold text-amber-900">
                 New Social Media Link
               </span>
               <button 

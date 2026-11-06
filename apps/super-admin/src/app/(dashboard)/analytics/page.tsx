@@ -1,22 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { 
-  DollarSign, 
-  Ticket, 
-  Calendar, 
-  ArrowUpRight, 
+import {
   RefreshCw,
-  ShoppingBag,
   MapPin,
   Layers,
-  Sparkles,
-  TrendingUp,
-  CreditCard,
-  User,
-  Clock
 } from "lucide-react";
 import api, { fetchAllPages } from "@/lib/api";
+import { statusLabel } from "@/lib/format";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export default function AnalyticsPage() {
@@ -162,10 +153,10 @@ export default function AnalyticsPage() {
       <header className="mb-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Performance & Analytics
+            Analytics
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Real-time insights aggregated directly from your event bookings and ticket sales.
+            Sales and ticket performance across your events.
           </p>
         </div>
 
@@ -188,14 +179,9 @@ export default function AnalyticsPage() {
         
         {/* Card 1: Gross Revenue */}
         <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
           <div>
-            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Gross Revenue</p>
-            <p className="text-3xl font-semibold text-slate-900 mt-1">
+            <p className="text-[13px] text-slate-500">Gross Revenue</p>
+            <p className="text-2xl font-semibold text-slate-900 mt-1">
               {formatCurrency(totalRevenue)}
             </p>
             <p className="text-[13px] text-slate-500 mt-1.5">
@@ -206,14 +192,9 @@ export default function AnalyticsPage() {
 
         {/* Card 2: Tickets Issued */}
         <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50/90 border border-emerald-200/60 flex items-center justify-center">
-              <Ticket className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
           <div>
-            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Tickets Issued</p>
-            <p className="text-3xl font-semibold text-slate-900 mt-1">
+            <p className="text-[13px] text-slate-500">Tickets Issued</p>
+            <p className="text-2xl font-semibold text-slate-900 mt-1">
               {totalTicketsSold}
             </p>
             <p className="text-[13px] text-slate-500 mt-1.5">
@@ -224,14 +205,9 @@ export default function AnalyticsPage() {
 
         {/* Card 3: Avg. Order Value */}
         <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-50/90 border border-blue-200/60 flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
           <div>
-            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Avg. Order Value</p>
-            <p className="text-3xl font-semibold text-slate-900 mt-1">
+            <p className="text-[13px] text-slate-500">Avg. Order Value</p>
+            <p className="text-2xl font-semibold text-slate-900 mt-1">
               {formatCurrency(averageOrderValue)}
             </p>
             <p className="text-[13px] text-slate-500 mt-1.5">
@@ -242,17 +218,9 @@ export default function AnalyticsPage() {
 
         {/* Card 4: Active Events */}
         <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-200/80 transition-all">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-amber-600" />
-            </div>
-            <span className="flex items-center text-[13px] font-semibold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60">
-              Live
-            </span>
-          </div>
           <div>
-            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Active Events</p>
-            <p className="text-3xl font-semibold text-slate-900 mt-1">{liveEventsCount}</p>
+            <p className="text-[13px] text-slate-500">Active Events</p>
+            <p className="text-2xl font-semibold text-slate-900 mt-1">{liveEventsCount}</p>
             <p className="text-[13px] text-slate-500 mt-1.5">
               {events.length} total created
             </p>
@@ -294,7 +262,7 @@ export default function AnalyticsPage() {
                   return (
                     <div 
                       key={event.id}
-                      className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/40 hover:bg-[#FFF9EB]/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/40 hover:bg-amber-50/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                     >
                       <div className="flex items-center gap-3.5">
                         <div className="w-8 h-8 rounded-xl bg-amber-100/90 border border-amber-200/80 text-amber-950 font-semibold text-sm flex items-center justify-center shrink-0">
@@ -324,10 +292,10 @@ export default function AnalyticsPage() {
                           </div>
                         </div>
 
-                        <span className={`px-2.5 py-1 rounded-xl text-xs font-semibold uppercase tracking-wider ${
+                        <span className={`px-2.5 py-1 rounded-xl text-xs font-semibold ${
                           event.status === "PUBLISHED" ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80" : "bg-slate-100 text-slate-700"
                         }`}>
-                          {event.status}
+                          {statusLabel(event.status)}
                         </span>
                       </div>
                     </div>
@@ -402,9 +370,6 @@ export default function AnalyticsPage() {
                 className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-700 font-semibold">
-                    <CreditCard className="w-5 h-5" />
-                  </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-900">
                       {order.user?.name || order.guestName || "Customer"}
@@ -424,8 +389,8 @@ export default function AnalyticsPage() {
                       {new Date(order.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <span className="px-2.5 py-1 rounded-xl text-xs font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                    PAID
+                  <span className="px-2.5 py-1 rounded-xl text-xs font-semibold bg-emerald-100 text-emerald-800">
+                    Paid
                   </span>
                 </div>
               </div>

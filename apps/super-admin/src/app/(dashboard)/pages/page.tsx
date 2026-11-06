@@ -2,24 +2,14 @@
 
 import { useState, useEffect } from "react";
 import {
-  BookOpen,
   Save,
   Plus,
   Trash2,
   RefreshCw,
-  Eye,
-  EyeOff,
   ShieldAlert,
   CheckCircle2,
   Sparkles,
-  Info,
-  Phone,
-  Mail,
   Building2,
-  Clock,
-  MapPin,
-  HelpCircle,
-  MessageCircle
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/api";
@@ -243,15 +233,12 @@ export default function PagesCMSPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-            <BookOpen className="w-5 h-5" />
-          </div>
           <div>
             <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
-              Pages CMS
+              Website pages
             </h1>
             <p className="text-[13px] sm:text-sm text-slate-500">
-              Edit About Us, Contact Us, FAQ, and Organiser Requirements displayed on the user website.
+              About, Contact, FAQ and Organiser requirements shown on the website.
             </p>
           </div>
         </div>
@@ -260,7 +247,7 @@ export default function PagesCMSPage() {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[13px] font-semibold transition shadow-sm hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-[13px] font-semibold transition shadow-sm disabled:opacity-60 cursor-pointer"
         >
           {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {saving ? "Publishing..." : "Publish Changes"}
@@ -318,7 +305,7 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
     <div className="space-y-6">
       {/* Hero Section */}
       <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Hero Section</h3>
+        <h3 className="text-sm font-semibold text-slate-900">Hero Section</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField label="Hero Tagline" value={data.heroTagline} onChange={(v) => update("heroTagline", v)} />
           <InputField label="Hero Title" value={data.heroTitle} onChange={(v) => update("heroTitle", v)} />
@@ -330,7 +317,7 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
       {/* Stats */}
       <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Statistics ({data.stats.length})</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Statistics ({data.stats.length})</h3>
           <button
             type="button"
             onClick={() => update("stats", [...data.stats, { label: "New Stat", value: "0", sub: "Description" }])}
@@ -363,7 +350,7 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
 
       {/* Narrative */}
       <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Narrative Section</h3>
+        <h3 className="text-sm font-semibold text-slate-900">Narrative Section</h3>
         <InputField label="Section Tagline" value={data.narrativeTagline} onChange={(v) => update("narrativeTagline", v)} />
         <InputField label="Section Title" value={data.narrativeTitle} onChange={(v) => update("narrativeTitle", v)} />
         {data.narrativeParagraphs.map((p, i) => (
@@ -398,7 +385,7 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
 
       {/* Feature Box */}
       <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Feature Highlight Box</h3>
+        <h3 className="text-sm font-semibold text-slate-900">Feature Highlight Box</h3>
         <InputField label="Title" value={data.featureBoxTitle} onChange={(v) => update("featureBoxTitle", v)} />
         <TextareaField label="Description" value={data.featureBoxDescription} onChange={(v) => update("featureBoxDescription", v)} rows={3} />
         <InputField label="Badge Text" value={data.featureBoxBadge} onChange={(v) => update("featureBoxBadge", v)} />
@@ -408,7 +395,7 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
       <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Core Values ({data.values.length})</h3>
+            <h3 className="text-sm font-semibold text-slate-900">Core Values ({data.values.length})</h3>
             <p className="text-[13px] text-slate-500 mt-0.5">Each value is a card shown in the &ldquo;What sets us apart&rdquo; section.</p>
           </div>
           <button
@@ -446,7 +433,7 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
 
       {/* CTA */}
       <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Call to Action Banner</h3>
+        <h3 className="text-sm font-semibold text-slate-900">Call to Action Banner</h3>
         <InputField label="CTA Title" value={data.ctaTitle} onChange={(v) => update("ctaTitle", v)} />
         <InputField label="CTA Description" value={data.ctaDescription} onChange={(v) => update("ctaDescription", v)} />
       </div>
@@ -473,7 +460,7 @@ function ContactUsEditor({ data, onChange }: { data: ContactUsData; onChange: (d
     <div className="space-y-6">
       {/* Hero */}
       <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Hero Section</h3>
+        <h3 className="text-sm font-semibold text-slate-900">Hero Section</h3>
         <InputField label="Hero Tagline" value={data.heroTagline} onChange={(v) => update("heroTagline", v)} />
         <InputField label="Hero Title" value={data.heroTitle} onChange={(v) => update("heroTitle", v)} />
         <TextareaField label="Hero Description" value={data.heroDescription} onChange={(v) => update("heroDescription", v)} rows={3} />
@@ -482,7 +469,7 @@ function ContactUsEditor({ data, onChange }: { data: ContactUsData; onChange: (d
       {/* Contact Cards */}
       <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Contact Cards ({data.contactCards.length})</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Contact Cards ({data.contactCards.length})</h3>
           <button
             type="button"
             onClick={() => update("contactCards", [...data.contactCards, {
@@ -550,7 +537,7 @@ function ContactUsEditor({ data, onChange }: { data: ContactUsData; onChange: (d
       {/* Office Locations */}
       <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">Office Locations ({data.offices.length})</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Office Locations ({data.offices.length})</h3>
           <button
             type="button"
             onClick={() => update("offices", [...data.offices, { label: "New Office", address: "Address", city: "City, State, Country" }])}
@@ -593,7 +580,7 @@ function FaqEditor({ data, onChange }: { data: FaqData; onChange: (d: FaqData) =
     <div className="space-y-6">
       {/* Heading */}
       <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-900">FAQ Section Heading</h3>
+        <h3 className="text-sm font-semibold text-slate-900">FAQ Section Heading</h3>
         <InputField label="Heading" value={data.heading} onChange={(v) => update("heading", v)} />
         <InputField label="Subheading" value={data.subheading} onChange={(v) => update("subheading", v)} />
       </div>
@@ -623,7 +610,7 @@ function FaqEditor({ data, onChange }: { data: FaqData; onChange: (d: FaqData) =
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1">
-                <label className="block text-[13px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                <label className="block text-[13px] font-semibold text-slate-400 mb-1">
                   Question {index + 1}
                 </label>
                 <input
@@ -645,7 +632,7 @@ function FaqEditor({ data, onChange }: { data: FaqData; onChange: (d: FaqData) =
               </button>
             </div>
             <div>
-              <label className="block text-[13px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+              <label className="block text-[13px] font-semibold text-slate-400 mb-1">
                 Answer
               </label>
               <textarea
@@ -743,7 +730,7 @@ function OrganiserRequirementsEditor({
               className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-3"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[13px] font-semibold text-amber-600 uppercase tracking-wider">
+                <span className="text-[13px] font-semibold text-amber-600">
                   Requirement #{index + 1}
                 </span>
                 {data.requirements.length > 1 && (

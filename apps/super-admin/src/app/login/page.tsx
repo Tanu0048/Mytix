@@ -4,18 +4,17 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
-import { 
-  Lock, 
-  Mail, 
-  ArrowRight, 
-  Shield, 
-  User, 
-  Eye, 
-  EyeOff, 
-  Check, 
-  Sparkles,
+import {
+  Lock,
+  Mail,
+  ArrowRight,
+  Shield,
+  User,
+  Eye,
+  EyeOff,
+  Check,
   AlertCircle,
-  QrCode
+  QrCode,
 } from "lucide-react";
 
 export default function LoginPage() {

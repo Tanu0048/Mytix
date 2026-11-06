@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Plus, Trash2, LayoutGrid, Loader2 } from "lucide-react";
+import {
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import api from "@/lib/api";
 
 export default function CategoriesPage() {
@@ -60,7 +63,7 @@ export default function CategoriesPage() {
       <div className="mb-10">
         <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Categories</h1>
         <p className="mt-2 text-sm text-slate-500">
-          Manage the event categories available for organisers on the platform.
+          Event categories organisers can choose from.
         </p>
       </div>
 
@@ -80,7 +83,7 @@ export default function CategoriesPage() {
           <button 
             type="submit"
             disabled={isSubmitting || !newCat.trim()}
-            className="h-10 px-6 rounded-full bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center shrink-0 shadow-sm"
+            className="h-10 px-6 rounded-full bg-amber-400 hover:bg-amber-500 text-slate-950 text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center shrink-0 shadow-sm"
           >
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add Category"}
           </button>
@@ -89,7 +92,7 @@ export default function CategoriesPage() {
 
       {/* Category List */}
       <div>
-        <h3 className="text-[13px] text-slate-500 uppercase tracking-widest mb-4">
+        <h3 className="text-[13px] text-slate-500 mb-4">
           All Categories ({categories.length})
         </h3>
 

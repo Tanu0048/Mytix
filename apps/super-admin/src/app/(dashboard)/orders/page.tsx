@@ -1,27 +1,25 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { 
-  Search, 
-  Download, 
-  ShoppingBag, 
-  DollarSign, 
-  Ticket, 
-  CheckCircle2, 
-  Eye, 
+import {
+  Search,
+  Download,
+  ShoppingBag,
+  Ticket,
+  Eye,
   RefreshCw,
   X,
   User,
-  MapPin,
   Calendar,
   CreditCard,
   Copy,
   Check,
   Filter,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 import api, { fetchAllPages } from "@/lib/api";
+import { statusLabel } from "@/lib/format";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export default function OrdersPage() {
@@ -170,31 +168,31 @@ export default function OrdersPage() {
       case "PAID":
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-            PAID
+            Paid
           </span>
         );
       case "PENDING":
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
-            PENDING
+            Pending
           </span>
         );
       case "FAILED":
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/60">
-            FAILED
+            Failed
           </span>
         );
       case "CANCELLED":
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/60">
-            CANCELLED
+            Cancelled
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/60">
-            {status}
+            {statusLabel(status)}
           </span>
         );
     }
@@ -207,10 +205,10 @@ export default function OrdersPage() {
       <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Orders & Sales
+            Orders
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Real-time customer transactions, payment settlements, and order history.
+            Every ticket purchase and its payment status.
           </p>
         </div>
 
@@ -242,46 +240,34 @@ export default function OrdersPage() {
         {/* Card 1: Total Orders */}
         <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">Total Orders</p>
+            <p className="text-[13px] font-semibold text-slate-500">Total Orders</p>
             <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{totalOrdersCount}</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-600 flex items-center justify-center shrink-0">
-            <ShoppingBag className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 2: Total Revenue */}
         <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">Gross Sales</p>
+            <p className="text-[13px] font-semibold text-slate-500">Gross Sales</p>
             <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
               {formatCurrency(totalRevenueCents)}
             </p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/70 text-emerald-600 flex items-center justify-center shrink-0">
-            <DollarSign className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 3: Tickets Sold */}
         <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">Tickets Issued</p>
+            <p className="text-[13px] font-semibold text-slate-500">Tickets Issued</p>
             <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{totalTicketsSold}</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/70 text-blue-600 flex items-center justify-center shrink-0">
-            <Ticket className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 4: Success Rate */}
         <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">Success Rate</p>
+            <p className="text-[13px] font-semibold text-slate-500">Success Rate</p>
             <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{successRate}%</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200/70 text-purple-600 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
 
@@ -512,9 +498,6 @@ export default function OrdersPage() {
             {/* Modal Header */}
             <div className="flex items-start justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
-                  <ShoppingBag className="w-5 h-5" />
-                </div>
                 <div>
                   <h3 className="text-base font-semibold text-slate-900 leading-tight">
                     Order Details
@@ -541,7 +524,7 @@ export default function OrdersPage() {
               
               {/* Customer Box */}
               <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/70 space-y-1.5">
-                <p className="text-[13px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <p className="text-[13px] font-semibold text-slate-500 flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5" /> Customer Information
                 </p>
                 <div className="flex items-center justify-between text-[13px]">
@@ -562,7 +545,7 @@ export default function OrdersPage() {
 
               {/* Event Box */}
               <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/70 space-y-1.5">
-                <p className="text-[13px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <p className="text-[13px] font-semibold text-slate-500 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" /> Event & Venue
                 </p>
                 <div className="flex items-center justify-between text-[13px]">
@@ -583,7 +566,7 @@ export default function OrdersPage() {
 
               {/* Payment Summary */}
               <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200/70 space-y-1.5">
-                <p className="text-[13px] font-semibold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                <p className="text-[13px] font-semibold text-amber-900 flex items-center gap-1.5">
                   <CreditCard className="w-3.5 h-3.5" /> Payment Summary
                 </p>
                 <div className="flex items-center justify-between text-[13px]">

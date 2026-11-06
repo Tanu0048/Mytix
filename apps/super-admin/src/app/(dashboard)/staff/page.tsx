@@ -1,28 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Users, 
-  Plus, 
-  Key, 
-  Trash2, 
-  ShieldCheck, 
-  ShieldAlert, 
-  CheckCircle2, 
-  RefreshCw, 
-  QrCode, 
-  DoorOpen, 
-  Calendar,
-  Lock,
+import {
+  Users,
+  Plus,
+  Key,
+  Trash2,
+  ShieldAlert,
+  CheckCircle2,
+  RefreshCw,
+  DoorOpen,
   Eye,
   EyeOff,
-  Sparkles,
-  ToggleLeft,
-  ToggleRight,
   Search,
   Copy,
   Check,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import api, { fetchAllPages } from "@/lib/api";
 
@@ -208,15 +201,12 @@ export default function StaffManagementPage() {
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200/80 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-            <QrCode className="w-6 h-6" />
-          </div>
           <div>
             <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
-              Gate Staff & Scanner Accounts
+              Gate staff
             </h1>
             <p className="text-[13px] sm:text-sm text-slate-500">
-              Create and manage mobile ticket scanner credentials for your venue door staff.
+              Scanner logins for your door staff.
             </p>
           </div>
         </div>
@@ -224,7 +214,7 @@ export default function StaffManagementPage() {
         <button
           type="button"
           onClick={handleOpenAddModal}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[13px] sm:text-sm font-semibold transition shadow-sm hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[13px] sm:text-sm font-semibold transition shadow-sm cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Add Staff Member
@@ -321,7 +311,7 @@ export default function StaffManagementPage() {
                   <button
                     type="button"
                     onClick={() => handleToggleStatus(staff)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold transition cursor-pointer active:scale-95 ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold transition cursor-pointer ${
                       staff.isActive 
                         ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                         : "bg-rose-50 text-rose-700 border border-rose-200"
@@ -350,7 +340,7 @@ export default function StaffManagementPage() {
                       setNewPassword("");
                       setShowPasswordModal(true);
                     }}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-[13px] hover:bg-slate-100 active:scale-95 cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-[13px] hover:bg-slate-100 cursor-pointer"
                   >
                     <Key className="w-3.5 h-3.5 text-amber-600" />
                     <span>Change Password</span>
@@ -359,7 +349,7 @@ export default function StaffManagementPage() {
                   <button
                     type="button"
                     onClick={() => handleDeleteStaff(staff)}
-                    className="p-2 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 hover:bg-rose-100 active:scale-95 cursor-pointer"
+                    className="p-2 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 hover:bg-rose-100 cursor-pointer"
                     title="Delete Staff"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -511,7 +501,7 @@ export default function StaffManagementPage() {
                     value={addForm.staffId}
                     onChange={(e) => setAddForm({ ...addForm, staffId: e.target.value.toUpperCase() })}
                     placeholder="e.g. GATE1_ALEX"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold uppercase tracking-wider focus:ring-2 focus:ring-amber-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
 
@@ -683,7 +673,7 @@ export default function StaffManagementPage() {
               )}
 
               <div className="space-y-1">
-                <span className="text-[13px] font-semibold uppercase tracking-wider text-slate-400">
+                <span className="text-[13px] font-semibold text-slate-400">
                   Password
                 </span>
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 font-mono text-sm font-semibold text-slate-900">
@@ -695,7 +685,7 @@ export default function StaffManagementPage() {
                       setCopiedStaffPassword(true);
                       setTimeout(() => setCopiedStaffPassword(false), 2000);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-700 transition active:scale-95 cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-700 transition cursor-pointer"
                   >
                     {copiedStaffPassword ? (
                       <>
@@ -729,7 +719,7 @@ export default function StaffManagementPage() {
                 setSuccessMsg(savedStaffCredentials.isNew ? "Staff credentials recorded." : "Staff password saved.");
                 setTimeout(() => setSuccessMsg(""), 3500);
               }}
-              className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer active:scale-98"
+              className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer"
             >
               Done / I Have Stored The Password
             </button>

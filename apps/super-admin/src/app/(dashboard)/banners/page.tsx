@@ -1,24 +1,20 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { 
-  Image as ImageIcon, 
-  Upload, 
-  Trash2, 
-  X, 
-  Plus, 
-  Edit2, 
-  Check, 
-  AlertCircle, 
-  Sparkles, 
-  Eye, 
-  EyeOff, 
-  Search, 
+import {
+  Image as ImageIcon,
+  Upload,
+  Trash2,
+  X,
+  Plus,
+  Edit2,
+  Check,
+  Eye,
+  EyeOff,
+  Search,
   RefreshCw,
   Loader2,
   UploadCloud,
-  Layers,
-  ArrowRight
 } from "lucide-react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -238,15 +234,15 @@ export default function BannersPage() {
       <header className="mb-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-100/80 border border-amber-200/60 text-amber-900 text-xs font-semibold uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-100/80 border border-amber-200/60 text-amber-900 text-xs font-semibold">
               Hero & Media Slider
             </span>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Banners & Promotions
+            Banners
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Manage homepage carousel slides, event features, and hero creative banners.
+            Homepage carousel slides and featured events.
           </p>
         </div>
 
@@ -277,7 +273,7 @@ export default function BannersPage() {
               setDisplayOrder(banners.length + 1);
               setIsCreateModalOpen(true);
             }}
-            className="flex items-center justify-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer"
           >
             <Plus className="h-4 w-4 stroke-[2.5]" />
             <span>Add New Banner</span>
@@ -291,15 +287,12 @@ export default function BannersPage() {
         {/* Card 1: Total Banners */}
         <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center">
-              <ImageIcon className="w-6 h-6 text-amber-600" />
-            </div>
-            <span className="text-xs font-semibold text-amber-900 bg-[#FFF9EB] px-2.5 py-1 rounded-full border border-amber-200/70">
+            <span className="text-xs font-semibold text-amber-900 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/70">
               Carousel Assets
             </span>
           </div>
           <div>
-            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Total Banners</p>
+            <p className="text-[13px] text-slate-500">Total Banners</p>
             <p className="text-3xl font-semibold text-slate-900 mt-1">{totalBanners}</p>
             <p className="text-[13px] text-slate-500 mt-1.5">Stored in Supabase bucket</p>
           </div>
@@ -308,15 +301,12 @@ export default function BannersPage() {
         {/* Card 2: Active Banners */}
         <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50/90 border border-emerald-200/60 flex items-center justify-center">
-              <Eye className="w-6 h-6 text-emerald-600" />
-            </div>
             <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
               Live on Site
             </span>
           </div>
           <div>
-            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Active Slides</p>
+            <p className="text-[13px] text-slate-500">Active Slides</p>
             <p className="text-3xl font-semibold text-slate-900 mt-1">{activeBanners}</p>
             <p className="text-[13px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1">
               <span>● Visible to users</span>
@@ -335,7 +325,7 @@ export default function BannersPage() {
             </span>
           </div>
           <div>
-            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Inactive Slides</p>
+            <p className="text-[13px] text-slate-500">Inactive Slides</p>
             <p className="text-3xl font-semibold text-slate-900 mt-1">{inactiveBanners}</p>
             <p className="text-[13px] text-slate-500 mt-1.5">Offline or scheduled</p>
           </div>
@@ -344,15 +334,12 @@ export default function BannersPage() {
         {/* Card 4: Standard Aspect Ratio */}
         <div className="bg-white rounded-xl p-6 border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-50/90 border border-blue-200/60 flex items-center justify-center">
-              <Layers className="w-6 h-6 text-blue-600" />
-            </div>
             <span className="text-xs font-semibold text-blue-800 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200/60">
               16:9 Standard
             </span>
           </div>
           <div>
-            <p className="text-[13px] text-slate-500 uppercase tracking-wider">Format Ratio</p>
+            <p className="text-[13px] text-slate-500">Format Ratio</p>
             <p className="text-3xl font-semibold text-slate-900 mt-1">1920 × 1080</p>
             <p className="text-[13px] text-slate-500 mt-1.5">Optimal HD desktop fit</p>
           </div>
@@ -387,7 +374,7 @@ export default function BannersPage() {
               onClick={() => setStatusFilter(tab.id)}
               className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shrink-0 cursor-pointer ${
                 statusFilter === tab.id
-                  ? "bg-[#FFF9EB] text-amber-950 border border-amber-300/80 shadow-2xs font-semibold"
+                  ? "bg-amber-50 text-amber-950 border border-amber-300/80 shadow-2xs font-semibold"
                   : "text-slate-500 hover:bg-slate-50 border border-transparent"
               }`}
             >
@@ -417,7 +404,7 @@ export default function BannersPage() {
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-6 py-3 text-sm font-semibold text-slate-950 transition-all shadow-xs cursor-pointer"
+            className="flex items-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 px-6 py-3 text-sm font-semibold text-slate-950 transition-all shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Add New Banner
           </button>
@@ -436,7 +423,7 @@ export default function BannersPage() {
                   <img 
                     src={banner.imageUrl} 
                     alt={banner.title} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    className="w-full h-full object-cover transition-transform duration-500" 
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-300">
@@ -446,7 +433,7 @@ export default function BannersPage() {
 
                 {/* Status Badges Overlay */}
                 <div className="absolute top-3 left-3 flex items-center gap-2">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider backdrop-blur-md shadow-sm ${
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-md shadow-sm ${
                     banner.isActive 
                       ? "bg-emerald-500/90 text-white border border-emerald-400/50" 
                       : "bg-slate-900/80 text-slate-300 border border-slate-700/50"
@@ -514,9 +501,6 @@ export default function BannersPage() {
             
             <div className="flex items-start justify-between pb-5 border-b border-slate-100 mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
-                  <ImageIcon className="w-5 h-5" />
-                </div>
                 <div>
                   <h3 className="text-base font-semibold text-slate-900 leading-tight">Add New Banner</h3>
                   <p className="text-sm text-slate-500 mt-0.5">Upload a 16:9 hero banner image for homepage carousel.</p>
@@ -599,7 +583,7 @@ export default function BannersPage() {
                         setImageFile(file);
                         setImagePreview(URL.createObjectURL(file));
                       }}
-                      className="text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[13px] file:font-semibold file:bg-[#FFF9EB] file:text-amber-900 cursor-pointer"
+                      className="text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[13px] file:font-semibold file:bg-amber-50 file:text-amber-900 cursor-pointer"
                     />
                     <p className="text-xs text-slate-500 mt-2">
                       Formats: JPG, PNG, WEBP • Max 5MB • 1920×1080 recommended
@@ -620,7 +604,7 @@ export default function BannersPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || !imageFile}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] py-3.5 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 py-3.5 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
@@ -716,7 +700,7 @@ export default function BannersPage() {
                     setEditImageFile(file);
                     setEditImagePreview(URL.createObjectURL(file));
                   }}
-                  className="text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[13px] file:font-semibold file:bg-[#FFF9EB] file:text-amber-900 cursor-pointer"
+                  className="text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[13px] file:font-semibold file:bg-amber-50 file:text-amber-900 cursor-pointer"
                 />
                 <p className="text-xs text-slate-500 mt-1.5">
                   Leave empty to keep the existing image file.
@@ -734,7 +718,7 @@ export default function BannersPage() {
                 <button
                   type="submit"
                   disabled={isEditSubmitting}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] py-3.5 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 py-3.5 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
                 >
                   {isEditSubmitting ? (
                     <>

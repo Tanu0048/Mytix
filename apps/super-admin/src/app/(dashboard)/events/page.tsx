@@ -3,28 +3,22 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { 
-  Plus, 
-  Calendar, 
-  MapPin, 
-  Tag, 
-  Clock, 
-  Filter, 
+import {
+  Plus,
+  Calendar,
+  MapPin,
+  Tag,
+  Filter,
   ChevronLeft,
   ChevronRight,
-  MoreHorizontal, 
-  Ticket, 
-  Activity, 
   CalendarDays,
   Trash2,
   Edit2,
   Loader2,
-  AlertTriangle,
-  X,
   Search,
-  Flame
 } from "lucide-react";
 import api, { fetchAllPages } from "@/lib/api";
+import { statusLabel } from "@/lib/format";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -147,18 +141,18 @@ export default function EventsPage() {
       <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Event Management
+            Events
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Real-time statistics, active shows, and ticket capacity monitoring.
+            All your events, ticket sales and status.
           </p>
         </div>
         <button 
           onClick={() => router.push("/events/create")}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-2.5 text-[13px] font-semibold text-slate-950 transition-all shadow-xs hover:shadow-sm cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 px-5 py-2.5 text-[13px] font-semibold text-slate-950 transition-all shadow-xs hover:shadow-sm cursor-pointer self-start sm:self-auto"
         >
           <Plus className="h-4 w-4 stroke-[2.5]" />
-          <span>Create New Event</span>
+          <span>Create event</span>
         </button>
       </header>
 
@@ -168,48 +162,36 @@ export default function EventsPage() {
         {/* Card 1: Total Events */}
         <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">Total Events</p>
+            <p className="text-[13px] font-semibold text-slate-500">Total Events</p>
             <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{totalEvents}</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-600 flex items-center justify-center shrink-0">
-            <Calendar className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 2: Tickets Sold */}
         <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">Tickets Sold</p>
+            <p className="text-[13px] font-semibold text-slate-500">Tickets Sold</p>
             <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
               {calculatedSold.toLocaleString("en-AU")}
             </p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/70 text-blue-600 flex items-center justify-center shrink-0">
-            <Ticket className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 3: Revenue */}
         <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">Gross Revenue</p>
+            <p className="text-[13px] font-semibold text-slate-500">Gross Revenue</p>
             <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
               ${calculatedRevenue.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/70 text-emerald-600 flex items-center justify-center shrink-0 font-semibold text-base">
-            $
           </div>
         </div>
 
         {/* Card 4: Upcoming */}
         <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">Active Shows</p>
+            <p className="text-[13px] font-semibold text-slate-500">Active Shows</p>
             <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{upcomingEvents}</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200/70 text-purple-600 flex items-center justify-center shrink-0">
-            <CalendarDays className="w-5 h-5" />
           </div>
         </div>
 
@@ -383,7 +365,7 @@ export default function EventsPage() {
                             return (
                               <div className="flex flex-col gap-1 items-start">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300">
                                     <Flame className="w-3 h-3 text-amber-600 fill-amber-600" />
                                     #{t.rank} Trending
                                   </span>
@@ -409,14 +391,14 @@ export default function EventsPage() {
 
                       {/* Column 5: Status */}
                       <td className="px-5 py-3.5">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wider ${
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold ${
                           isDraft 
                             ? "bg-amber-50 text-amber-700 border border-amber-200/60"
                             : event.status === "CANCELLED"
                             ? "bg-rose-50 text-rose-700 border border-rose-200/60"
                             : "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
                         }`}>
-                          {event.status || "PUBLISHED"}
+                          {statusLabel(event.status || "PUBLISHED")}
                         </span>
                       </td>
 
@@ -481,7 +463,7 @@ export default function EventsPage() {
       {/* ===== Toast Notification ===== */}
       {toastMsg && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-slate-900 text-white px-4 py-3 shadow-xl border border-slate-800 text-[13px] font-semibold">
-          <div className="w-2 h-2 rounded-full bg-[#F6C636] animate-pulse"></div>
+          <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
           <span>{toastMsg}</span>
         </div>
       )}
@@ -491,9 +473,6 @@ export default function EventsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4">
           <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl border border-slate-200/80">
             <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
 
               <div>
                 <h3 className="text-base font-semibold text-slate-900">Delete Event?</h3>

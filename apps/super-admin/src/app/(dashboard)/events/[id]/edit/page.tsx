@@ -260,7 +260,7 @@ function EditEventForm() {
           Edit Event
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Update event details, dates, and ticketing tiers.
+          Update details, seating and tickets.
         </p>
       </header>
 
@@ -485,7 +485,7 @@ function EditEventForm() {
           <button 
             type="submit" 
             disabled={isSaving}
-            className="flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-sm font-semibold text-slate-950 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01]"
+            className="flex items-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 px-8 py-3.5 text-sm font-semibold text-slate-950 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving ? "Saving..." : <><Save className="w-4 h-4 stroke-[2.5]" /> Save Changes</>}
           </button>

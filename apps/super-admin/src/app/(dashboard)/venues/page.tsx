@@ -2,21 +2,20 @@
 
 import { useEffect, useState, useMemo } from "react";
 import api from "@/lib/api";
-import { 
-  MapPin, 
-  Plus, 
-  Search, 
-  Building2, 
-  Calendar, 
-  Trash2, 
-  Edit3, 
-  X, 
-  Check, 
+import {
+  MapPin,
+  Plus,
+  Search,
+  Building2,
+  Trash2,
+  Edit3,
+  X,
+  Check,
   AlertCircle,
   Users,
   Image as ImageIcon,
   UploadCloud,
-  Loader2
+  Loader2,
 } from "lucide-react";
 
 interface Venue {
@@ -266,12 +265,11 @@ export default function VenuesAndCitiesPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight flex items-center gap-2.5">
-            <MapPin className="w-7 h-7 text-amber-500" />
-            Venues & Cities
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+            Venues & cities
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Manage concert cities and venue locations for Australian tours.
+            Venues and cities you can use for events.
           </p>
         </div>
 
@@ -292,7 +290,7 @@ export default function VenuesAndCitiesPage() {
 
           <button
             onClick={openCreateModal}
-            className="flex items-center justify-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-3 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:scale-[1.01] cursor-pointer"
+            className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-950 transition-all shadow-sm cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-3" /> Add City & Venue
           </button>
@@ -316,11 +314,8 @@ export default function VenuesAndCitiesPage() {
         <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[13px] text-slate-500 uppercase tracking-wider">Active Cities</p>
+              <p className="text-[13px] text-slate-500">Active Cities</p>
               <p className="text-2xl font-semibold text-slate-900 mt-1">{uniqueCities.length}</p>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
-              <MapPin className="w-5 h-5" />
             </div>
           </div>
           <p className="text-[13px] text-slate-400 font-semibold mt-3">
@@ -331,7 +326,7 @@ export default function VenuesAndCitiesPage() {
         <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[13px] text-slate-500 uppercase tracking-wider">Total Venues</p>
+              <p className="text-[13px] text-slate-500">Total Venues</p>
               <p className="text-2xl font-semibold text-slate-900 mt-1">{venues.length}</p>
             </div>
             <div className="w-11 h-11 rounded-xl bg-blue-50 border border-blue-200/60 flex items-center justify-center text-blue-600">
@@ -346,11 +341,8 @@ export default function VenuesAndCitiesPage() {
         <div className="bg-white p-6 rounded-xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[13px] text-slate-500 uppercase tracking-wider">Live & Past Shows</p>
+              <p className="text-[13px] text-slate-500">Live & Past Shows</p>
               <p className="text-2xl font-semibold text-slate-900 mt-1">{totalEventsCount}</p>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-600">
-              <Calendar className="w-5 h-5" />
             </div>
           </div>
           <p className="text-[13px] text-slate-400 font-semibold mt-3">
@@ -422,7 +414,7 @@ export default function VenuesAndCitiesPage() {
             </p>
             <button
               onClick={openCreateModal}
-              className="mt-4 px-4 py-2 bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 rounded-xl text-[13px] font-semibold transition-colors"
+              className="mt-4 px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl text-[13px] font-semibold transition-colors"
             >
               + Add First Venue
             </button>
@@ -718,7 +710,7 @@ export default function VenuesAndCitiesPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 text-[13px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-[13px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? "Saving..." : editingVenue ? "Update Venue" : "Save City & Venue"}
                 </button>
@@ -846,7 +838,7 @@ export default function VenuesAndCitiesPage() {
 
               {/* Live Preview Card (Dark Theme matching user site) */}
               <div>
-                <span className="block text-[13px] text-slate-500 uppercase tracking-wider mb-2">
+                <span className="block text-[13px] text-slate-500 mb-2">
                   Live Card Preview (User Website)
                 </span>
                 <div className="relative overflow-hidden rounded-xl h-36 flex flex-col justify-between p-4 border border-slate-700 shadow-md">
@@ -860,7 +852,7 @@ export default function VenuesAndCitiesPage() {
 
                   {/* Top Badge */}
                   <div className="relative z-10">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-white/20 backdrop-blur-md text-white border border-white/20">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-white border border-white/20">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       Live Shows
                     </span>
@@ -868,7 +860,7 @@ export default function VenuesAndCitiesPage() {
 
                   {/* Bottom Text */}
                   <div className="relative z-10">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-amber-300">
+                    <p className="text-xs font-semibold text-amber-300">
                       Australia
                     </p>
                     <h4 className="font-semibold text-white text-xl tracking-tight leading-tight">
@@ -890,7 +882,7 @@ export default function VenuesAndCitiesPage() {
                 <button
                   type="submit"
                   disabled={isSavingCityImg}
-                  className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-slate-950 text-[13px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-[13px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {isSavingCityImg ? "Saving..." : "Save City Photo"}
                 </button>

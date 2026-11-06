@@ -2,24 +2,20 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  QrCode, 
-  Search, 
-  LogOut, 
-  Flashlight, 
-  Volume2, 
-  VolumeX, 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  Sparkles, 
-  RefreshCw, 
-  UserCheck, 
+import {
+  QrCode,
+  Search,
+  LogOut,
+  Flashlight,
+  Volume2,
+  VolumeX,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  UserCheck,
   DoorOpen,
   Camera,
-  ArrowRight,
-  ShieldCheck,
-  Check
+  Check,
 } from "lucide-react";
 import { useAuthStore, useAuthHydrated } from "@/store/useAuthStore";
 import api from "@/lib/api";

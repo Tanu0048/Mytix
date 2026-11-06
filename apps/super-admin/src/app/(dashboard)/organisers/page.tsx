@@ -1,31 +1,27 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { 
-  Search, 
-  Plus, 
-  UserCheck, 
-  UserX, 
-  MoreVertical, 
-  KeyRound, 
-  CheckCircle, 
-  Ban, 
-  X, 
-  Copy, 
-  Check, 
-  Eye, 
-  EyeOff, 
-  ShieldCheck, 
-  Building2, 
-  RefreshCw, 
-  Loader2, 
-  AlertCircle, 
-  Sparkles,
-  Users,
+import {
+  Search,
+  Plus,
+  MoreVertical,
+  KeyRound,
+  CheckCircle,
+  Ban,
+  X,
+  Copy,
+  Check,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Building2,
+  RefreshCw,
+  Loader2,
+  AlertCircle,
   Trash2,
   ChevronLeft,
   ChevronRight,
-  Filter
+  Filter,
 } from "lucide-react";
 import api, { fetchAllPages } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -290,10 +286,10 @@ export default function OrganisersPage() {
       <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Organisers Directory
+            Organisers
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Create organiser accounts, assign login credentials, and manage platform permissions.
+            Organiser accounts and their access to Mytix.
           </p>
         </div>
 
@@ -313,7 +309,7 @@ export default function OrganisersPage() {
               setCreateError("");
               setIsCreateModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-4 py-2 text-[13px] font-semibold text-slate-950 transition-all shadow-xs hover:shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 px-4 py-2 text-[13px] font-semibold text-slate-950 transition-all shadow-xs hover:shadow-sm cursor-pointer"
           >
             <Plus className="h-4 w-4 stroke-[2.5]" />
             <span>Create New Organiser</span>
@@ -342,7 +338,7 @@ export default function OrganisersPage() {
               } catch {}
               await fetchOrganisers();
             }}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-semibold text-slate-950 transition-all shadow-sm hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-500 text-sm font-semibold text-slate-950 transition-all shadow-sm"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
             <span>Sync Session & Reload</span>
@@ -355,33 +351,24 @@ export default function OrganisersPage() {
             {/* Total */}
             <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-[13px] font-semibold uppercase tracking-wider text-slate-500">Total Organisers</p>
+                <p className="text-[13px] font-semibold text-slate-500">Total Organisers</p>
                 <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{totalCount}</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-600 flex items-center justify-center shrink-0">
-                <Users className="w-5 h-5" />
               </div>
             </div>
 
             {/* Active */}
             <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-[13px] font-semibold uppercase tracking-wider text-slate-500">Active & Ready</p>
+                <p className="text-[13px] font-semibold text-slate-500">Active & Ready</p>
                 <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{approvedCount}</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/70 text-emerald-600 flex items-center justify-center shrink-0">
-                <UserCheck className="w-5 h-5" />
               </div>
             </div>
 
             {/* Suspended */}
             <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
               <div>
-                <p className="text-[13px] font-semibold uppercase tracking-wider text-slate-500">Suspended</p>
+                <p className="text-[13px] font-semibold text-slate-500">Suspended</p>
                 <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{suspendedCount}</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200/70 text-rose-600 flex items-center justify-center shrink-0">
-                <UserX className="w-5 h-5" />
               </div>
             </div>
           </div>
@@ -461,9 +448,6 @@ export default function OrganisersPage() {
               </div>
             ) : filteredOrganisers.length === 0 ? (
               <div className="p-12 text-center">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 mx-auto mb-2">
-                  <Users className="w-5 h-5" />
-                </div>
                 <h3 className="text-sm font-semibold text-slate-900">No Organisers Found</h3>
                 <p className="text-[13px] text-slate-400 mt-1 max-w-sm mx-auto">
                   {searchQuery ? "No partners match your search query." : "Click 'Create New Organiser' above to add your first partner account."}
@@ -726,7 +710,7 @@ export default function OrganisersPage() {
             <form onSubmit={handleCreateSubmit} className="mt-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Contact Person Name *
                   </label>
                   <input
@@ -740,7 +724,7 @@ export default function OrganisersPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Organiser / Brand Name *
                   </label>
                   <input
@@ -756,7 +740,7 @@ export default function OrganisersPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Login Email (User ID) *
                   </label>
                   <input
@@ -770,7 +754,7 @@ export default function OrganisersPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                     Contact Phone Number
                   </label>
                   <input
@@ -785,7 +769,7 @@ export default function OrganisersPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider">
+                  <label className="block text-sm font-semibold text-slate-700">
                     Password *
                   </label>
                   <button
@@ -827,7 +811,7 @@ export default function OrganisersPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-semibold text-slate-950 transition-all shadow-xs disabled:opacity-60 flex items-center gap-2 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-sm font-semibold text-slate-950 transition-all shadow-xs disabled:opacity-60 flex items-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
@@ -887,7 +871,7 @@ export default function OrganisersPage() {
                   navigator.clipboard.writeText(text);
                   showToast("Login details copied to clipboard!");
                 }}
-                className="flex-1 py-3 px-4 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-semibold text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
+                className="flex-1 py-3 px-4 rounded-xl bg-amber-400 hover:bg-amber-500 text-sm font-semibold text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
               >
                 <Copy className="w-4 h-4" />
                 <span>Copy Login Details</span>
@@ -960,9 +944,6 @@ export default function OrganisersPage() {
           <div className="bg-white rounded-xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200/80">
             <div className="flex items-start justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600">
-                  <KeyRound className="w-5 h-5" />
-                </div>
                 <div>
                   <h3 className="text-base font-semibold text-slate-900">Reset Password</h3>
                   <p className="text-sm text-slate-500 mt-0.5">
@@ -987,7 +968,7 @@ export default function OrganisersPage() {
 
             <form onSubmit={handleConfirmResetPassword} className="mt-5 space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                   New Password *
                 </label>
                 <div className="relative">
@@ -1020,7 +1001,7 @@ export default function OrganisersPage() {
                 <button
                   type="submit"
                   disabled={isResetSubmitting}
-                  className="px-6 py-2.5 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] text-sm font-semibold text-slate-950 transition-all shadow-xs disabled:opacity-60 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-sm font-semibold text-slate-950 transition-all shadow-xs disabled:opacity-60 cursor-pointer"
                 >
                   {isResetSubmitting ? "Changing..." : "Confirm & Change Password"}
                 </button>
@@ -1036,9 +1017,6 @@ export default function OrganisersPage() {
       {savedResetCredentials && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-xs p-4">
           <div className="bg-white rounded-xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200/80 text-center space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center mx-auto">
-              <CheckCircle className="w-6 h-6" />
-            </div>
 
             <div>
               <h3 className="text-xl font-semibold text-slate-900">Password Changed</h3>
@@ -1048,7 +1026,7 @@ export default function OrganisersPage() {
             </div>
 
             <div className="text-left space-y-1.5 pt-1">
-              <label className="text-[13px] font-semibold uppercase tracking-wider text-slate-400">
+              <label className="text-[13px] font-semibold text-slate-400">
                 New Password
               </label>
               <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80 font-mono text-sm font-semibold text-slate-900">
@@ -1060,7 +1038,7 @@ export default function OrganisersPage() {
                     setCopiedResetPassword(true);
                     setTimeout(() => setCopiedResetPassword(false), 2000);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-[13px] font-semibold text-slate-700 hover:bg-slate-100 transition shadow-2xs active:scale-95 cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-[13px] font-semibold text-slate-700 hover:bg-slate-100 transition shadow-2xs cursor-pointer"
                 >
                   {copiedResetPassword ? (
                     <>
@@ -1092,7 +1070,7 @@ export default function OrganisersPage() {
                 setCopiedResetPassword(false);
                 showToast("Password saved and stored safely.");
               }}
-              className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer active:scale-98"
+              className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition cursor-pointer"
             >
               Done / I Have Stored The Password
             </button>

@@ -42,33 +42,56 @@ export default function Sidebar() {
     logout();
   };
 
-  const adminNavItems = [
-    { name: "Overview", href: "/", icon: LayoutDashboard },
-    { name: "Events", href: "/events", icon: CalendarDays },
-    { name: "Gate Staff", href: "/staff", icon: QrCode },
-    { name: "Venues & Cities", href: "/venues", icon: MapPin },
-    { name: "Banners", href: "/banners", icon: ImageIcon },
-    { name: "Organisers", href: "/organisers", icon: Users },
-    { name: "Categories", href: "/categories", icon: LayoutGrid },
-    { name: "Orders", href: "/orders", icon: ShoppingBag },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
-    { name: "Terms & Legal", href: "/terms", icon: FileText },
-    { name: "Social Links", href: "/social-links", icon: Share2 },
-    { name: "Pages CMS", href: "/pages", icon: BookOpen },
-    { name: "Settings", href: "/settings", icon: Settings },
+  type NavItem = { name: string; href: string; icon: typeof LayoutDashboard };
+  type NavGroup = { label: string | null; items: NavItem[] };
+
+  const sellGroup: NavGroup = {
+    label: "Sales",
+    items: [
+      { name: "Events", href: "/events", icon: CalendarDays },
+      { name: "Orders", href: "/orders", icon: ShoppingBag },
+      { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    ],
+  };
+
+  const adminNavGroups: NavGroup[] = [
+    { label: null, items: [{ name: "Overview", href: "/", icon: LayoutDashboard }] },
+    sellGroup,
+    {
+      label: "Operations",
+      items: [
+        { name: "Organisers", href: "/organisers", icon: Users },
+        { name: "Venues & cities", href: "/venues", icon: MapPin },
+        { name: "Gate staff", href: "/staff", icon: QrCode },
+      ],
+    },
+    {
+      label: "Website",
+      items: [
+        { name: "Banners", href: "/banners", icon: ImageIcon },
+        { name: "Categories", href: "/categories", icon: LayoutGrid },
+        { name: "Website pages", href: "/pages", icon: BookOpen },
+        { name: "Social links", href: "/social-links", icon: Share2 },
+        { name: "Terms & conditions", href: "/terms", icon: FileText },
+      ],
+    },
+    { label: null, items: [{ name: "Settings", href: "/settings", icon: Settings }] },
   ];
 
-  const organiserNavItems = [
-    { name: "Overview", href: "/", icon: LayoutDashboard },
-    { name: "Events", href: "/events", icon: CalendarDays },
-    { name: "Gate Staff", href: "/staff", icon: QrCode },
-    { name: "Venues & Cities", href: "/venues", icon: MapPin },
-    { name: "Orders", href: "/orders", icon: ShoppingBag },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
-    { name: "Settings", href: "/settings", icon: Settings },
+  const organiserNavGroups: NavGroup[] = [
+    { label: null, items: [{ name: "Overview", href: "/", icon: LayoutDashboard }] },
+    sellGroup,
+    {
+      label: "Operations",
+      items: [
+        { name: "Venues & cities", href: "/venues", icon: MapPin },
+        { name: "Gate staff", href: "/staff", icon: QrCode },
+      ],
+    },
+    { label: null, items: [{ name: "Settings", href: "/settings", icon: Settings }] },
   ];
 
-  const navItems = user?.role === "ADMIN" ? adminNavItems : user?.role === "ORGANISER" ? organiserNavItems : [];
+  const navGroups = user?.role === "ADMIN" ? adminNavGroups : user?.role === "ORGANISER" ? organiserNavGroups : [];
 
   return (
     <>
@@ -90,7 +113,7 @@ export default function Sidebar() {
           <div className="flex flex-col items-center pt-6 pb-4">
             <button
               onClick={toggleSidebar}
-              className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 border border-amber-200/80 p-1.5 shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer overflow-hidden"
+              className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 border border-amber-200/80 p-1.5 shadow-sm transition-all cursor-pointer overflow-hidden"
               title="Expand menu (Mytix)"
             >
               <Image 
@@ -133,9 +156,14 @@ export default function Sidebar() {
         )}
 
         {/* Navigation items */}
-        <nav className={isCollapsed ? "px-2 mt-2" : "px-4 mt-3"}>
+        <nav className={isCollapsed ? "px-2 mt-2" : "px-3 mt-2"}>
+          {navGroups.map((group, gIdx) => (
+          <div key={gIdx} className={gIdx > 0 ? (isCollapsed ? "mt-2 pt-2 border-t border-slate-100" : "mt-5") : ""}>
+          {group.label && !isCollapsed && (
+            <p className="px-3 mb-1 text-xs font-medium text-slate-400">{group.label}</p>
+          )}
           <ul className="space-y-0.5">
-            {navItems.map((item) => {
+            {group.items.map((item) => {
               const Icon = item.icon;
               const isActive =
                 pathname === item.href ||
@@ -147,17 +175,11 @@ export default function Sidebar() {
                     <Link
                       href={item.href}
                       scroll={false}
-                      className={`flex h-12 w-12 items-center justify-center rounded-xl border transition-all duration-200 ease-in-out active:scale-95 ${
-                        isActive
-                          ? "bg-[#FFF9EB] text-amber-600 border-amber-300/80 shadow-2xs font-semibold"
-                          : "text-slate-400 border-transparent hover:bg-slate-50 hover:text-slate-900"
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+                        isActive ? "bg-amber-50 text-amber-700" : "text-slate-400 hover:bg-slate-50 hover:text-slate-900"
                       }`}
                     >
-                      <Icon
-                        className={`h-5 w-5 transition-transform duration-200 ${
-                          isActive ? "text-amber-500 scale-110" : "group-hover:scale-110 group-hover:text-slate-700"
-                        }`}
-                      />
+                      <Icon className="h-[18px] w-[18px]" />
                     </Link>
 
                     {/* Floating Tooltip */}
@@ -191,6 +213,8 @@ export default function Sidebar() {
               );
             })}
           </ul>
+          </div>
+          ))}
         </nav>
       </div>
 
@@ -201,7 +225,7 @@ export default function Sidebar() {
           <div className="relative group">
             <button
               onClick={() => router.push("/events/create")}
-              className="w-11 h-11 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 flex items-center justify-center text-amber-700 transition-all shadow-2xs hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-11 h-11 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 flex items-center justify-center text-amber-700 transition-all shadow-2xs cursor-pointer"
             >
               <Crown className="w-5 h-5" />
             </button>
@@ -233,7 +257,7 @@ export default function Sidebar() {
             className="group flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer"
           >
             <LogOut className="mr-2.5 h-4 w-4 text-rose-500" />
-            <span>Sign Out</span>
+            <span>Sign out</span>
           </button>
         </div>
       )}

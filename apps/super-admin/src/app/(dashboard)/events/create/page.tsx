@@ -2,28 +2,22 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  ArrowLeft, 
-  Save, 
-  Plus, 
-  Trash2, 
-  Calendar, 
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Calendar,
   Clock,
-  Music, 
-  MapPin, 
-  User, 
-  Ticket, 
-  UploadCloud, 
-  Image as ImageIcon, 
-  FileText, 
-  ChevronDown, 
+  Music,
+  MapPin,
+  UploadCloud,
+  Image as ImageIcon,
+  FileText,
+  ChevronDown,
   GripVertical,
   ArrowRight,
   X,
   Loader2,
-  LayoutGrid,
-  Armchair,
-  Check
 } from "lucide-react";
 import api from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
@@ -237,10 +231,10 @@ export default function CreateEventPage() {
             <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back to Events
           </button>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Create New Event
+            Create event
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Set up your event details and ticketing tiers.
+            Add the details, seating and tickets, then publish.
           </p>
         </div>
 
@@ -259,9 +253,6 @@ export default function CreateEventPage() {
           
           {/* Section Header */}
           <div className="flex items-start gap-3.5 mb-7">
-            <div className="w-11 h-11 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
-              <Calendar className="w-5 h-5 text-amber-600" />
-            </div>
             <div>
               <h2 className="text-base font-semibold text-slate-900 leading-tight">Basic Details</h2>
               <p className="text-sm text-slate-500 mt-0.5">
@@ -522,9 +513,6 @@ export default function CreateEventPage() {
         {/* ===== CARD 2: SEATING & LAYOUT ===== */}
         <div className="rounded-xl bg-white p-6 sm:p-7 shadow-xs border border-slate-200/80">
           <div className="flex items-start gap-3.5 mb-6">
-            <div className="w-11 h-11 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
-              <Armchair className="w-5 h-5 text-amber-600" />
-            </div>
             <div>
               <h2 className="text-base font-semibold text-slate-900 leading-tight">Seating & Layout</h2>
               <p className="text-sm text-slate-500 mt-0.5">
@@ -552,9 +540,6 @@ export default function CreateEventPage() {
           {/* Section Header */}
           <div className="flex items-center justify-between mb-7">
             <div className="flex items-start gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
-                <Ticket className="w-5 h-5 text-amber-600" />
-              </div>
               <div>
                 <h2 className="text-base font-semibold text-slate-900 leading-tight">Ticket Categories</h2>
                 <p className="text-sm text-slate-500 mt-0.5">
@@ -567,7 +552,7 @@ export default function CreateEventPage() {
             <button 
               type="button" 
               onClick={addTicketType} 
-              className="flex items-center gap-1.5 whitespace-nowrap shrink-0 text-sm font-semibold text-amber-900 bg-[#FFF9EB] hover:bg-amber-100/70 border border-amber-200/80 px-4 py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer"
+              className="flex items-center gap-1.5 whitespace-nowrap shrink-0 text-sm font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100/70 border border-amber-200/80 px-4 py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-3" /> Add Category
             </button>
@@ -683,7 +668,7 @@ export default function CreateEventPage() {
           <button 
             type="submit" 
             disabled={isLoading}
-            className="flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-9 py-4 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 px-9 py-4 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {isLoading ? (
               "Publishing Event..."

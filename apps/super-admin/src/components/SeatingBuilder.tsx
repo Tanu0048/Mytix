@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Sparkles, Lock, Accessibility, Ban, Users, Armchair, UtensilsCrossed, PaintBucket } from "lucide-react";
+import { Plus, Trash2, Sparkles, Lock, Accessibility, Ban, Users, Armchair, UtensilsCrossed, PaintBucket, Layers } from "lucide-react";
 import {
   type SeatingMode,
   type SeatSection,
@@ -85,6 +85,13 @@ function KindIcon({ kind, className = "w-4 h-4" }: { kind: SectionKind; classNam
   return <Armchair className={className} />;
 }
 
+function ModeIcon({ mode, className }: { mode: SeatingMode; className?: string }) {
+  if (mode === "GENERAL") return <Users className={className} />;
+  if (mode === "TABLES") return <UtensilsCrossed className={className} />;
+  if (mode === "MIXED") return <Layers className={className} />;
+  return <Armchair className={className} />;
+}
+
 function clampInt(value: string, min: number, max: number): number {
   const n = Math.floor(Number(value));
   if (!Number.isFinite(n)) return min;
@@ -128,7 +135,7 @@ function SeatDot({
       disabled={disabled}
       title={title}
       className={`w-6 h-6 shrink-0 rounded-md text-[10px] font-semibold flex items-center justify-center select-none transition-transform ${cls} ${
-        disabled ? "cursor-default" : "cursor-pointer hover:scale-110"
+        disabled ? "cursor-default" : "cursor-pointer"
       }`}
     >
       {mark === "accessible" ? "♿" : mark === "blocked" ? "×" : label}
@@ -192,7 +199,7 @@ function SeatMap({
     <div className="bg-slate-950 rounded-lg px-3 py-4">
       <div className="mx-auto mb-4 w-2/3 max-w-sm">
         <div className="h-1.5 rounded-full bg-linear-to-r from-transparent via-amber-400 to-transparent" />
-        <p className="text-center text-[11px] font-medium uppercase tracking-widest text-slate-500 mt-1">Stage</p>
+        <p className="text-center text-[11px] font-medium text-slate-500 mt-1">Stage</p>
       </div>
       {isTables ? (
         <div className="flex flex-wrap gap-4 justify-center">
@@ -348,8 +355,9 @@ export default function SeatingBuilder({
                   active ? "border-amber-400 bg-amber-50 ring-1 ring-amber-400" : "border-slate-200 bg-white hover:border-slate-300 disabled:opacity-50"
                 } ${locked ? "cursor-default" : "cursor-pointer"}`}
               >
-                <span className="block text-sm font-semibold text-slate-900">
-                  <span className="mr-1">{opt.emoji}</span> {opt.title}
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                  <ModeIcon mode={opt.id} className={`w-4 h-4 shrink-0 ${active ? "text-amber-600" : "text-slate-400"}`} />
+                  {opt.title}
                 </span>
                 <span className="block text-xs text-slate-500 mt-0.5 leading-snug">{opt.example}</span>
               </button>

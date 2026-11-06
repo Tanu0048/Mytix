@@ -3,25 +3,19 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
-import { 
-  Ticket, 
-  Calendar, 
-  Plus, 
-  ArrowRight, 
-  Activity, 
-  ShoppingBag, 
-  Users, 
-  Filter, 
-  Search, 
-  ChevronLeft, 
+import {
+  Ticket,
+  Plus,
+  Activity,
+  ShoppingBag,
+  Users,
+  Filter,
+  Search,
+  ChevronLeft,
   ChevronRight,
-  MapPin,
-  Clock,
-  Eye,
-  CheckCircle2,
-  Clock3
 } from "lucide-react";
 import api, { fetchAllPages } from "@/lib/api";
+import { statusLabel } from "@/lib/format";
 
 export default function Home() {
   const router = useRouter();
@@ -139,12 +133,12 @@ export default function Home() {
               Welcome, {firstName}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              Real-time statistics, active shows, and event ticketing management.
+              Here’s how your events are doing.
             </p>
           </div>
           <button
             onClick={() => router.push("/events/create")}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-2.5 text-[13px] font-semibold text-slate-950 transition-all shadow-xs hover:shadow-sm cursor-pointer self-start sm:self-auto"
+            className="inline-flex items-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 px-5 py-2.5 text-[13px] font-semibold text-slate-950 transition-all shadow-xs hover:shadow-sm cursor-pointer self-start sm:self-auto"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Create an Event</span>
@@ -157,45 +151,36 @@ export default function Home() {
           {/* Card 1: Total Sales */}
           <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
             <div>
-              <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">
+              <p className="text-[13px] font-semibold text-slate-500">
                 Total Sales
               </p>
               <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
                 ${totalSales.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-600 flex items-center justify-center shrink-0">
-              <Ticket className="w-5 h-5" />
-            </div>
           </div>
 
           {/* Card 2: Tickets Sold */}
           <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
             <div>
-              <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">
+              <p className="text-[13px] font-semibold text-slate-500">
                 Tickets Sold
               </p>
               <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
                 {ticketsSold.toLocaleString("en-AU")}
               </p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/70 text-blue-600 flex items-center justify-center shrink-0">
-              <Activity className="w-5 h-5" />
-            </div>
           </div>
 
           {/* Card 3: Live Events */}
           <div className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between">
             <div>
-              <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">
+              <p className="text-[13px] font-semibold text-slate-500">
                 Live Events
               </p>
               <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
                 {liveEvents}
               </p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/70 text-emerald-600 flex items-center justify-center shrink-0">
-              <Calendar className="w-5 h-5" />
             </div>
           </div>
 
@@ -204,16 +189,13 @@ export default function Home() {
         {/* ===== Events Section: Empty State or Clean Data Table ===== */}
         {events.length === 0 && !isLoading ? (
           <div className="bg-white rounded-xl border border-slate-200/90 p-12 text-center shadow-xs">
-            <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200/60 text-amber-600 flex items-center justify-center mx-auto mb-4">
-              <Calendar className="w-6 h-6" />
-            </div>
             <h2 className="text-lg font-semibold text-slate-900 mb-1">No active events</h2>
             <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">
               You haven&apos;t created any events yet. Get started by creating your first event to sell tickets.
             </p>
             <button
               onClick={() => router.push("/events/create")}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-5 py-2.5 text-[13px] font-semibold text-slate-950 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 px-5 py-2.5 text-[13px] font-semibold text-slate-950 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>Create an Event</span>
@@ -329,12 +311,12 @@ export default function Home() {
                               <span className="text-slate-400"> / {totalTickets}</span>
                             </td>
                             <td className="px-5 py-3.5">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wider ${
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold ${
                                 event.status === "PUBLISHED" ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" :
                                 event.status === "DRAFT" ? "bg-amber-50 text-amber-700 border border-amber-200/60" :
                                 "bg-slate-100 text-slate-600"
                               }`}>
-                                {event.status}
+                                {statusLabel(event.status)}
                               </span>
                             </td>
                             <td className="px-5 py-3.5 text-right">
@@ -470,10 +452,10 @@ export default function Home() {
       {/* Clean Standard Admin Header */}
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          Platform Overview
+          Overview
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Real-time statistics, active organisers, and platform management.
+          Platform revenue, organisers and recent activity.
         </p>
       </header>
 
@@ -485,11 +467,8 @@ export default function Home() {
             className="bg-white rounded-xl p-5 border border-slate-200/90 shadow-xs flex items-center justify-between"
           >
             <div>
-              <p className="text-[13px] font-semibold text-slate-500 uppercase tracking-wider">{stat.name}</p>
+              <p className="text-[13px] font-medium text-slate-500">{stat.name}</p>
               <p className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">{stat.value}</p>
-            </div>
-            <div className={`w-10 h-10 rounded-xl ${stat.bg} border ${stat.border} ${stat.color} flex items-center justify-center shrink-0`}>
-              <stat.icon className="w-5 h-5" />
             </div>
           </div>
         ))}
@@ -581,12 +560,12 @@ export default function Home() {
                       <p className="text-[13px] text-slate-400 mt-0.5">{org.user?.phone || "No phone"}</p>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wider ${
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold ${
                         org.status === "ACTIVE" || org.status === "APPROVED" ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" :
                         org.status === "SUSPENDED" ? "bg-rose-50 text-rose-700 border border-rose-200/60" :
                         "bg-slate-100 text-slate-700"
                       }`}>
-                        {org.status}
+                        {statusLabel(org.status)}
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-right">

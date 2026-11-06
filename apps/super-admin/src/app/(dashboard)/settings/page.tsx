@@ -1,20 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  User, 
-  Lock, 
-  Save, 
-  Check, 
-  Mail, 
-  Phone, 
-  Sparkles,
+import {
+  User,
+  Lock,
+  Save,
+  Check,
+  Mail,
+  Phone,
   AlertCircle,
   Eye,
   EyeOff,
   Share2,
   ExternalLink,
-  ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -197,10 +195,10 @@ export default function SettingsPage() {
       <header className="mb-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-            Account & Settings
+            Settings
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Manage your personal profile, security credentials, and platform integration.
+            Your profile, password and login email.
           </p>
         </div>
 
@@ -234,7 +232,7 @@ export default function SettingsPage() {
               onClick={() => setActiveTab(tab.id as SettingsTab)}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer shrink-0 ${
                 isActive
-                  ? "bg-[#FFF9EB] text-amber-950 border border-amber-300/80 shadow-2xs font-semibold"
+                  ? "bg-amber-50 text-amber-950 border border-amber-300/80 shadow-2xs font-semibold"
                   : "bg-white text-slate-500 hover:text-slate-900 border border-slate-200/80 hover:bg-slate-50"
               }`}
             >
@@ -263,7 +261,7 @@ export default function SettingsPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-semibold text-slate-900">{formData.name}</h2>
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-semibold uppercase tracking-wider">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-semibold">
                       {user?.role || "ORGANISER"}
                     </span>
                   </div>
@@ -276,9 +274,6 @@ export default function SettingsPage() {
           {/* Card: Personal Details Form */}
           <div className="bg-white rounded-xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-6">
             <div className="flex items-start gap-3.5 pb-5 border-b border-slate-100">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
-                <User className="w-5 h-5" />
-              </div>
               <div>
                 <h3 className="text-base font-semibold text-slate-900">Personal Information</h3>
                 <p className="text-sm text-slate-500 mt-0.5">
@@ -347,7 +342,7 @@ export default function SettingsPage() {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex items-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-8 py-3.5 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 px-8 py-3.5 text-sm font-semibold text-slate-950 transition-all shadow-sm hover:shadow-md cursor-pointer disabled:opacity-50"
               >
                 <Save className="w-4 h-4 stroke-[2.5]" />
                 <span>{isSaving ? "Saving..." : "Save Profile"}</span>
@@ -366,9 +361,6 @@ export default function SettingsPage() {
           <div className="bg-white rounded-xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-8">
             
             <div className="flex items-start gap-3.5 pb-6 border-b border-slate-100">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-600 shrink-0">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
               <div>
                 <h3 className="text-base font-semibold text-slate-900">Account Access & Authentication</h3>
                 <p className="text-sm text-slate-500 mt-0.5">
@@ -407,7 +399,7 @@ export default function SettingsPage() {
 
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="text-[13px] font-semibold uppercase tracking-wider text-slate-400 block">Current Active Email</span>
+                    <span className="text-[13px] font-semibold text-slate-400 block">Current Active Email</span>
                     <span className="text-sm font-semibold text-slate-800 truncate block mt-0.5">{user?.email || "admin@mytix.example.com"}</span>
                   </div>
                   <span className="text-xs font-semibold uppercase px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
@@ -524,7 +516,7 @@ export default function SettingsPage() {
                     <button
                       type="submit"
                       disabled={isSaving}
-                      className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-[#F6C636] hover:bg-[#E5B523] px-7 py-3 text-sm font-semibold text-slate-950 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-500 px-7 py-3 text-sm font-semibold text-slate-950 transition-all shadow-sm cursor-pointer disabled:opacity-50"
                     >
                       <Save className="w-4 h-4 stroke-[2.5]" />
                       <span>{isSaving ? "Updating..." : "Update Password"}</span>
