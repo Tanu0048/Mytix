@@ -15,6 +15,7 @@ import {
   Undo2,
   X,
   CheckCircle2,
+  RotateCcw,
 } from "lucide-react";
 import {
   type SeatingMode,
@@ -340,6 +341,19 @@ export default function SeatingBuilder({
     );
   const setNotForSale = (idx: number, on: boolean) =>
     applyToSelection(idx, (s, keys) => keys.reduce((acc, k) => ((markOf(acc, k) === "blocked") === on ? acc : toggleBlocked(acc, k)), s));
+  /** Back to normal: the section's main category, sellable, no wheelchair marker. */
+  const resetToNormal = (idx: number) =>
+    applyToSelection(idx, (s, keys) => {
+      const drop = new Set(keys);
+      const seatTiers = { ...(s.seatTiers || {}) };
+      for (const k of keys) delete seatTiers[k];
+      return {
+        ...s,
+        seatTiers,
+        blocked: (s.blocked || []).filter((k) => !drop.has(k)),
+        accessible: (s.accessible || []).filter((k) => !drop.has(k)),
+      };
+    });
 
   // ---- sections / modes / templates ----
   const addSection = (kind: SectionKind) => {
@@ -701,6 +715,14 @@ export default function SeatingBuilder({
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/30 text-[13px] hover:bg-white/10 cursor-pointer"
                             >
                               <Ban className="w-3.5 h-3.5" /> {allBlocked ? "Make sellable again" : "Not for sale"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => resetToNormal(idx)}
+                              title={`Make the selected seats normal ${sec.tierName || "seats"} again (removes VIP / wheelchair / not for sale)`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 text-slate-900 text-[13px] font-semibold hover:bg-amber-300 cursor-pointer"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" /> Reset to normal{sec.tierName ? ` (${sec.tierName})` : ""}
                             </button>
                             <button
                               type="button"
