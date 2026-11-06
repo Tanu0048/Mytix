@@ -27,6 +27,15 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
+import SeatingBuilder from "@/components/SeatingBuilder";
+import {
+  type SeatingMode,
+  type SeatSection,
+  type SeatingTemplate,
+  capacityByTier,
+  toApiConfig,
+  validateSeating,
+} from "@/lib/seating";
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -37,17 +46,8 @@ export default function CreateEventPage() {
   const [previewUrl, setPreviewUrl] = useState("");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const [seatingType, setSeatingType] = useState<"GENERAL" | "RESERVED">("GENERAL");
-  const [seatingSections, setSeatingSections] = useState([
-    {
-      id: "sec-1",
-      name: "Front Section",
-      tierName: "General Admission",
-      rawRows: "A, B, C",
-      rows: ["A", "B", "C"],
-      seatsPerRow: 10
-    }
-  ]);
+  const [seatingMode, setSeatingMode] = useState<SeatingMode>("GENERAL");
+  const [seatSections, setSeatSections] = useState<SeatSection[]>([]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -80,21 +80,58 @@ export default function CreateEventPage() {
 
   const handleTicketChange = (index: number, field: string, value: any) => {
     const updated = [...ticketTypes];
+    const oldName = updated[index].name;
     updated[index] = { ...updated[index], [field]: value };
     setTicketTypes(updated);
+    // Renaming a category keeps the seat map sections pointing at it
+    if (field === "name" && oldName.trim()) {
+      setSeatSections((prev) =>
+        prev.map((sec) =>
+          sec.tierName.trim().toLowerCase() === oldName.trim().toLowerCase() ? { ...sec, tierName: String(value) } : sec
+        )
+      );
+    }
+  };
+
+  // Seated / standing categories get their quantity from the seat map
+  const mapCapacity = seatingMode === "GENERAL" ? new Map<string, number>() : capacityByTier(seatSections);
+  const mappedQuantity = (name: string) => mapCapacity.get(name.trim().toLowerCase());
+
+  const emptyTier = (name: string, priceCents = 5000) => ({
+    name,
+    description: "",
+    priceCents,
+    quantity: 100,
+    saleStartsAt: "",
+    saleEndsAt: "",
+    minPerOrder: 1,
+    maxPerOrder: 10
+  });
+
+  /** Adds a ticket category with a unique name and returns that name. */
+  const addTierNamed = (suggested: string, priceCents = 5000) => {
+    const taken = new Set(ticketTypes.map((t) => t.name.trim().toLowerCase()));
+    let name = suggested.trim() || "New Category";
+    let n = 2;
+    while (taken.has(name.toLowerCase())) name = `${suggested.trim() || "New Category"} ${n++}`;
+    setTicketTypes((prev) => [...prev, emptyTier(name, priceCents)]);
+    return name;
+  };
+
+  /** Creates the categories a template needs; replaces the untouched default category. */
+  const applyTemplateTiers = (tpl: SeatingTemplate) => {
+    setTicketTypes((prev) => {
+      const isUntouchedDefault =
+        prev.length === 1 && prev[0].name === "General Admission" && !prev[0].description && Number(prev[0].priceCents) === 5000;
+      const base = isUntouchedDefault ? [] : prev;
+      const have = new Set(base.map((t) => t.name.trim().toLowerCase()));
+      const added = tpl.tiers.filter((t) => !have.has(t.name.toLowerCase())).map((t) => emptyTier(t.name, t.priceCents));
+      return [...base, ...added];
+    });
   };
 
   const addTicketType = () => {
-    setTicketTypes([...ticketTypes, {
-      name: "",
-      description: "",
-      priceCents: 5000,
-      quantity: 100,
-      saleStartsAt: "",
-      saleEndsAt: "",
-      minPerOrder: 1,
-      maxPerOrder: 10
-    }]);
+    setTicketTypes([...ticketTypes, emptyTier("")]);
   };
 
   const removeTicketType = (index: number) => {
@@ -102,45 +139,6 @@ export default function CreateEventPage() {
     const updated = [...ticketTypes];
     updated.splice(index, 1);
     setTicketTypes(updated);
-  };
-
-  const addSeatingSection = () => {
-    const nextChar = String.fromCharCode(65 + seatingSections.length * 3);
-    const nextRows = [nextChar, String.fromCharCode(nextChar.charCodeAt(0) + 1), String.fromCharCode(nextChar.charCodeAt(0) + 2)];
-    setSeatingSections([
-      ...seatingSections,
-      {
-        id: `sec-${Date.now()}`,
-        name: `Section ${seatingSections.length + 1}`,
-        tierName: ticketTypes[0]?.name || "General Admission",
-        rawRows: nextRows.join(", "),
-        rows: nextRows,
-        seatsPerRow: 10
-      }
-    ]);
-  };
-
-  const removeSeatingSection = (index: number) => {
-    if (seatingSections.length === 1) return;
-    const updated = [...seatingSections];
-    updated.splice(index, 1);
-    setSeatingSections(updated);
-  };
-
-  const handleSectionChange = (index: number, field: string, val: any) => {
-    const updated = [...seatingSections];
-    updated[index] = { ...updated[index], [field]: val };
-    setSeatingSections(updated);
-  };
-
-  const handleRowsChange = (index: number, rawValue: string) => {
-    const rows = rawValue
-      .split(",")
-      .map(r => r.trim().toUpperCase())
-      .filter(Boolean);
-    const updated = [...seatingSections];
-    updated[index] = { ...updated[index], rawRows: rawValue, rows };
-    setSeatingSections(updated);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -154,6 +152,14 @@ export default function CreateEventPage() {
       }
       if (!formData.venueName.trim() || !formData.venueCity.trim()) {
         throw new Error("Please specify the venue name and city.");
+      }
+      const tierNames = ticketTypes.map((t) => t.name.trim());
+      if (new Set(tierNames.map((n) => n.toLowerCase())).size !== tierNames.length) {
+        throw new Error("Each ticket category needs a different name.");
+      }
+      const seatingProblems = validateSeating(seatingMode, seatSections, tierNames);
+      if (seatingProblems.length > 0) {
+        throw new Error(seatingProblems[0]);
       }
 
       // Automatically create and register the custom venue
@@ -174,8 +180,8 @@ export default function CreateEventPage() {
         venueId: finalVenueId,
         category: formData.category.trim(),
         posterPath: formData.posterPath,
-        seatingType,
-        seatingConfig: seatingType === "RESERVED" ? { sections: seatingSections } : null,
+        seatingType: seatingMode === "GENERAL" ? "GENERAL" : "RESERVED",
+        seatingConfig: toApiConfig(seatingMode, seatSections),
         startsAt: new Date(formData.startsAt).toISOString(),
         doorsOpenAt: formData.doorsOpenAt ? new Date(formData.doorsOpenAt).toISOString() : undefined,
         artists: [],
@@ -183,7 +189,7 @@ export default function CreateEventPage() {
           name: t.name,
           description: t.description || undefined,
           priceCents: Number(t.priceCents),
-          quantity: Number(t.quantity),
+          quantity: mappedQuantity(t.name) ?? Number(t.quantity),
           saleStartsAt: t.saleStartsAt && new Date(t.saleStartsAt) < new Date(formData.startsAt) ? new Date(t.saleStartsAt).toISOString() : new Date().toISOString(),
           saleEndsAt: t.saleEndsAt && new Date(t.saleEndsAt) > new Date() ? new Date(t.saleEndsAt).toISOString() : new Date(formData.startsAt).toISOString(),
           minPerOrder: Number(t.minPerOrder || 1),
@@ -510,7 +516,31 @@ export default function CreateEventPage() {
           </div>
         </div>
 
-        {/* ===== CARD 2: TICKET CATEGORIES ===== */}
+        {/* ===== CARD 2: SEATING & LAYOUT ===== */}
+        <div className="rounded-3xl bg-white p-7 sm:p-9 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-100">
+          <div className="flex items-start gap-3.5 mb-6">
+            <div className="w-11 h-11 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
+              <Armchair className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-black text-slate-900 leading-tight">Seating & Layout</h2>
+              <p className="text-sm font-semibold text-slate-400 mt-0.5">
+                Choose how people attend. For seats or tables, build the map and we count the tickets for you.
+              </p>
+            </div>
+          </div>
+          <SeatingBuilder
+            mode={seatingMode}
+            onModeChange={setSeatingMode}
+            sections={seatSections}
+            onSectionsChange={setSeatSections}
+            tiers={ticketTypes}
+            onAddTier={addTierNamed}
+            onApplyTemplate={applyTemplateTiers}
+          />
+        </div>
+
+        {/* ===== CARD 3: TICKET CATEGORIES ===== */}
         <div className="rounded-3xl bg-white p-7 sm:p-9 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-100">
           
           {/* Section Header */}
@@ -522,7 +552,7 @@ export default function CreateEventPage() {
               <div>
                 <h2 className="text-base font-black text-slate-900 leading-tight">Ticket Categories</h2>
                 <p className="text-sm font-semibold text-slate-400 mt-0.5">
-                  Create categories for your tickets (e.g., VIP, Normal, Student) and set their prices.
+                  Set a name and price for each category (e.g. VIP, Standard, Student). Seated categories get their ticket count from the seat map.
                 </p>
               </div>
             </div>
@@ -575,13 +605,15 @@ export default function CreateEventPage() {
                     {/* Price in cents */}
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
-                        Price (in cents) <span className="text-red-500">*</span>
+                        Price ($) <span className="text-red-500">*</span>
                       </label>
-                      <input 
-                        required 
-                        type="number" 
-                        value={ticket.priceCents} 
-                        onChange={(e) => handleTicketChange(index, "priceCents", e.target.value)} 
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={Number(ticket.priceCents) / 100}
+                        onChange={(e) => handleTicketChange(index, "priceCents", Math.round(Number(e.target.value || 0) * 100))}  
                         className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
                       />
                     </div>
@@ -590,13 +622,18 @@ export default function CreateEventPage() {
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
                         Total Tickets <span className="text-red-500">*</span>
+                        {mappedQuantity(ticket.name) !== undefined && (
+                          <span className="ml-1 text-amber-700 font-bold">· from seat map</span>
+                        )}
                       </label>
-                      <input 
-                        required 
-                        type="number" 
-                        value={ticket.quantity} 
-                        onChange={(e) => handleTicketChange(index, "quantity", e.target.value)} 
-                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white" 
+                      <input
+                        required
+                        type="number"
+                        min="1"
+                        disabled={mappedQuantity(ticket.name) !== undefined}
+                        value={mappedQuantity(ticket.name) ?? ticket.quantity}
+                        onChange={(e) => handleTicketChange(index, "quantity", e.target.value)}
+                        className="w-full rounded-xl border border-slate-200/80 bg-slate-50/40 py-2.5 px-3.5 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 focus:bg-white disabled:bg-amber-50/60 disabled:text-amber-900"
                       />
                     </div>
 
@@ -632,193 +669,6 @@ export default function CreateEventPage() {
             ))}
           </div>
 
-        </div>
-
-        {/* ===== CARD 3: SEATING ARRANGEMENT ===== */}
-        <div className="rounded-3xl bg-white p-7 sm:p-9 shadow-[0_2px_16px_rgba(0,0,0,0.03)] border border-slate-100">
-          <div className="flex items-start gap-3.5 mb-6">
-            <div className="w-11 h-11 rounded-2xl bg-amber-50/90 border border-amber-200/60 flex items-center justify-center shrink-0">
-              <Armchair className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <h2 className="text-base font-black text-slate-900 leading-tight">Seating & Layout</h2>
-              <p className="text-sm font-semibold text-slate-400 mt-0.5">
-                Assign the categories (like VIP, Normal) to seats or keep it as open admission.
-              </p>
-            </div>
-          </div>
-
-          {/* 2 Choice Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            {/* General Admission */}
-            <div 
-              onClick={() => setSeatingType("GENERAL")}
-              className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
-                seatingType === "GENERAL"
-                  ? "border-amber-400 bg-amber-50/40 shadow-xs ring-2 ring-amber-400/20"
-                  : "border-slate-100 bg-slate-50/40 hover:border-slate-200"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-black text-slate-900">General Admission (Open)</span>
-                {seatingType === "GENERAL" && (
-                  <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[11px] font-black">
-                    ✓
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                Best for Standing or Club events. Buyers pick a category without specific seat numbers.
-              </p>
-            </div>
-
-            {/* Reserved Seating */}
-            <div 
-              onClick={() => setSeatingType("RESERVED")}
-              className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
-                seatingType === "RESERVED"
-                  ? "border-amber-400 bg-amber-50/40 shadow-xs ring-2 ring-amber-400/20"
-                  : "border-slate-100 bg-slate-50/40 hover:border-slate-200"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-black text-slate-900">Reserved Seating (Numbered)</span>
-                {seatingType === "RESERVED" && (
-                  <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[11px] font-black">
-                    ✓
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
-                Assign specific rows and seat numbers to the categories you created above.
-              </p>
-            </div>
-          </div>
-
-          {/* Reserved Seating Grid Config */}
-          {seatingType === "RESERVED" && (
-            <div className="mt-6 pt-6 border-t border-slate-100 space-y-5 animate-in fade-in duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-black text-slate-900">Seat Sections & Rows</h3>
-                  <p className="text-[11px] text-slate-400 font-medium">
-                    Map rows to your ticket categories (e.g. Rows A,B for VIP).
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={addSeatingSection}
-                  className="flex items-center gap-1.5 text-sm font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 px-3.5 py-1.5 rounded-xl cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add Section
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {seatingSections.map((sec, idx) => {
-                  const totalSeats = sec.rows.length * sec.seatsPerRow;
-                  return (
-                     <div key={sec.id} className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/30 space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-                        {/* Section Name */}
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-700 mb-1">Section Name</label>
-                          <input
-                            type="text"
-                            value={sec.name}
-                            onChange={(e) => handleSectionChange(idx, "name", e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400"
-                            placeholder="e.g. VIP Front"
-                          />
-                        </div>
-
-                        {/* Linked Tier */}
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-700 mb-1">Category</label>
-                          <select
-                            value={sec.tierName}
-                            onChange={(e) => handleSectionChange(idx, "tierName", e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400"
-                          >
-                            {ticketTypes.map((t, tIdx) => (
-                              <option key={tIdx} value={t.name || `Category ${tIdx + 1}`}>
-                                {t.name || `Category ${tIdx + 1}`}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Rows (comma separated) */}
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-700 mb-1">
-                            Rows <span className="text-slate-400">(e.g. A,B,C)</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={sec.rawRows !== undefined ? sec.rawRows : sec.rows.join(", ")}
-                            onChange={(e) => handleRowsChange(idx, e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400"
-                            placeholder="A, B, C"
-                          />
-                        </div>
-
-                        {/* Seats Per Row & Delete */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-slate-700 mb-1">Seats / Row</label>
-                            <input
-                              type="number"
-                              min="1"
-                              max="40"
-                              value={sec.seatsPerRow}
-                              onChange={(e) => handleSectionChange(idx, "seatsPerRow", Number(e.target.value))}
-                              className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400"
-                            />
-                          </div>
-                          {seatingSections.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeSeatingSection(idx)}
-                              className="p-2 text-slate-400 hover:text-red-500 transition-colors mt-4"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Visual Mini Preview */}
-                      <div className="bg-slate-950 p-3 rounded-xl">
-                        <div className="text-[10px] font-bold text-slate-400 mb-2 flex items-center justify-between">
-                          <span>Preview: {sec.name}</span>
-                          <span className="text-amber-400">{totalSeats} seats generated</span>
-                        </div>
-                        <div className="space-y-1.5 overflow-x-auto py-1">
-                          {sec.rows.map((r) => (
-                            <div key={r} className="flex items-center gap-1.5 min-w-fit">
-                              <span className="w-4 text-[9px] font-black text-slate-500">{r}</span>
-                              {Array.from({ length: Math.min(sec.seatsPerRow, 25) }, (_, i) => (
-                                <span
-                                  key={i}
-                                  className="w-4 h-4 rounded-sm bg-slate-800 text-[8px] font-bold text-slate-400 flex items-center justify-center border border-slate-700"
-                                >
-                                  {i + 1}
-                                </span>
-                              ))}
-                              {sec.seatsPerRow > 25 && (
-                                <span className="text-[9px] text-slate-500 ml-1">+{sec.seatsPerRow - 25} more</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ===== BOTTOM ACTION BUTTON ===== */}

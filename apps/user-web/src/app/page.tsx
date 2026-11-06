@@ -368,8 +368,7 @@ export default function Home() {
     // Supabase Realtime Subscription for Live Banners Updates
     const bannerChannel = supabase
       .channel('banners-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'banners' }, (payload) => {
-        console.log('Realtime banner change received:', payload);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'banners' }, () => {
         fetchBanners(); // Refetch the updated list automatically
       })
       .subscribe();
@@ -377,8 +376,7 @@ export default function Home() {
     // Supabase Realtime Subscription for Live Categories Updates
     const categoryChannel = supabase
       .channel('categories-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, (payload) => {
-        console.log('Realtime category change received:', payload);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
         fetchCategories(); // Refetch the updated categories automatically
       })
       .subscribe();

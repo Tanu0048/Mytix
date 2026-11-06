@@ -1,8 +1,9 @@
+import { useSyncExternalStore } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import api from "@/lib/api";
 
-interface User {
+export interface User {
   id: string;
   email?: string;
   name: string;
@@ -12,6 +13,12 @@ interface User {
   assignedGate?: string;
   assignedEvent?: { id: string; title: string } | null;
   businessName?: string;
+  organiser?: { id: string; businessName?: string; status?: string } | null;
+}
+
+function extractErrorMessage(err: unknown, fallback: string): string {
+  const data = (err as { response?: { data?: { error?: { message?: string }; message?: string } } })?.response?.data;
+  return data?.error?.message || data?.message || fallback;
 }
 
 interface AuthState {
@@ -23,7 +30,9 @@ interface AuthState {
   setToken: (token: string | null) => void;
   login: (email: string, password: string) => Promise<string | boolean>;
   staffLogin: (staffId: string, password: string) => Promise<string | boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  /** Clears the local session without calling the API (used when the server session is already gone). */
+  clearSession: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -54,8 +63,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false 
           });
           return user.role;
-        } catch (err: any) {
-          const errorMsg = err.response?.data?.error?.message || err.response?.data?.message || "Invalid email or password";
+        } catch (err) {
+          const errorMsg = extractErrorMessage(err, "Invalid email or password");
           set({ 
             error: errorMsg, 
             isLoading: false 
@@ -76,8 +85,8 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false
           });
           return "STAFF";
-        } catch (err: any) {
-          const errorMsg = err.response?.data?.error?.message || err.response?.data?.message || "Invalid Staff ID or password";
+        } catch (err) {
+          const errorMsg = extractErrorMessage(err, "Invalid Staff ID or password");
           set({
             error: errorMsg,
             isLoading: false
@@ -95,6 +104,8 @@ export const useAuthStore = create<AuthState>()(
           set({ user: null, token: null });
         }
       },
+
+      clearSession: () => set({ user: null, token: null }),
     }),
     {
       name: "admin-auth-storage",
@@ -102,3 +113,15 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+/**
+ * True once the persisted session has been read from localStorage on the client.
+ * Always false during SSR/prerender, so gating UI on it avoids hydration mismatches.
+ */
+export function useAuthHydrated(): boolean {
+  return useSyncExternalStore(
+    (onChange) => useAuthStore.persist.onFinishHydration(onChange),
+    () => useAuthStore.persist.hasHydrated(),
+    () => false
+  );
+}

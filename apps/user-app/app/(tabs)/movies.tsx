@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -43,6 +43,14 @@ export default function ExploreEventsScreen() {
   const [categories, setCategories] = useState<string[]>(['All']);
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState(params.q || '');
+  // Search runs 400ms after the user stops typing, not on every keystroke.
+  const [debouncedQuery, setDebouncedQuery] = useState(params.q || '');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 400);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+  // Only the newest request may update the list, so a slow old response cannot overwrite a newer one.
+  const latestRequestRef = useRef(0);
   const [selectedCategory, setSelectedCategory] = useState(params.category || 'All');
   const [selectedState, setSelectedState] = useState('');
   const [selectedCity, setSelectedCity] = useState(LocationStore.getCity());
@@ -88,21 +96,30 @@ export default function ExploreEventsScreen() {
   }, []);
 
   const fetchEvents = useCallback(async () => {
+    const requestId = ++latestRequestRef.current;
     try {
       let eventsArray: any[] = [];
-      if (searchQuery.trim()) {
-        const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      if (debouncedQuery.trim()) {
+        const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(debouncedQuery.trim())}`);
         if (res.ok) {
           const data = await res.json();
           eventsArray = data.results?.events || [];
         }
       } else {
-        const res = await fetch(`${API_BASE}/events`);
+        const res = await fetch(`${API_BASE}/events?upcoming=true`);
         if (res.ok) {
           const data = await res.json();
           eventsArray = Array.isArray(data) ? data : (data.events || data.data || []);
         }
       }
+      if (requestId !== latestRequestRef.current) return;
+
+      // Explore only lists events that have not started yet (search results include past ones).
+      const now = Date.now();
+      eventsArray = eventsArray.filter((e: any) => {
+        const start = e.startsAt || e.startDate;
+        return !start || new Date(start).getTime() > now;
+      });
 
       // Extract unique states configured by admin across venues
       const rawStates = eventsArray
@@ -136,10 +153,12 @@ export default function ExploreEventsScreen() {
     } catch (err) {
       console.error('Error fetching events in explore:', err);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (requestId === latestRequestRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, [searchQuery, selectedCity, selectedState, selectedCategory]);
+  }, [debouncedQuery, selectedCity, selectedState, selectedCategory]);
 
   useEffect(() => {
     setLoading(true);

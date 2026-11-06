@@ -44,7 +44,10 @@ function CheckoutContent() {
         const res = await fetchWithAuth(`${API_BASE}/holds/${holdId}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || data.message || 'Hold expired or not found');
-        
+        if (data.data?.status && data.data.status !== 'ACTIVE') {
+          throw new Error('Your ticket reservation has expired. Please select tickets again.');
+        }
+
         setHold(data.data);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
@@ -60,18 +63,27 @@ function CheckoutContent() {
   // Reservation countdown timer
   useEffect(() => {
     if (!hold?.expiresAt) return;
+    let interval: ReturnType<typeof setInterval> | null = null;
     const updateCountdown = () => {
       const remaining = Math.max(0, Math.floor((new Date(hold.expiresAt).getTime() - Date.now()) / 1000));
       setTimeLeft(remaining);
       if (remaining <= 0) {
+        // Stop ticking first so the toast and redirect fire exactly once.
+        if (interval) clearInterval(interval);
+        interval = null;
         toast.error("Your ticket reservation has expired. Please select tickets again.");
-        router.push('/');
+        router.push(hold.eventSlug ? `/events/${hold.eventSlug}` : '/');
+        return false;
       }
+      return true;
     };
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-    return () => clearInterval(interval);
-  }, [hold?.expiresAt, router]);
+    if (updateCountdown()) {
+      interval = setInterval(updateCountdown, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [hold?.expiresAt, hold?.eventSlug, router]);
 
   const handlePayment = async () => {
     setProcessing(true);
@@ -117,10 +129,10 @@ function CheckoutContent() {
 
   if (!hold) return null;
 
-  const totalAmount = hold.totalCents / 100;
-  // Australian domestic transaction fee (1.7% + 30c AUD Stripe rate)
-  const fee = Math.round((totalAmount * 0.017 + 0.30) * 100) / 100;
-  const finalAmount = totalAmount + fee;
+  // Pricing comes from the backend (same calculation the checkout charges); never computed here.
+  const totalAmount = (hold.pricing?.ticketTotalCents ?? hold.totalCents) / 100;
+  const fee = (hold.pricing?.buyerFeeCents ?? 0) / 100;
+  const finalAmount = (hold.pricing?.totalCents ?? hold.totalCents) / 100;
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -341,7 +353,9 @@ function CheckoutContent() {
                   <h3 className="text-lg font-black text-white leading-snug">{hold.eventTitle}</h3>
                   <div className="flex items-center gap-2 text-slate-300 text-xs mt-3 font-semibold">
                     <Calendar className="w-3.5 h-3.5 text-amber-400" /> 
-                    {new Date(hold.expiresAt).toLocaleDateString('en-AU', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {hold.eventStartsAt
+                      ? new Date(hold.eventStartsAt).toLocaleString('en-AU', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+                      : 'Date TBA'}
                   </div>
                </div>
                

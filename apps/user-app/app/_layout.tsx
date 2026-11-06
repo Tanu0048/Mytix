@@ -120,6 +120,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
         <Stack.Screen name="orders" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="checkout" options={{ headerShown: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

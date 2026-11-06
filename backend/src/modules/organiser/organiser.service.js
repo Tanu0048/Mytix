@@ -6,6 +6,51 @@ import { parseCursorPagination, formatPaginatedResponse } from "../../utils/pagi
 import { generateTicketsForOrder } from "../tickets/ticket.service.js";
 import { deleteCached } from "../../lib/cache.js";
 import { hashPassword } from "../auth/password.service.js";
+import {
+  normalizeSeatingConfig,
+  capacityByTier,
+  assertTiersExist
+} from "./seating.js";
+
+function assertUniqueTierNames(names) {
+  const seen = new Set();
+  for (const n of names) {
+    const key = String(n).trim().toLowerCase();
+    if (seen.has(key)) {
+      throw new AppError("VALIDATION_ERROR", 400, `Two ticket categories are both called "${n}". Please give each category a unique name.`);
+    }
+    seen.add(key);
+  }
+}
+
+/**
+ * Comparable fingerprint of a seat map, with sections pointing at ticket type IDs
+ * instead of names (so renaming a category is not treated as a layout change).
+ */
+function seatingFingerprint(seatingType, config, nameToId) {
+  if (seatingType !== "RESERVED" || !config) return "GENERAL";
+  const sections = (config.sections || []).map((s) => ({
+    name: s.name,
+    kind: s.kind || "ROWS",
+    rows: s.rows || [],
+    seatsPerRow: s.seatsPerRow || 0,
+    capacity: s.capacity || 0,
+    blocked: [...(s.blocked || [])].sort(),
+    tier: nameToId(String(s.tierName || "").trim().toLowerCase()) || s.tierName
+  }));
+  return JSON.stringify(sections);
+}
+
+/** Sum of seats currently held (ACTIVE holds) per ticket type ID. */
+async function activeHeldByTier(ticketTypeIds) {
+  if (ticketTypeIds.length === 0) return new Map();
+  const rows = await prisma.inventoryHold.groupBy({
+    by: ["ticketTypeId"],
+    where: { ticketTypeId: { in: ticketTypeIds }, status: "ACTIVE" },
+    _sum: { quantity: true }
+  });
+  return new Map(rows.map((r) => [r.ticketTypeId, r._sum.quantity || 0]));
+}
 
 export async function applyForOrganiser(userId, data) {
   const existing = await prisma.organiser.findUnique({
@@ -88,6 +133,16 @@ export async function createEvent(userId, data) {
     }
   }
 
+  // Seat map: validate it and derive seated/standing category quantities from it
+  const seatingType = data.seatingType === "RESERVED" ? "RESERVED" : "GENERAL";
+  const seatingConfig = normalizeSeatingConfig(seatingType, data.seatingConfig);
+  if (seatingConfig) {
+    assertUniqueTierNames(data.ticketTypes.map((t) => t.name));
+    assertTiersExist(seatingConfig, data.ticketTypes.map((t) => t.name));
+  }
+  const mapCapacity = capacityByTier(seatingConfig);
+  const quantityFor = (t) => mapCapacity.get(String(t.name).trim().toLowerCase()) ?? t.quantity;
+
   const event = await prisma.event.create({
     data: {
       organiserId: organiser.id,
@@ -100,8 +155,8 @@ export async function createEvent(userId, data) {
       doorsOpenAt: data.doorsOpenAt ? new Date(data.doorsOpenAt) : null,
       status: "PUBLISHED", // Published upon creation for testing Phase 3
       category: data.category || "Concert",
-      seatingType: data.seatingType || "GENERAL",
-      seatingConfig: data.seatingConfig || null,
+      seatingType,
+      seatingConfig,
       artists: data.artists?.length
         ? {
             create: data.artists.map((a) => ({
@@ -114,8 +169,8 @@ export async function createEvent(userId, data) {
         create: data.ticketTypes.map((t) => ({
           name: t.name,
           priceCents: t.priceCents,
-          quantity: t.quantity,
-          available: t.quantity,
+          quantity: quantityFor(t),
+          available: quantityFor(t),
           saleStartsAt: t.saleStartsAt && new Date(t.saleStartsAt) < new Date(data.startsAt) ? new Date(t.saleStartsAt) : new Date(),
           saleEndsAt: t.saleEndsAt && new Date(t.saleEndsAt) > new Date() ? new Date(t.saleEndsAt) : new Date(data.startsAt),
           minPerOrder: t.minPerOrder || 1,
@@ -169,8 +224,65 @@ export async function updateEvent(userId, eventId, data) {
   if (data.description !== undefined) updateData.description = data.description;
   if (data.posterPath !== undefined) updateData.posterPath = data.posterPath;
   if (data.category !== undefined) updateData.category = data.category;
-  if (data.seatingType !== undefined) updateData.seatingType = data.seatingType;
-  if (data.seatingConfig !== undefined) updateData.seatingConfig = data.seatingConfig;
+
+  // ---- Seat map changes ----
+  const existingTiers = await prisma.ticketType.findMany({ where: { eventId } });
+  const submittedTiers = Array.isArray(data.ticketTypes) ? data.ticketTypes : [];
+  // Ticket category names after this update (renames applied, new categories added)
+  const finalTierNames = existingTiers.map((t) => submittedTiers.find((x) => x.id === t.id)?.name ?? t.name);
+  for (const t of submittedTiers) if (!t.id) finalTierNames.push(t.name);
+
+  const wantsSeatingChange = data.seatingType !== undefined || data.seatingConfig !== undefined;
+  let finalSeatingConfig = null;
+  if (wantsSeatingChange) {
+    const finalType = (data.seatingType ?? existingEvent.seatingType) === "RESERVED" ? "RESERVED" : "GENERAL";
+    finalSeatingConfig = normalizeSeatingConfig(
+      finalType,
+      data.seatingConfig !== undefined ? data.seatingConfig : existingEvent.seatingConfig
+    );
+    if (finalSeatingConfig) {
+      assertUniqueTierNames(finalTierNames);
+      assertTiersExist(finalSeatingConfig, finalTierNames);
+    }
+
+    const totalSold = existingTiers.reduce((sum, t) => sum + (t.sold || 0), 0);
+    const held = await activeHeldByTier(existingTiers.map((t) => t.id));
+    const totalHeld = Array.from(held.values()).reduce((a, b) => a + b, 0);
+    if (totalSold > 0 || totalHeld > 0) {
+      const oldIds = new Map(existingTiers.map((t) => [t.name.trim().toLowerCase(), t.id]));
+      const newIds = new Map();
+      existingTiers.forEach((t, i) => newIds.set(String(finalTierNames[i]).trim().toLowerCase(), t.id));
+      const before = seatingFingerprint(existingEvent.seatingType, existingEvent.seatingConfig, (n) => oldIds.get(n));
+      const after = seatingFingerprint(finalType, finalSeatingConfig, (n) => newIds.get(n));
+      if (before !== after) {
+        throw new AppError(
+          "SEATING_LOCKED",
+          409,
+          "The seat layout cannot be changed after tickets have been sold or reserved. You can still edit names, prices and other details."
+        );
+      }
+    }
+    updateData.seatingType = finalType;
+    updateData.seatingConfig = finalSeatingConfig;
+  } else if (existingEvent.seatingType === "RESERVED" && existingEvent.seatingConfig?.sections) {
+    // Keep seat map category references in sync when categories are renamed
+    let changed = false;
+    const config = JSON.parse(JSON.stringify(existingEvent.seatingConfig));
+    existingTiers.forEach((t, i) => {
+      const newName = finalTierNames[i];
+      if (newName === t.name) return;
+      for (const sec of config.sections) {
+        if (String(sec.tierName || "").trim().toLowerCase() === t.name.trim().toLowerCase()) {
+          sec.tierName = newName;
+          changed = true;
+        }
+      }
+    });
+    if (changed) {
+      updateData.seatingConfig = config;
+      if (config.version === 2) finalSeatingConfig = config;
+    }
+  }
   if (data.status !== undefined) updateData.status = data.status;
   if (data.startsAt !== undefined) updateData.startsAt = new Date(data.startsAt);
   if (data.doorsOpenAt !== undefined) updateData.doorsOpenAt = data.doorsOpenAt ? new Date(data.doorsOpenAt) : null;
@@ -228,6 +340,23 @@ export async function updateEvent(userId, eventId, data) {
             maxPerOrder: t.maxPerOrder || 10,
           }
         });
+      }
+    }
+  }
+
+  // Seated / standing categories take their quantity from the seat map
+  if (finalSeatingConfig) {
+    const caps = capacityByTier(finalSeatingConfig);
+    const tiers = await prisma.ticketType.findMany({ where: { eventId } });
+    const held = await activeHeldByTier(tiers.map((t) => t.id));
+    for (const t of tiers) {
+      const cap = caps.get(t.name.trim().toLowerCase());
+      if (cap === undefined) continue;
+      const sold = t.sold || 0;
+      const quantity = Math.max(cap, sold);
+      const available = Math.max(0, quantity - sold - (held.get(t.id) || 0));
+      if (quantity !== t.quantity || available !== t.available) {
+        await prisma.ticketType.update({ where: { id: t.id }, data: { quantity, available } });
       }
     }
   }

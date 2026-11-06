@@ -83,9 +83,6 @@ export default function SuperAdminTermsPage() {
 
   const [terms, setTerms] = useState<TermsData>(DEFAULT_TERMS_FALLBACK);
 
-  useEffect(() => {
-    fetchTerms();
-  }, []);
 
   const fetchTerms = async () => {
     try {
@@ -100,6 +97,10 @@ export default function SuperAdminTermsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchTerms();
+  }, []);
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();

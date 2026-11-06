@@ -21,7 +21,7 @@ import {
   CheckCircle2,
   Clock3
 } from "lucide-react";
-import api from "@/lib/api";
+import api, { fetchAllPages } from "@/lib/api";
 
 export default function Home() {
   const router = useRouter();
@@ -30,6 +30,8 @@ export default function Home() {
   const [adminOrganisers, setAdminOrganisers] = useState<any[]>([]);
   const [adminOrders, setAdminOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // Page-load timestamp (Date.now() must not be called during render)
+  const [currentTime] = useState(() => Date.now());
 
   // Organiser Event Table Controls (Frontend Hygiene)
   const [orgEventSearch, setOrgEventSearch] = useState("");
@@ -48,18 +50,17 @@ export default function Home() {
       setIsLoading(true);
       try {
         if (user?.role === "ORGANISER" || !user?.role) {
-          const res = await api.get("/organiser/events");
-          setEvents(res.data.data || []);
+          setEvents(await fetchAllPages("/organiser/events"));
         } else if (user?.role === "ADMIN") {
           const [orgsRes, ordersRes] = await Promise.allSettled([
-            api.get("/admin/organisers"),
-            api.get("/admin/orders").catch(() => api.get("/organiser/orders"))
+            fetchAllPages("/admin/organisers"),
+            fetchAllPages("/admin/orders")
           ]);
           if (orgsRes.status === "fulfilled") {
-            setAdminOrganisers(orgsRes.value.data.data || []);
+            setAdminOrganisers(orgsRes.value);
           }
           if (ordersRes.status === "fulfilled") {
-            setAdminOrders(ordersRes.value.data.data || []);
+            setAdminOrders(ordersRes.value);
           }
         }
       } catch (err) {
@@ -85,9 +86,8 @@ export default function Home() {
       return sum + tierSold;
     }, 0);
 
-    const currentTime = Date.now();
     const liveEvents = events.filter((e) => e.status === "PUBLISHED" && e.startsAt && new Date(e.startsAt).getTime() > currentTime).length;
-    const firstName = user?.name?.split(" ")[0] || "Aman";
+    const firstName = user?.name?.split(" ")[0] || "there";
 
     // Filtering & Pagination for Organiser Events
     const filteredOrgEvents = events.filter((e) => {

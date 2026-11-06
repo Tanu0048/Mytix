@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { API_BASE } from '@/config/api';
 import { fetchWithAuth } from '@/lib/fetchWithAuth';
+import { formatSeatLabel } from '@/components/SeatPicker';
+import { toast } from 'sonner';
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -47,35 +49,11 @@ export default function OrdersPage() {
         const list = data.data || data.orders || (Array.isArray(data) ? data : []);
         setOrders(list);
       } else {
-        // Direct Supabase Fallback
-        try {
-          const SUPABASE_URL = 'https://kfcocpzuzxpinqgnzhsq.supabase.co';
-          const ANON_KEY =
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmY29jcHp1enhwaW5xZ256aHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODk2NjgsImV4cCI6MjEwNjc2NTY2OH0.tDVNBk_Pi88UHQoWFQZMgjADTZf6PhGYFWAuynzJfMk';
-
-          if (user?.id) {
-            const sbRes = await fetch(
-              `${SUPABASE_URL}/rest/v1/orders?select=*,events(id,title,starts_at,venues(name,city)),order_items(*,ticket_types(name))&user_id=eq.${user.id}&order=created_at.desc`,
-              {
-                headers: {
-                  apikey: ANON_KEY,
-                  Authorization: `Bearer ${ANON_KEY}`,
-                },
-              }
-            );
-            if (sbRes.ok) {
-              const sbData = await sbRes.json();
-              if (Array.isArray(sbData)) {
-                setOrders(sbData);
-              }
-            }
-          }
-        } catch (sbErr) {
-          console.warn('Supabase fallback error:', sbErr);
-        }
+        toast.error('Could not load your orders. Please try again.');
       }
     } catch (err) {
       console.error('Failed to fetch orders:', err);
+      toast.error('Network error while loading your orders.');
     } finally {
       setLoading(false);
     }
@@ -164,7 +142,15 @@ export default function OrdersPage() {
               const ticketTotalAud = ((order.ticketTotalCents || order.totalCents || 0) / 100).toFixed(2);
               const buyerFeeAud = ((order.buyerFeeCents || 0) / 100).toFixed(2);
               const orderNum = order.orderNumber || order.order_number || (order.id ? order.id.slice(0, 8).toUpperCase() : 'ORD-MYTIX');
-              const status = order.status || 'PAID';
+              const status: string = order.status || 'UNKNOWN';
+              const statusClass =
+                status === 'PAID'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  : status === 'PENDING'
+                    ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                    : status === 'REFUNDED'
+                      ? 'bg-slate-100 text-slate-700 border border-slate-200'
+                      : 'bg-red-50 text-red-700 border border-red-200';
               const itemsList = order.items || order.order_items || [];
 
               return (
@@ -178,11 +164,7 @@ export default function OrdersPage() {
                       <div className="flex items-center gap-2.5">
                         <span className="text-base font-extrabold text-gray-900 tracking-tight">#{orderNum}</span>
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider ${
-                            status === 'CANCELLED'
-                              ? 'bg-red-50 text-red-700 border border-red-200'
-                              : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          }`}
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider ${statusClass}`}
                         >
                           {status}
                         </span>
@@ -238,7 +220,7 @@ export default function OrdersPage() {
                             const unitPrice = ((item.unitPriceCents || 0) / 100).toFixed(2);
                             const seats = item.selectedSeats || item.selected_seats;
                             const seatStr = Array.isArray(seats)
-                              ? seats.map((s: string) => (s.includes(':') ? s.split(':')[1] : s)).join(', ')
+                              ? seats.map((s: string) => formatSeatLabel(s)).join(', ')
                               : null;
 
                             return (

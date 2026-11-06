@@ -4,6 +4,43 @@ import { logger } from "../../lib/logger.js";
 import { deleteCached } from "../../lib/cache.js";
 import { AppError } from "../../utils/errors.js";
 import { HOLD_DURATION_MINUTES } from "../../config/constants.js";
+import { calculateOrderPricing } from "../checkout/pricing.service.js";
+import { validateSelectedSeats } from "../organiser/seating.js";
+
+/**
+ * Parses a seat reference into { section, row, num }.
+ * Accepts "Section:A-1", "Section-A-1", "A-1" or { section, row, seatNumber }.
+ */
+function parseSeat(seat) {
+  if (seat && typeof seat === "object") {
+    return {
+      section: seat.section || null,
+      row: seat.row != null ? String(seat.row) : null,
+      num: seat.seatNumber != null ? String(seat.seatNumber) : seat.seat != null ? String(seat.seat) : null
+    };
+  }
+  if (typeof seat !== "string") return { section: null, row: null, num: null };
+
+  let section = null;
+  let rest = seat;
+  const colon = seat.indexOf(":");
+  if (colon !== -1) {
+    section = seat.slice(0, colon);
+    rest = seat.slice(colon + 1);
+  }
+  const parts = rest.split("-");
+  if (parts.length < 2) return { section, row: rest, num: null };
+  const num = parts[parts.length - 1];
+  const row = parts[parts.length - 2];
+  if (!section && parts.length > 2) section = parts.slice(0, -2).join("-");
+  return { section, row, num };
+}
+
+/** Same physical seat: row and number match, and sections match whenever both are known. */
+function isSameSeat(a, b) {
+  if (!a.row || !a.num || a.row !== b.row || a.num !== b.num) return false;
+  return !a.section || !b.section || a.section === b.section;
+}
 
 export async function getActiveHolds(userId) {
   const holds = await prisma.inventoryHold.findMany({
@@ -43,8 +80,9 @@ export async function getActiveHolds(userId) {
   }));
 }
 
-export async function createHold(userId, { ticketTypeId, quantity, selectedSeats }) {
+export async function createHold(userId, { ticketTypeId, quantity, selectedSeats: requestedSeatList }) {
   const now = new Date();
+  let selectedSeats = requestedSeatList;
 
   const ticketType = await prisma.ticketType.findUnique({
     where: { id: ticketTypeId },
@@ -55,7 +93,9 @@ export async function createHold(userId, { ticketTypeId, quantity, selectedSeats
           title: true,
           slug: true,
           status: true,
-          startsAt: true
+          startsAt: true,
+          seatingType: true,
+          seatingConfig: true
         }
       }
     }
@@ -63,6 +103,13 @@ export async function createHold(userId, { ticketTypeId, quantity, selectedSeats
 
   if (!ticketType) {
     throw new AppError("NOT_FOUND", 404, "Ticket type not found.");
+  }
+
+  // Seat-map events (v2 configs): seated categories need valid seats, standing ones need none.
+  // Legacy (pre-v2) seat maps keep the old lenient behaviour.
+  if (ticketType.event.seatingType === "RESERVED" && ticketType.event.seatingConfig?.version === 2) {
+    const normalized = validateSelectedSeats(ticketType.event.seatingConfig, ticketType.name, selectedSeats, quantity);
+    selectedSeats = normalized || undefined;
   }
 
   if (ticketType.event.status !== "PUBLISHED") {
@@ -153,15 +200,21 @@ export async function createHold(userId, { ticketTypeId, quantity, selectedSeats
       select: { seatRow: true, seatNumber: true, sectionName: true }
     });
 
-    for (const t of existingTickets) {
-      const cleanRow = t.seatRow?.includes(":") ? t.seatRow.split(":")[1] : t.seatRow;
-      const tKey1 = `${cleanRow}-${t.seatNumber}`;
-      const tKey2 = `${t.seatRow}-${t.seatNumber}`;
-      const tKey3 = t.sectionName ? `${t.sectionName}:${cleanRow}-${t.seatNumber}` : null;
+    const requestedSeats = seatKeys.map((key) => ({ key, seat: parseSeat(key) }));
 
-      for (const reqSeat of seatKeys) {
-        if (reqSeat === tKey1 || reqSeat === tKey2 || reqSeat === tKey3 || reqSeat.endsWith(`:${cleanRow}-${t.seatNumber}`) || reqSeat.endsWith(`-${cleanRow}-${t.seatNumber}`)) {
-          throw new AppError("SEAT_ALREADY_BOOKED", 409, `Seat ${reqSeat} has already been booked. Please choose another seat.`);
+    for (const t of existingTickets) {
+      if (!t.seatRow || !t.seatNumber) continue;
+      // Older tickets stored the section inside seatRow ("Section:A"), so split it back out.
+      const rowHasSection = t.seatRow.includes(":");
+      const ticketSeat = {
+        section: t.sectionName || (rowHasSection ? t.seatRow.split(":")[0] : null),
+        row: rowHasSection ? t.seatRow.split(":")[1] : t.seatRow,
+        num: String(t.seatNumber)
+      };
+
+      for (const { key, seat } of requestedSeats) {
+        if (isSameSeat(seat, ticketSeat)) {
+          throw new AppError("SEAT_ALREADY_BOOKED", 409, `Seat ${key} has already been booked. Please choose another seat.`);
         }
       }
     }
@@ -180,8 +233,10 @@ export async function createHold(userId, { ticketTypeId, quantity, selectedSeats
     for (const h of otherHolds) {
       if (Array.isArray(h.selectedSeats)) {
         for (const heldSeat of h.selectedSeats) {
-          if (seatKeys.includes(heldSeat)) {
-            throw new AppError("SEAT_HELD", 409, `Seat ${heldSeat} is currently held by another user. Please choose another seat.`);
+          const held = parseSeat(heldSeat);
+          const clash = requestedSeats.find(({ seat }) => isSameSeat(seat, held));
+          if (clash) {
+            throw new AppError("SEAT_HELD", 409, `Seat ${clash.key} is currently held by another user. Please choose another seat.`);
           }
         }
       }
@@ -322,7 +377,8 @@ export async function getHoldById(holdId, userId, userRole) {
             select: {
               id: true,
               title: true,
-              slug: true
+              slug: true,
+              startsAt: true
             }
           }
         }
@@ -346,10 +402,17 @@ export async function getHoldById(holdId, userId, userRole) {
 
   const secondsRemaining = Math.max(0, Math.floor((hold.expiresAt.getTime() - Date.now()) / 1000));
 
+  // Same pricing the checkout will charge, so the UI never has to guess the booking fee.
+  const pricing = await calculateOrderPricing(hold.ticketType.priceCents * hold.quantity);
+
   return {
     holdId: hold.id,
     eventId: hold.ticketType.event.id,
     eventTitle: hold.ticketType.event.title,
+    eventSlug: hold.ticketType.event.slug,
+    eventStartsAt: hold.ticketType.event.startsAt,
+    pricing,
+    selectedSeats: hold.selectedSeats || null,
     ticketTypeId: hold.ticketTypeId,
     ticketTypeName: hold.ticketType.name,
     quantity: hold.quantity,

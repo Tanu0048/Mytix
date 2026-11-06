@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Loader2, X, ArrowLeft, Check, SlidersHorizontal } from 'lucide-react';
 import { EventCardSkeleton } from '@/components/ui/Skeleton';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -61,7 +61,12 @@ function EventsExploreContent() {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
+  // Each fetch gets an id; only the latest one may update state, so a slow old
+  // response can't overwrite results for filters the user has since changed.
+  const latestRequestRef = useRef(0);
+
   const fetchEvents = async () => {
+    const requestId = ++latestRequestRef.current;
     setLoading(true);
     try {
       let eventsArray = [];
@@ -72,7 +77,14 @@ function EventsExploreContent() {
         if (res.ok) {
           const data = await res.json();
           eventsArray = data.results?.events || [];
-          
+
+          // Search returns past events too; the explore list only shows upcoming ones.
+          const now = Date.now();
+          eventsArray = eventsArray.filter((e: any) => {
+            const start = e.startsAt || e.startDate;
+            return !start || new Date(start).getTime() >= now;
+          });
+
           if (selectedState) {
             eventsArray = eventsArray.filter((e: any) => e.venue?.state === selectedState);
           }
@@ -98,11 +110,12 @@ function EventsExploreContent() {
         }
       }
       
+      if (requestId !== latestRequestRef.current) return;
       setEvents(eventsArray);
     } catch (error) {
       console.error('Failed to fetch events:', error);
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestRef.current) setLoading(false);
     }
   };
 

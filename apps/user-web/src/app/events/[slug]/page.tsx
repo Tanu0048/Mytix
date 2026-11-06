@@ -9,19 +9,20 @@ import { toast } from 'sonner';
 import { EventDetailsSkeleton } from '@/components/ui/Skeleton';
 import SeatPicker from '@/components/SeatPicker';
 import { API_BASE } from '@/config/api';
-import { supabase } from '@/lib/supabase';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function EventDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = use(params);
   const slug = resolvedParams.slug;
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const authLoading = useAuthStore((s) => s.loading);
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [holdError, setHoldError] = useState('');
   const [holding, setHolding] = useState(false);
-  const [holdData, setHoldData] = useState<any>(null);
 
   // Reserved Seating States
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
@@ -30,82 +31,56 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
   const [heldSeats, setHeldSeats] = useState<string[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
+    let seatInterval: ReturnType<typeof setInterval> | null = null;
+
     async function fetchEvent() {
       try {
         const res = await fetch(`${API_BASE}/events/${slug}`);
         if (!res.ok) {
-          setError('Event not found');
+          if (!cancelled) setError('Event not found');
           return;
         }
-        let data = await res.json();
+        // The backend returns every event column, including seatingType and seatingConfig.
+        const data = await res.json();
 
-        // If backend API is running a build where seatingType or seatingConfig is not included, fetch directly from Supabase
-        if (!data.seatingConfig || !data.seatingType) {
-          try {
-            const { data: sbEvent } = await supabase
-              .from('events')
-              .select('seating_type, seating_config')
-              .eq('slug', slug)
-              .single();
-            if (sbEvent) {
-              data.seatingType = sbEvent.seating_type || data.seatingType || 'GENERAL';
-              data.seatingConfig = sbEvent.seating_config || data.seatingConfig || null;
-            }
-          } catch (sbErr) {
-            console.warn('Supabase seatingConfig fallback err:', sbErr);
-          }
-        }
-
+        if (cancelled) return;
         setEvent(data);
 
-        // If reserved seating, fetch booked & held seats
+        // If reserved seating, fetch booked & held seats (backend only — no direct DB access from the browser)
         if (data.seatingType === 'RESERVED') {
           const fetchSeatsStatus = async () => {
             try {
               const seatsRes = await fetch(`${API_BASE}/events/${slug}/seats`);
-              if (seatsRes.ok) {
-                const seatsData = await seatsRes.json();
-                setBookedSeats(seatsData.bookedSeats || []);
-                setHeldSeats(seatsData.heldSeats || []);
-                return;
-              }
-
-              // Fallback: Query Supabase tickets table directly for booked seats for this specific event
-              const eventId = data?.id;
-              if (eventId) {
-                const { data: tickets } = await supabase
-                  .from('tickets')
-                  .select('seat_row, seat_number, section_name, orders!inner(event_id)')
-                  .eq('orders.event_id', eventId)
-                  .neq('status', 'CANCELLED');
-
-                if (tickets && tickets.length > 0) {
-                  const booked = tickets
-                    .filter((t: any) => t.seat_row && t.seat_number)
-                    .map((t: any) => {
-                      const sec = t.section_name || '';
-                      return sec ? `${sec}:${t.seat_row}-${t.seat_number}` : `${t.seat_row}-${t.seat_number}`;
-                    });
-                  setBookedSeats(booked);
-                }
-              }
+              if (!seatsRes.ok || cancelled) return;
+              const seatsData = await seatsRes.json();
+              if (cancelled) return;
+              setBookedSeats(seatsData.bookedSeats || []);
+              setHeldSeats(seatsData.heldSeats || []);
             } catch (e) {
               console.error("Could not load seat map status", e);
             }
           };
 
           await fetchSeatsStatus();
-          // Poll seat availability every 10 seconds so bookings by other users reflect live
-          const seatInterval = setInterval(fetchSeatsStatus, 10000);
-          return () => clearInterval(seatInterval);
+          // Poll seat availability every 10 seconds so bookings by other users reflect live.
+          // The interval lives in the effect scope so the effect cleanup can clear it.
+          if (!cancelled) {
+            seatInterval = setInterval(fetchSeatsStatus, 10000);
+          }
         }
       } catch (err: any) {
-        setError(err.message);
+        if (!cancelled) setError(err.message);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchEvent();
+
+    return () => {
+      cancelled = true;
+      if (seatInterval) clearInterval(seatInterval);
+    };
   }, [slug]);
 
   const startsAt = event?.startsAt ? new Date(event.startsAt) : null;
@@ -113,6 +88,32 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
   const oneHourBeforeShow = startsAt ? new Date(startsAt.getTime() - 60 * 60 * 1000) : null;
   const isBookingClosed = oneHourBeforeShow ? now >= oneHourBeforeShow : false;
   const isEventSoldOut = Boolean(event?.ticketTypes?.length && event.ticketTypes.every((tt: any) => (tt.available ?? 0) <= 0));
+
+  // Seat map: which ticket categories are sold as numbered seats, and which by quantity.
+  // v2 seat maps list seated sections explicitly (standing zones are sold by quantity);
+  // older seat maps treat every category as seated.
+  const hasSeatMap = event?.seatingType === 'RESERVED' && event?.seatingConfig?.sections?.length > 0;
+  const tierKey = (name: unknown) => String(name || '').trim().toLowerCase();
+  const seatedTierKeys = new Set<string>(
+    !hasSeatMap
+      ? []
+      : event.seatingConfig.version === 2
+        ? event.seatingConfig.sections
+            .filter((sec: any) => (sec.kind || 'ROWS') !== 'STANDING')
+            .map((sec: any) => tierKey(sec.tierName))
+        : (event.ticketTypes || []).map((t: any) => tierKey(t.name))
+  );
+  const quantityTiers: any[] = (event?.ticketTypes || []).filter((t: any) => !seatedTierKeys.has(tierKey(t.name)));
+  const isSeatSelection = selectedSeats.length > 0;
+
+  /** Picks a quantity-based category (clears any seats, since one booking covers one category). */
+  const selectQuantityTier = (id: string) => {
+    if (selectedSeats.length > 0) {
+      setSelectedSeats([]);
+      setSeatTierMap({});
+    }
+    setQuantities({ [id]: (quantities[id] || 0) || 1 });
+  };
 
   const handleToggleSeat = (seatKey: string, tierId: string) => {
     if (isBookingClosed) {
@@ -136,6 +137,14 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
         return;
       }
       const resolvedTierId = tierId || event?.ticketTypes?.[0]?.id || "";
+      // A hold covers exactly one ticket type, so every seat in a booking must share the same price tier.
+      const currentTierId = selectedSeats.length > 0 ? seatTierMap[selectedSeats[0]] : null;
+      if (currentTierId && currentTierId !== resolvedTierId) {
+        const currentTier = event?.ticketTypes?.find((t: any) => t.id === currentTierId);
+        toast.error(`Seats from different price tiers must be booked separately. Your current selection is ${currentTier?.name || 'another tier'}.`);
+        return;
+      }
+      setQuantities({});
       setSelectedSeats(prev => [...prev, seatKey]);
       setSeatTierMap(prev => ({
         ...prev,
@@ -168,32 +177,57 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
   };
 
   const isActionDisabled = holding || isBookingClosed || isEventSoldOut || (
-    event?.seatingType === 'RESERVED' 
-      ? selectedSeats.length === 0 
-      : Object.values(quantities).reduce((a, b) => a + b, 0) === 0
+    selectedSeats.length === 0 && Object.values(quantities).reduce((a, b) => a + b, 0) === 0
   );
 
+  // Ticket subtotal only. The booking fee is configured on the backend and shown exactly at checkout.
   let selectedCount = 0;
   let computedTotal = 0;
 
-  if (event?.seatingType === 'RESERVED') {
+  if (isSeatSelection) {
     selectedCount = selectedSeats.length;
-    const sub = selectedSeats.reduce((sum, sKey) => {
+    computedTotal = selectedSeats.reduce((sum, sKey) => {
       const tierId = seatTierMap[sKey];
       const tier = event.ticketTypes?.find((t: any) => t.id === tierId) || event.ticketTypes?.[0];
       return sum + (tier ? tier.priceCents / 100 : 0);
     }, 0);
-    computedTotal = sub + Math.floor(sub * 0.05);
   } else {
     const selectedId = Object.keys(quantities).find(id => quantities[id] > 0);
     if (selectedId) {
       const q = quantities[selectedId];
       selectedCount = q;
       const tt = event?.ticketTypes?.find((t: any) => t.id === selectedId);
-      const sub = ((tt?.priceCents || 0) / 100) * q;
-      computedTotal = sub + Math.floor(sub * 0.05);
+      computedTotal = ((tt?.priceCents || 0) / 100) * q;
     }
   }
+
+  /** Creates a hold; sends the user to log in first (and back here afterwards) if needed. */
+  const createHold = async (body: Record<string, unknown>, failMessage: string) => {
+    const loginUrl = `/auth?redirect=${encodeURIComponent(`/events/${slug}`)}`;
+    // While the session is still being checked, let the request go through; a 401 is handled below.
+    if (!user && !authLoading) {
+      toast.error('Please sign in to book tickets.');
+      router.push(loginUrl);
+      return null;
+    }
+    const res = await fetchWithAuth(
+      `${API_BASE}/holds`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      { redirectOnFail: false }
+    );
+    if (res.status === 401) {
+      toast.error('Your session has expired. Please sign in again.');
+      router.push(loginUrl);
+      return null;
+    }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || data.message || failMessage);
+    return data.data;
+  };
 
   const handleHoldTickets = async () => {
     if (isBookingClosed) {
@@ -205,31 +239,17 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
       return;
     }
 
-    if (event.seatingType === 'RESERVED') {
-      if (selectedSeats.length === 0) {
-        toast.error('Please select at least one seat.');
-        return;
-      }
+    if (selectedSeats.length > 0) {
       setHolding(true);
       try {
         const primaryTierId = seatTierMap[selectedSeats[0]] || event.ticketTypes?.[0]?.id;
-        const res = await fetch(`${API_BASE}/holds`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify({ 
-            ticketTypeId: primaryTierId, 
-            quantity: selectedSeats.length,
-            selectedSeats 
-          })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error?.message || data.message || 'Failed to hold seats.');
-        setHoldData(data.data);
+        const hold = await createHold(
+          { ticketTypeId: primaryTierId, quantity: selectedSeats.length, selectedSeats },
+          'Failed to hold seats.'
+        );
+        if (!hold) return;
         toast.success('Seats held successfully! Proceeding to payment...');
-        router.push(`/checkout?holdId=${data.data.holdId}`);
+        router.push(`/checkout?holdId=${hold.holdId}`);
       } catch(err: any) {
         toast.error(err.message);
       } finally {
@@ -238,31 +258,25 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
       return;
     }
 
-    // General Admission hold flow
+    // Quantity-based (general admission / standing) hold flow
     const selectedTypeId = Object.keys(quantities).find(id => quantities[id] > 0);
     if (!selectedTypeId) {
-      toast.error('Please select a ticket.');
+      toast.error(hasSeatMap ? 'Please pick your seats or choose a ticket.' : 'Please select a ticket.');
       return;
     }
     setHolding(true);
     try {
-      const res = await fetch(`${API_BASE}/holds`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ ticketTypeId: selectedTypeId, quantity: quantities[selectedTypeId] })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error?.message || data.message || 'Failed to hold tickets.');
-      setHoldData(data.data);
-      if (data.data.existing) {
+      const hold = await createHold(
+        { ticketTypeId: selectedTypeId, quantity: quantities[selectedTypeId] },
+        'Failed to hold tickets.'
+      );
+      if (!hold) return;
+      if (hold.existing) {
         toast.success('Resuming your active ticket reservation...');
       } else {
         toast.success('Tickets held successfully! Proceeding to payment...');
       }
-      router.push(`/checkout?holdId=${data.data.holdId}`);
+      router.push(`/checkout?holdId=${hold.holdId}`);
     } catch(err: any) {
       toast.error(err.message);
     } finally {
@@ -383,11 +397,11 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
           <div id="tickets" className="bg-white border border-brand-200 rounded-3xl overflow-hidden mb-12 shadow-card">
             <div className="px-6 py-5 border-b border-brand-100 bg-brand-50/70 flex items-center justify-between">
               <h2 className="text-lg font-bold">
-                {event.seatingType === 'RESERVED' ? 'Select your seats' : 'Choose tickets'}
+                {hasSeatMap ? (quantityTiers.length > 0 ? 'Choose seats or tickets' : 'Select your seats') : 'Choose tickets'}
               </h2>
-              {event.seatingType === 'RESERVED' && (
+              {hasSeatMap && (
                 <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
-                  Numbered seating
+                  {quantityTiers.length > 0 ? 'Seats + standing' : 'Numbered seating'}
                 </span>
               )}
             </div>
@@ -423,8 +437,8 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                 </div>
               )}
 
-              {event.seatingType === 'RESERVED' && event.seatingConfig?.sections?.length > 0 ? (
-                /* ===== RESERVED SEATING: VISUAL MAP ===== */
+              {hasSeatMap && (
+                /* ===== SEAT MAP (rows / tables) ===== */
                 <div className="space-y-6">
                   <SeatPicker
                     config={event.seatingConfig}
@@ -437,11 +451,19 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                     disabled={isBookingClosed || isEventSoldOut}
                   />
                 </div>
-              ) : (
-                /* ===== GENERAL ADMISSION: LIST SELECTOR ===== */
+              )}
+
+              {quantityTiers.length > 0 && (
+                /* ===== QUANTITY TICKETS (general admission / standing areas) ===== */
                 <>
+                  {hasSeatMap && (
+                    <div className="mt-8 mb-3">
+                      <h3 className="font-bold text-ink">Standing &amp; general tickets</h3>
+                      <p className="text-xs text-slate-500">No seat number — just choose how many.</p>
+                    </div>
+                  )}
                   <div className="space-y-3 mb-8">
-                    {event.ticketTypes?.map((tt: any) => {
+                    {quantityTiers.map((tt: any) => {
                        const isSelected = !!quantities[tt.id];
                        const isSoldOut = tt.available <= 0;
                        const isLowStock = tt.available > 0 && tt.available <= 10;
@@ -452,7 +474,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                            key={tt.id} 
                            onClick={() => {
                               if (isDisabled) return;
-                              setQuantities({ [tt.id]: (quantities[tt.id] || 0) || 1 });
+                              selectQuantityTier(tt.id);
                            }}
                            role="radio"
                            aria-checked={isSelected}
@@ -461,7 +483,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                            onKeyDown={(e) => {
                               if (isDisabled || (e.key !== 'Enter' && e.key !== ' ')) return;
                               e.preventDefault();
-                              setQuantities({ [tt.id]: (quantities[tt.id] || 0) || 1 });
+                              selectQuantityTier(tt.id);
                            }}
                            className={`p-4 rounded-2xl border transition-colors flex items-center justify-between gap-4 ${
                              isDisabled
@@ -484,7 +506,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                                  </span>
                                ) : (
                                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                   {tt.available} seats available
+                                   {tt.available} available
                                  </span>
                                )}
                              </div>
@@ -555,42 +577,31 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
               )}
 
               {/* Reserved Total Summary */}
-              {event.seatingType === 'RESERVED' && selectedSeats.length > 0 && (() => {
-                const reservedSubtotal = selectedSeats.reduce((sum, sKey) => {
-                  const tierId = seatTierMap[sKey];
-                  const tier = event.ticketTypes?.find((t: any) => t.id === tierId) || event.ticketTypes?.[0];
-                  return sum + (tier ? tier.priceCents / 100 : 0);
-                }, 0);
-                const reservedFee = Math.floor(reservedSubtotal * 0.05);
-                const reservedTotal = reservedSubtotal + reservedFee;
-
+              {isSeatSelection && (() => {
                 return (
                   <div className="border-t border-slate-100 pt-6 mt-6">
                     <div className="flex items-center justify-between text-sm text-slate-500 mb-2">
                       <span>{selectedSeats.length} × Reserved Seat{selectedSeats.length > 1 ? 's' : ''}</span>
-                      <span>${reservedSubtotal.toFixed(2)}</span>
+                      <span>${computedTotal.toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
                       <span>Booking fee</span>
-                      <span>${reservedFee.toFixed(2)}</span>
+                      <span>Calculated at checkout</span>
                     </div>
                     <div className="flex items-center justify-between text-lg font-bold text-ink mb-6 border-t border-dashed border-slate-200 pt-4">
-                      <span>Total</span>
-                      <span>${reservedTotal.toFixed(2)}</span>
+                      <span>Subtotal</span>
+                      <span>${computedTotal.toFixed(2)}</span>
                     </div>
                   </div>
                 );
               })()}
 
               {/* General Admission Total Summary */}
-              {event.seatingType !== 'RESERVED' && Object.keys(quantities).some(id => quantities[id] > 0) && (() => {
+              {!isSeatSelection && Object.keys(quantities).some(id => quantities[id] > 0) && (() => {
                  const selectedId = Object.keys(quantities).find(id => quantities[id] > 0)!;
                  const q = quantities[selectedId];
                  const tt = event.ticketTypes.find((t: any) => t.id === selectedId);
-                 const price = (tt?.priceCents || 0) / 100;
-                 const subtotal = price * q;
-                 const fee = Math.floor(subtotal * 0.05);
-                 const total = subtotal + fee;
+                 const subtotal = computedTotal;
 
                  return (
                    <div className="border-t border-slate-100 pt-6">
@@ -600,11 +611,11 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                      </div>
                      <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
                        <span>Booking fee</span>
-                       <span>${fee.toFixed(2)}</span>
+                       <span>Calculated at checkout</span>
                      </div>
                      <div className="flex items-center justify-between text-lg font-bold text-ink mb-6 border-t border-dashed border-slate-200 pt-4">
-                       <span>Total</span>
-                       <span>${total.toFixed(2)}</span>
+                       <span>Subtotal</span>
+                       <span>${subtotal.toFixed(2)}</span>
                      </div>
                    </div>
                  );
@@ -626,9 +637,11 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                     ? 'Online booking closed'
                     : isEventSoldOut
                       ? 'Sold Out'
-                      : event.seatingType === 'RESERVED' 
-                        ? `Reserve ${selectedSeats.length > 0 ? `${selectedSeats.length} seat${selectedSeats.length > 1 ? 's' : ''}` : 'seats'}` 
-                        : 'Get tickets'}
+                      : isSeatSelection
+                        ? `Reserve ${selectedSeats.length} seat${selectedSeats.length > 1 ? 's' : ''}`
+                        : hasSeatMap && quantityTiers.length === 0
+                          ? 'Reserve seats'
+                          : 'Get tickets'}
               </button>
             </div>
           </div>
@@ -710,10 +723,10 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
         <div className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] z-40 flex items-center justify-between gap-3">
           <div>
             <span className="text-[11px] font-bold text-slate-500 block leading-tight">
-              {selectedCount} {event.seatingType === 'RESERVED' ? (selectedCount > 1 ? 'Seats' : 'Seat') : (selectedCount > 1 ? 'Tickets' : 'Ticket')}
+              {selectedCount} {isSeatSelection ? (selectedCount > 1 ? 'Seats' : 'Seat') : (selectedCount > 1 ? 'Tickets' : 'Ticket')}
             </span>
             <span className="text-lg font-bold text-ink leading-tight tabular-nums">
-              ${computedTotal.toFixed(2)} <span className="text-xs font-semibold text-slate-500">AUD</span>
+              ${computedTotal.toFixed(2)} <span className="text-xs font-semibold text-slate-500">AUD + fees</span>
             </span>
           </div>
           <button
@@ -721,7 +734,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
             onClick={handleHoldTickets}
             className="h-11 px-6 bg-brand-400 hover:bg-brand-300 text-ink font-semibold rounded-full text-sm transition-colors cursor-pointer disabled:opacity-50"
           >
-            {holding ? 'Holding...' : event.seatingType === 'RESERVED' ? 'Reserve Seats' : 'Continue'}
+            {holding ? 'Holding...' : isSeatSelection ? 'Reserve Seats' : 'Continue'}
           </button>
         </div>
       )}

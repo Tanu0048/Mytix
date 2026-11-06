@@ -4,18 +4,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
-import { ChevronDown, PanelLeft } from "lucide-react";
+import { ChevronDown, Menu, PanelLeft } from "lucide-react";
 
 export default function Header() {
   const user = useAuthStore((state) => state.user);
-  const { isCollapsed, toggleSidebar } = useSidebarStore();
+  const { isCollapsed, toggleSidebar, setMobileOpen } = useSidebarStore();
 
-  const displayName = user?.name || "Aman Mirza";
+  const displayName = user?.name?.trim() || user?.email || "User";
   const displayRole = user?.role === "ADMIN" ? "Administrator" : "Organiser";
-  const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const initials = displayName.split(/\s+/).filter(Boolean).map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100/80 px-8 py-4 flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100/80 px-4 sm:px-8 py-4 flex items-center justify-between">
       
       {/* Left side: Toggle button and Mobile Brand Logo */}
       <div className="flex items-center gap-3">
@@ -25,6 +25,13 @@ export default function Header() {
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <PanelLeft className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200/80 bg-white text-slate-600 cursor-pointer shrink-0"
+          aria-label="Open menu"
+        >
+          <Menu className="w-4 h-4" />
         </button>
         <Link href="/" className="lg:hidden flex items-center">
           <Image 

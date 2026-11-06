@@ -24,7 +24,7 @@ import {
   Check,
   AlertCircle
 } from "lucide-react";
-import api from "@/lib/api";
+import api, { fetchAllPages } from "@/lib/api";
 
 interface StaffMember {
   id: string;
@@ -77,24 +77,19 @@ export default function StaffManagementPage() {
   } | null>(null);
   const [copiedStaffPassword, setCopiedStaffPassword] = useState(false);
 
-  useEffect(() => {
-    fetchStaffAndEvents();
-  }, []);
 
   const fetchStaffAndEvents = async () => {
     try {
       setLoading(true);
       const [staffRes, eventsRes] = await Promise.all([
         api.get("/organiser/staff"),
-        api.get("/organiser/events?limit=50")
+        fetchAllPages<{ id: string; title: string }>("/organiser/events")
       ]);
 
       if (staffRes.data?.data) {
         setStaffList(staffRes.data.data);
       }
-      if (eventsRes.data?.data) {
-        setEvents(eventsRes.data.data.map((e: any) => ({ id: e.id, title: e.title })));
-      }
+      setEvents(eventsRes.map((e) => ({ id: e.id, title: e.title })));
     } catch (err: any) {
       console.error(err);
       setErrorMsg("Failed to load staff list. Please try again.");
@@ -102,6 +97,10 @@ export default function StaffManagementPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchStaffAndEvents();
+  }, []);
 
   const generateSuggestedId = () => {
     const random = Math.floor(100 + Math.random() * 900);

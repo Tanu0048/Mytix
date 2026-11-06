@@ -27,7 +27,7 @@ import {
   ChevronRight,
   Filter
 } from "lucide-react";
-import api from "@/lib/api";
+import api, { fetchAllPages } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 
 interface Organiser {
@@ -110,8 +110,7 @@ export default function OrganisersPage() {
   const fetchOrganisers = async () => {
     setIsRefreshing(true);
     try {
-      const res = await api.get("/admin/organisers");
-      setOrganisers(res.data.data || []);
+      setOrganisers(await fetchAllPages("/admin/organisers"));
       setIsForbidden(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {

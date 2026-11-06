@@ -25,6 +25,15 @@ const { width } = Dimensions.get('window');
 import { API_BASE, BACKEND_HOST } from '../../constants/api';
 import { getValidAuthToken, fetchWithAuth } from '../../services/auth';
 
+/** Parses a JSON body, tolerating HTML/empty error pages (e.g. while the server is waking up). */
+async function readJson(res: Response): Promise<any> {
+  try {
+    return await res.json();
+  } catch {
+    return { message: res.ok ? '' : `Server error (${res.status}). Please try again in a moment.` };
+  }
+}
+
 function getFullImageUrl(path: string | undefined): string {
   if (!path) return 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&q=80';
   if (path.startsWith('http')) return path;
@@ -54,7 +63,9 @@ export default function EventDetailScreen() {
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
 
   useEffect(() => {
-    let seatInterval: any = null;
+    let seatInterval: ReturnType<typeof setInterval> | null = null;
+    // Set on unmount/slug change; async work that finishes later must not start timers or set state.
+    let cancelled = false;
 
     const fetchEvent = async () => {
       try {
@@ -63,31 +74,7 @@ export default function EventDetailScreen() {
         if (res.ok) {
           data = await res.json();
         }
-
-        // If backend hasn't populated seatingConfig/seatingType, fallback to Supabase REST
-        if (!data || !data.seatingConfig || !data.seatingType) {
-          try {
-            const sbRes = await fetch(
-              `https://kfcocpzuzxpinqgnzhsq.supabase.co/rest/v1/events?slug=eq.${encodeURIComponent(slug)}&select=seating_type,seating_config`,
-              {
-                headers: {
-                  apikey:
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmY29jcHp1enhwaW5xZ256aHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODk2NjgsImV4cCI6MjEwNjc2NTY2OH0.tDVNBk_Pi88UHQoWFQZMgjADTZf6PhGYFWAuynzJfMk',
-                },
-              }
-            );
-            if (sbRes.ok) {
-              const sbRows = await sbRes.json();
-              if (sbRows && sbRows[0]) {
-                if (!data) data = {};
-                data.seatingType = sbRows[0].seating_type || data.seatingType || 'GENERAL';
-                data.seatingConfig = sbRows[0].seating_config || data.seatingConfig || null;
-              }
-            }
-          } catch (e) {
-            console.warn('Supabase fallback error:', e);
-          }
-        }
+        if (cancelled) return;
 
         setEvent(data);
         if (data?.ticketTypes?.length) {
@@ -102,52 +89,35 @@ export default function EventDetailScreen() {
           const fetchSeatsStatus = async () => {
             try {
               const seatsRes = await fetch(`${API_BASE}/events/${slug}/seats`);
-              if (seatsRes.ok) {
-                const seatsData = await seatsRes.json();
-                setBookedSeats(seatsData.bookedSeats || []);
-                setHeldSeats(seatsData.heldSeats || []);
-                return;
-              }
+              if (!seatsRes.ok || cancelled) return;
+              const seatsData = await seatsRes.json();
+              if (cancelled) return;
+              setBookedSeats(seatsData.bookedSeats || []);
+              setHeldSeats(seatsData.heldSeats || []);
 
-              // Direct Supabase tickets fallback for booked seats
-              const tRes = await fetch(
-                `https://kfcocpzuzxpinqgnzhsq.supabase.co/rest/v1/tickets?select=seat_row,seat_number,section_name&status=neq.CANCELLED`,
-                {
-                  headers: {
-                    apikey:
-                      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmY29jcHp1enhwaW5xZ256aHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODk2NjgsImV4cCI6MjEwNjc2NTY2OH0.tDVNBk_Pi88UHQoWFQZMgjADTZf6PhGYFWAuynzJfMk',
-                  },
-                }
-              );
-              if (tRes.ok) {
-                const tickets = await tRes.json();
-                const booked = tickets
-                  .filter((t: any) => t.seat_row && t.seat_number)
-                  .map((t: any) => {
-                    const sec = t.section_name || '';
-                    return sec ? `${sec}:${t.seat_row}-${t.seat_number}` : `${t.seat_row}-${t.seat_number}`;
-                  });
-                setBookedSeats(booked);
-              }
             } catch (err) {
               console.warn('Seats status error:', err);
             }
           };
 
           await fetchSeatsStatus();
-          seatInterval = setInterval(fetchSeatsStatus, 10000);
+          // Only start polling if the screen is still open after the first (awaited) fetch.
+          if (!cancelled) {
+            seatInterval = setInterval(fetchSeatsStatus, 10000);
+          }
         }
       } catch (err) {
         console.error(err);
-        setEvent(null);
+        if (!cancelled) setEvent(null);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchEvent();
 
     return () => {
+      cancelled = true;
       if (seatInterval) clearInterval(seatInterval);
     };
   }, [slug]);
@@ -295,6 +265,25 @@ export default function EventDetailScreen() {
     }
   };
 
+  // A real seat map only exists when the organiser configured sections; otherwise book as general admission.
+  const hasSeatMap = event.seatingType === 'RESERVED' && event.seatingConfig?.sections?.length > 0;
+
+  // Which ticket categories are numbered seats and which are bought by quantity.
+  // v2 seat maps list seated sections explicitly (standing zones are sold by quantity);
+  // older seat maps treat every category as seated.
+  const tierKey = (name: unknown) => String(name || '').trim().toLowerCase();
+  const seatedTierKeys = new Set<string>(
+    !hasSeatMap
+      ? []
+      : event.seatingConfig.version === 2
+      ? event.seatingConfig.sections
+          .filter((sec: any) => (sec.kind || 'ROWS') !== 'STANDING')
+          .map((sec: any) => tierKey(sec.tierName))
+      : (event.ticketTypes || []).map((t: any) => tierKey(t.name))
+  );
+  const quantityTiers: any[] = (event.ticketTypes || []).filter((t: any) => !seatedTierKeys.has(tierKey(t.name)));
+  const isSeatSelection = selectedSeats.length > 0;
+
   const handleToggleSeat = (seatKey: string, tierId: string) => {
     if (isBookingClosed) {
       Alert.alert('Booking Closed', 'Ticket sales have closed for this event.');
@@ -316,6 +305,18 @@ export default function EventDetailScreen() {
         Alert.alert('Limit Reached', 'Maximum 10 seats allowed per booking.');
         return;
       }
+      // A hold covers exactly one ticket type, so every seat in a booking must share the same price tier.
+      const currentTierId = selectedSeats.length > 0 ? seatTierMap[selectedSeats[0]] : null;
+      if (currentTierId && currentTierId !== tierId) {
+        const currentTier = event?.ticketTypes?.find((t: any) => t.id === currentTierId);
+        Alert.alert(
+          'One Price Tier Per Booking',
+          `Seats from different price tiers must be booked separately. Your current selection is ${currentTier?.name || 'another tier'}.`
+        );
+        return;
+      }
+      // One booking covers one category: picking a seat clears any quantity ticket choice
+      setSelectedTierId('');
       setSelectedSeats((prev) => [...prev, seatKey]);
       setSeatTierMap((prev) => ({ ...prev, [seatKey]: tierId }));
     }
@@ -327,12 +328,55 @@ export default function EventDetailScreen() {
     return sum + (tier ? (tier.priceCents || 0) / 100 : 0);
   }, 0);
 
+  // Quantity-based category in use. With a seat map the buyer must pick one explicitly.
   const activeTier =
-    event?.ticketTypes?.find((t: any) => t.id === selectedTierId) ||
-    event?.ticketTypes?.find((t: any) => (t.available ?? 0) > 0) ||
-    event?.ticketTypes?.[0];
+    quantityTiers.find((t: any) => t.id === selectedTierId) ||
+    (!hasSeatMap ? quantityTiers.find((t: any) => (t.available ?? 0) > 0) || quantityTiers[0] : undefined);
   const gaUnitPrice = activeTier ? (activeTier.priceCents || 0) / 100 : 0;
   const gaTotalPrice = gaUnitPrice * selectedQuantity;
+
+  const promptLogin = (message = 'Please sign in or create an account to book tickets.') => {
+    Alert.alert('Login Required', message, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Login / Register', onPress: () => router.push('/auth') },
+    ]);
+  };
+
+  /**
+   * Reserve the tickets on the server, then open checkout. Checkout shows the live
+   * reservation countdown and the exact price, and releases the hold if the user leaves.
+   * The server may hand back an existing active hold for this event instead of a new one;
+   * checkout always shows what the server actually holds.
+   */
+  const reserveAndCheckout = async (holdBody: Record<string, unknown>) => {
+    setHolding(true);
+    try {
+      const holdRes = await fetchWithAuth(`${API_BASE}/holds`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(holdBody),
+      });
+      if (holdRes.status === 401) {
+        promptLogin('Your session has expired. Please sign in again to book tickets.');
+        return;
+      }
+      const holdData = await readJson(holdRes);
+      if (!holdRes.ok) {
+        throw new Error(holdData.error?.message || holdData.message || 'Ticket reservation failed');
+      }
+      const holdId = holdData.data?.holdId || holdData.holdId;
+      if (!holdId) throw new Error('Ticket reservation failed');
+
+      router.push({
+        pathname: '/checkout',
+        params: { holdId, existing: holdData.data?.existing ? '1' : '0' },
+      });
+    } catch (e: any) {
+      Alert.alert('Booking Error', e.message || 'Failed to reserve tickets. Please try again.');
+    } finally {
+      setHolding(false);
+    }
+  };
 
   const handleBookTickets = async () => {
     if (isBookingClosed) {
@@ -346,109 +390,33 @@ export default function EventDetailScreen() {
 
     const storedToken = await getValidAuthToken();
     if (!storedToken) {
-      Alert.alert(
-        'Login Required',
-        'Please sign in or create an account to book tickets.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Login / Register', onPress: () => router.push('/auth') },
-        ]
-      );
+      promptLogin();
       return;
     }
 
-    if (event.seatingType === 'RESERVED' && event.seatingConfig?.sections?.length > 0) {
-      if (selectedSeats.length === 0) {
-        Alert.alert('Select Your Seats', 'Please tap on the seat map above to select your seats first.');
-        return;
-      }
-
-      const seatNames = selectedSeats
-        .map((s) => (s.includes(':') ? s.split(':')[1] : s))
-        .join(', ');
-
-      Alert.alert(
-        'Confirm Seat Booking',
-        `Event: ${event.title}\nSeats: ${seatNames}\nTotal: $${reservedTotalPrice.toFixed(0)} AUD\n\nInstant digital tickets with fraud-proof QR pass will be issued to your account.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Confirm & Book',
-            onPress: async () => {
-              setHolding(true);
-              try {
-                const primaryTierId = seatTierMap[selectedSeats[0]] || event.ticketTypes?.[0]?.id;
-
-                // 1. Create Hold
-                const holdRes = await fetchWithAuth(`${API_BASE}/holds`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    ticketTypeId: primaryTierId,
-                    quantity: selectedSeats.length,
-                    selectedSeats,
-                  }),
-                });
-
-                const holdData = await holdRes.json();
-                if (!holdRes.ok) {
-                  throw new Error(holdData.error?.message || holdData.message || 'Seat reservation failed');
-                }
-
-                const holdId = holdData.data?.holdId || holdData.holdId;
-
-                // 2. Complete Checkout to generate tickets
-                const checkoutRes = await fetchWithAuth(`${API_BASE}/checkout`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    holdId,
-                  }),
-                });
-
-                const checkoutData = await checkoutRes.json();
-                if (!checkoutRes.ok && checkoutData.error?.code !== 'PAYMENT_GATEWAY_NOT_CONFIGURED') {
-                  throw new Error(checkoutData.error?.message || checkoutData.message || 'Ticket creation failed');
-                }
-
-                setSelectedSeats([]);
-                setSeatTierMap({});
-
-                Alert.alert(
-                  'Booking Confirmed! 🎉',
-                  `Your digital entry passes for seats (${seatNames}) have been issued successfully!`,
-                  [
-                    {
-                      text: 'View My Tickets',
-                      onPress: () => router.push('/(tabs)/live'),
-                    },
-                    { text: 'OK', style: 'cancel' },
-                  ]
-                );
-              } catch (e: any) {
-                Alert.alert('Booking Error', e.message || 'Failed to complete booking. Please try again.');
-              } finally {
-                setHolding(false);
-              }
-            },
-          },
-        ]
-      );
+    if (selectedSeats.length > 0) {
+      const primaryTierId = seatTierMap[selectedSeats[0]] || event.ticketTypes?.[0]?.id;
+      await reserveAndCheckout({ ticketTypeId: primaryTierId, quantity: selectedSeats.length, selectedSeats });
       return;
     }
 
-    // General Admission flow
+    // Quantity flow (general admission / standing areas)
     const targetTier = activeTier;
     if (!targetTier) {
-      Alert.alert('Error', 'No ticket allocation available.');
+      if (hasSeatMap) {
+        Alert.alert(
+          'Select Your Seats',
+          quantityTiers.length > 0
+            ? 'Tap seats on the map, or choose a standing / general ticket below.'
+            : 'Please tap on the seat map above to select your seats first.'
+        );
+      } else {
+        Alert.alert('Error', 'No ticket allocation available.');
+      }
       return;
     }
 
-    const availableSeats = targetTier.available ?? 999;
+    const availableSeats = targetTier.available ?? 0;
     if (availableSeats <= 0) {
       Alert.alert('Tier Sold Out', 'The selected ticket tier is sold out. Please select another tier.');
       return;
@@ -459,73 +427,7 @@ export default function EventDetailScreen() {
       return;
     }
 
-    const totalPriceAud = ((targetTier.priceCents || 0) / 100 * selectedQuantity).toFixed(0);
-
-    Alert.alert(
-      'Confirm Ticket Booking',
-      `Event: ${event.title}\nTicket: ${targetTier.name || 'General Admission'} (x${selectedQuantity})\nTotal: $${totalPriceAud} AUD\n\nInstant digital tickets with fraud-proof QR pass will be issued to your account.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Confirm & Book',
-          onPress: async () => {
-            setHolding(true);
-            try {
-              // 1. Create Hold
-              const holdRes = await fetchWithAuth(`${API_BASE}/holds`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  ticketTypeId: targetTier.id,
-                  quantity: selectedQuantity,
-                }),
-              });
-
-              const holdData = await holdRes.json();
-              if (!holdRes.ok) {
-                throw new Error(holdData.error?.message || holdData.message || 'Failed to reserve ticket');
-              }
-
-              const holdId = holdData.data?.holdId || holdData.holdId;
-
-              // 2. Complete Checkout to generate tickets
-              const checkoutRes = await fetchWithAuth(`${API_BASE}/checkout`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  holdId,
-                }),
-              });
-
-              const checkoutData = await checkoutRes.json();
-              if (!checkoutRes.ok && checkoutData.error?.code !== 'PAYMENT_GATEWAY_NOT_CONFIGURED') {
-                throw new Error(checkoutData.error?.message || checkoutData.message || 'Ticket creation failed');
-              }
-
-              Alert.alert(
-                'Booking Confirmed! 🎉',
-                `Your ${selectedQuantity} digital entry pass${selectedQuantity > 1 ? 'es' : ''} for "${event.title}" have been issued successfully!`,
-                [
-                  {
-                    text: 'View My Tickets',
-                    onPress: () => router.push('/(tabs)/live'),
-                  },
-                  { text: 'OK', style: 'cancel' },
-                ]
-              );
-            } catch (e: any) {
-              Alert.alert('Booking Error', e.message || 'Failed to complete booking. Please try again.');
-            } finally {
-              setHolding(false);
-            }
-          },
-        },
-      ]
-    );
+    await reserveAndCheckout({ ticketTypeId: targetTier.id, quantity: selectedQuantity });
   };
 
   return (
@@ -632,7 +534,7 @@ export default function EventDetailScreen() {
           </View>
 
           {/* Interactive Seat Picker (Numbered Seating) OR Ticket Options (General Admission) */}
-          {event.seatingType === 'RESERVED' && event.seatingConfig?.sections?.length > 0 ? (
+          {hasSeatMap && (
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionTitle}>Select Your Seats</Text>
@@ -652,25 +554,30 @@ export default function EventDetailScreen() {
                 disabled={isBookingClosed || isSoldOut}
               />
             </View>
-          ) : (
-            /* Ticket Options Section (General Admission) */
+          )}
+
+          {(!hasSeatMap || quantityTiers.length > 0) && (
+            /* Ticket Options Section (General Admission / standing areas) */
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionTitle}>Select Tickets</Text>
+                <Text style={styles.sectionTitle}>{hasSeatMap ? 'Standing & General' : 'Select Tickets'}</Text>
                 <View style={styles.generalBadge}>
-                  <Text style={styles.generalBadgeText}>GENERAL ADMISSION</Text>
+                  <Text style={styles.generalBadgeText}>{hasSeatMap ? 'NO SEAT NUMBER' : 'GENERAL ADMISSION'}</Text>
                 </View>
               </View>
               <Text style={styles.sectionSubtitle}>
                 Select a tier and choose your ticket quantity (max 10).
               </Text>
 
-              {event.ticketTypes && event.ticketTypes.length > 0 ? (
-                event.ticketTypes.map((tier: any, index: number) => {
+              {quantityTiers.length > 0 ? (
+                quantityTiers.map((tier: any, index: number) => {
                   const tierPrice = (tier.priceCents || 0) / 100;
                   const tierAvailable = tier.available ?? 0;
                   const tierSoldOut = tierAvailable <= 0;
                   const isSelected = selectedTierId === tier.id;
+                  // Most this tier allows in one order: the per-order limit, capped by what is left.
+                  const tierMax = Math.max(1, Math.min(10, tier.maxPerOrder || 10, tierAvailable));
+                  const atMax = selectedQuantity >= tierMax;
 
                   return (
                     <TouchableOpacity
@@ -681,8 +588,14 @@ export default function EventDetailScreen() {
                         tierSoldOut && styles.ticketTierCardDisabled,
                       ]}
                       onPress={() => {
-                        if (!tierSoldOut) {
+                        if (!tierSoldOut && !isSelected) {
+                          if (selectedSeats.length > 0) {
+                            setSelectedSeats([]);
+                            setSeatTierMap({});
+                          }
                           setSelectedTierId(tier.id);
+                          // A quantity picked for another tier may exceed what this one allows.
+                          setSelectedQuantity((q) => Math.min(q, Math.max(1, Math.min(10, tier.maxPerOrder || 10, tierAvailable))));
                         }
                       }}
                       activeOpacity={tierSoldOut ? 1 : 0.7}
@@ -706,7 +619,7 @@ export default function EventDetailScreen() {
                           </Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={styles.tierPrice}>${tierPrice.toFixed(0)} AUD</Text>
+                          <Text style={styles.tierPrice}>${tierPrice.toFixed(2)} AUD</Text>
                           {tierSoldOut ? (
                             <View style={styles.tierSoldOutBadge}>
                               <Text style={styles.tierSoldOutText}>Sold Out</Text>
@@ -736,22 +649,22 @@ export default function EventDetailScreen() {
                             <TouchableOpacity
                               style={[
                                 styles.stepperBtn,
-                                (selectedQuantity >= 10 || selectedQuantity >= tierAvailable) &&
+                                atMax &&
                                   styles.stepperBtnDisabled,
                               ]}
                               onPress={() =>
                                 setSelectedQuantity((q) =>
-                                  Math.min(10, tierAvailable, q + 1)
+                                  Math.min(tierMax, q + 1)
                                 )
                               }
-                              disabled={selectedQuantity >= 10 || selectedQuantity >= tierAvailable}
+                              disabled={atMax}
                               activeOpacity={0.6}
                             >
                               <Ionicons
                                 name="add"
                                 size={18}
                                 color={
-                                  selectedQuantity >= 10 || selectedQuantity >= tierAvailable
+                                  atMax
                                     ? '#94A3B8'
                                     : '#0F172A'
                                 }
@@ -769,7 +682,7 @@ export default function EventDetailScreen() {
                     <Text style={styles.tierName}>Standard Admission</Text>
                     <Text style={styles.tierSeats}>General Entry</Text>
                   </View>
-                  <Text style={styles.tierPrice}>${minPrice > 0 ? minPrice.toFixed(0) : 'TBA'} AUD</Text>
+                  <Text style={styles.tierPrice}>${minPrice > 0 ? minPrice.toFixed(2) : 'TBA'} AUD</Text>
                 </View>
               )}
             </View>
@@ -839,9 +752,9 @@ export default function EventDetailScreen() {
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View>
           <Text style={styles.bottomPriceLabel}>
-            {event.seatingType === 'RESERVED' && selectedSeats.length > 0
+            {isSeatSelection
               ? `${selectedSeats.length} SEAT${selectedSeats.length > 1 ? 'S' : ''} SELECTED`
-              : event.seatingType !== 'RESERVED' && activeTier
+              : activeTier
               ? `${selectedQuantity} TICKET${selectedQuantity > 1 ? 'S' : ''} SELECTED`
               : 'TICKETS FROM'}
           </Text>
@@ -850,12 +763,12 @@ export default function EventDetailScreen() {
               ? 'Closed'
               : isSoldOut
               ? 'Sold Out'
-              : event.seatingType === 'RESERVED' && selectedSeats.length > 0
-              ? `$${reservedTotalPrice.toFixed(0)} AUD`
-              : event.seatingType !== 'RESERVED' && activeTier
-              ? `$${gaTotalPrice.toFixed(0)} AUD`
+              : isSeatSelection
+              ? `$${reservedTotalPrice.toFixed(2)} + fees`
+              : activeTier
+              ? `$${gaTotalPrice.toFixed(2)} + fees`
               : minPrice > 0
-              ? `$${minPrice.toFixed(0)} AUD`
+              ? `$${minPrice.toFixed(2)} AUD`
               : 'Free'}
           </Text>
         </View>
@@ -865,16 +778,14 @@ export default function EventDetailScreen() {
             styles.bookButton,
             (isBookingClosed ||
               isSoldOut ||
-              (event.seatingType === 'RESERVED' && selectedSeats.length === 0) ||
-              (event.seatingType !== 'RESERVED' && (!activeTier || (activeTier.available ?? 0) <= 0))) &&
+              (!isSeatSelection && (!activeTier || (activeTier.available ?? 0) <= 0))) &&
               styles.bookButtonDisabled,
           ]}
           onPress={handleBookTickets}
           disabled={
             isBookingClosed ||
             isSoldOut ||
-            (event.seatingType === 'RESERVED' && selectedSeats.length === 0) ||
-            (event.seatingType !== 'RESERVED' && (!activeTier || (activeTier.available ?? 0) <= 0)) ||
+            (!isSeatSelection && (!activeTier || (activeTier.available ?? 0) <= 0)) ||
             holding
           }
           activeOpacity={0.8}
@@ -887,11 +798,11 @@ export default function EventDetailScreen() {
                 ? 'Booking Closed'
                 : isSoldOut
                 ? 'Sold Out'
-                : event.seatingType === 'RESERVED'
-                ? selectedSeats.length > 0
-                  ? `Book ${selectedSeats.length} Seat${selectedSeats.length > 1 ? 's' : ''}`
-                  : 'Select Seats'
-                : `Book ${selectedQuantity} Ticket${selectedQuantity > 1 ? 's' : ''}`}
+                : isSeatSelection
+                ? `Book ${selectedSeats.length} Seat${selectedSeats.length > 1 ? 's' : ''}`
+                : activeTier
+                ? `Book ${selectedQuantity} Ticket${selectedQuantity > 1 ? 's' : ''}`
+                : 'Select Seats'}
             </Text>
           )}
         </TouchableOpacity>

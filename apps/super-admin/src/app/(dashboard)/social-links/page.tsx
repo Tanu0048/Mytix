@@ -49,9 +49,6 @@ export default function SocialLinksAdminPage() {
   const [newUrl, setNewUrl] = useState("");
   const [newLetter, setNewLetter] = useState("");
 
-  useEffect(() => {
-    fetchLinks();
-  }, []);
 
   const fetchLinks = async () => {
     try {
@@ -66,6 +63,10 @@ export default function SocialLinksAdminPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchLinks();
+  }, []);
 
   const handleSave = async () => {
     try {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -20,27 +20,22 @@ import {
 
 export default function LoginPage() {
   const [loginType, setLoginType] = useState<"ADMIN" | "ORGANISER" | "STAFF">("ADMIN");
-  const [email, setEmail] = useState("admin@mytix.example.com");
+  const [email, setEmail] = useState("");
   const [staffId, setStaffId] = useState("");
-  const [password, setPassword] = useState("AdminSecurePassword123!");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { login, staffLogin, isLoading, error } = useAuthStore();
   const router = useRouter();
 
-  // Reset fields & demo presets on role change
-  useEffect(() => {
+  // Switch role tab: clear error and the password (never carry a password across roles)
+  const switchLoginType = (type: "ADMIN" | "ORGANISER" | "STAFF") => {
+    if (type === loginType) return;
     useAuthStore.setState({ error: null });
-    if (loginType === "ADMIN") {
-      setEmail("admin@mytix.example.com");
-      setPassword("AdminSecurePassword123!");
-    } else if (loginType === "ORGANISER") {
-      setEmail("aman8447607490@gmail.com");
-      setPassword("OrganiserPass123!");
-    } else {
-      setStaffId("");
-      setPassword("");
-    }
-  }, [loginType]);
+    setPassword("");
+    setShowPassword(false);
+    if (type === "STAFF") setStaffId("");
+    setLoginType(type);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,11 +55,11 @@ export default function LoginPage() {
     const role = await login(email, password);
     if (role) {
       if (loginType === "ADMIN" && role !== "ADMIN") {
+        await useAuthStore.getState().logout();
         useAuthStore.setState({ error: "You are not an Admin. Please switch to Organiser login." });
-        useAuthStore.getState().logout();
       } else if (loginType === "ORGANISER" && role !== "ORGANISER") {
+        await useAuthStore.getState().logout();
         useAuthStore.setState({ error: "You are not an Organiser. Please switch to Admin login." });
-        useAuthStore.getState().logout();
       } else {
         router.push("/");
       }
@@ -161,7 +156,7 @@ export default function LoginPage() {
           <div className="grid grid-cols-3 p-1 bg-slate-100 rounded-2xl mb-4 border border-slate-200/70">
             <button
               type="button"
-              onClick={() => setLoginType("ADMIN")}
+              onClick={() => switchLoginType("ADMIN")}
               className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 px-1 text-xs sm:text-sm font-extrabold rounded-xl transition-all cursor-pointer active:scale-95 ${
                 loginType === "ADMIN"
                   ? "bg-white text-amber-950 border border-amber-300 shadow-xs"
@@ -174,7 +169,7 @@ export default function LoginPage() {
 
             <button
               type="button"
-              onClick={() => setLoginType("ORGANISER")}
+              onClick={() => switchLoginType("ORGANISER")}
               className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 px-1 text-xs sm:text-sm font-extrabold rounded-xl transition-all cursor-pointer active:scale-95 ${
                 loginType === "ORGANISER"
                   ? "bg-white text-amber-950 border border-amber-300 shadow-xs"
@@ -187,7 +182,7 @@ export default function LoginPage() {
 
             <button
               type="button"
-              onClick={() => setLoginType("STAFF")}
+              onClick={() => switchLoginType("STAFF")}
               className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2.5 px-1 text-xs sm:text-sm font-extrabold rounded-xl transition-all cursor-pointer active:scale-95 ${
                 loginType === "STAFF"
                   ? "bg-white text-amber-950 border border-amber-300 shadow-xs"
@@ -280,17 +275,7 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              {loginType === "ADMIN" && (
-                <div className="flex justify-end mt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => alert("Password reset instructions sent to registered admin email.")}
-                    className="text-[11px] font-bold text-slate-500 hover:text-slate-900 hover:underline transition-colors cursor-pointer"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-              )}
+              {/* TODO: add "Forgot password?" here once the reset email flow (/auth/forgot-password) is set up */}
             </div>
 
             {/* Submit Action Button (Large Touch Target) */}

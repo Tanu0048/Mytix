@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,15 +10,33 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
+/** "Club:T3-2" -> "Table 3 · Seat 2", "Stalls:A-4" -> "A4". */
+export function formatSeatLabel(key: string): string {
+  const plain = key.includes(':') ? key.slice(key.indexOf(':') + 1) : key;
+  const dash = plain.lastIndexOf('-');
+  if (dash === -1) return plain;
+  const row = plain.slice(0, dash);
+  const num = plain.slice(dash + 1);
+  return /^T[0-9]+$/.test(row) ? `Table ${row.slice(1)} · Seat ${num}` : `${row}${num}`;
+}
+
 export interface SeatingSection {
   id?: string;
   name: string;
   tierName?: string;
+  /** "ROWS" (default), "TABLES" (rows are tables T1, T2…) or "STANDING" (no seats; sold by quantity). */
+  kind?: 'ROWS' | 'TABLES' | 'STANDING';
   rows: string[];
   seatsPerRow: number;
+  /** Seats not for sale (aisles, pillars…), e.g. ["A-5"]. Rendered as gaps. */
+  blocked?: string[];
+  /** Wheelchair spaces, e.g. ["A-1"]. */
+  accessible?: string[];
 }
 
 export interface SeatingConfig {
+  version?: number;
+  stageLabel?: string;
   sections: SeatingSection[];
 }
 
@@ -38,6 +56,31 @@ interface SeatPickerProps {
   disabled?: boolean;
 }
 
+/**
+ * Builds a lookup that answers "is seat <section, row, number> taken?" from the backend seat list.
+ *
+ * The backend lists a sectioned seat under several keys ("Front:A-1", "Front-A-1" and plain "A-1"),
+ * and an unsectioned seat only as "A-1". So a plain "A-1" only blocks every section when no
+ * sectioned entry for A-1 exists; otherwise "Front:A-1" being booked would wrongly block "Back:A-1".
+ */
+function buildSeatLookup(keys: string[]) {
+  const set = new Set(keys);
+  const sectionedPlainKeys = new Set<string>();
+  for (const k of keys) {
+    const colon = k.indexOf(':');
+    if (colon !== -1) sectionedPlainKeys.add(k.slice(colon + 1));
+  }
+  return (section: string, row: string, num: number) => {
+    const plain = `${row}-${num}`;
+    if (set.has(`${section}:${plain}`) || set.has(`${section}-${plain}`)) return true;
+    return set.has(plain) && !sectionedPlainKeys.has(plain);
+  };
+}
+
+const SEAT_SIZE = 32;
+const TABLE_BOX = 128;
+const TABLE_RADIUS = 46;
+
 const TIER_BORDER_COLORS = [
   '#F59E0B', // Amber / VIP
   '#06B6D4', // Cyan / Premium
@@ -55,22 +98,21 @@ export default function SeatPicker({
   maxSeats = 10,
   disabled = false,
 }: SeatPickerProps) {
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes timer
+  // Hooks must run before the early return below.
+  const isBookedSeat = useMemo(() => buildSeatLookup(bookedSeats), [bookedSeats]);
+  const isHeldSeat = useMemo(() => buildSeatLookup(heldSeats), [heldSeats]);
 
-  useEffect(() => {
-    if (selectedSeats.length === 0) {
-      setTimeLeft(300);
-      return;
-    }
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [selectedSeats.length]);
-
-  if (!config || !config.sections || config.sections.length === 0) {
+  const seatSections = (config?.sections || []).filter((s) => (s.kind || 'ROWS') !== 'STANDING');
+  if (seatSections.length === 0) {
     return null;
   }
+  // Legend: only categories that are actually on the seat map
+  const seatedTierNames = new Set(seatSections.map((s) => (s.tierName || '').trim().toLowerCase()));
+  const legendTiers =
+    config.version === 2
+      ? ticketTypes.filter((t) => seatedTierNames.has(t.name.trim().toLowerCase()))
+      : ticketTypes;
+  const hasAccessible = seatSections.some((s) => (s.accessible || []).length > 0);
 
   const getTierInfoForSection = (section: SeatingSection) => {
     let index = 0;
@@ -85,12 +127,6 @@ export default function SeatPicker({
     return { tier, borderColor };
   };
 
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-
   return (
     <View style={styles.container}>
       {/* Stage / Screen Bar */}
@@ -101,12 +137,13 @@ export default function SeatPicker({
           end={{ x: 1, y: 0 }}
           style={styles.stageGlowBar}
         />
-        <Text style={styles.stageLabel}>STAGE / SCREEN</Text>
+        <Text style={styles.stageLabel}>{(config.stageLabel || 'Stage / Screen').toUpperCase()}</Text>
       </View>
 
       {/* Dynamic Tier Legend */}
       <View style={styles.legendContainer}>
-        {ticketTypes.map((tier, idx) => {
+        {legendTiers.map((tier) => {
+          const idx = Math.max(0, ticketTypes.findIndex((t) => t.id === tier.id));
           const borderColor = TIER_BORDER_COLORS[idx % TIER_BORDER_COLORS.length];
           const price = (tier.priceCents / 100).toFixed(0);
           return (
@@ -133,6 +170,15 @@ export default function SeatPicker({
           </View>
           <Text style={styles.legendTextSecondary}>Booked</Text>
         </View>
+
+        {hasAccessible && (
+          <View style={styles.legendItem}>
+            <View style={[styles.legendSwatch, styles.legendAccessibleSwatch]}>
+              <Text style={{ fontSize: 8 }}>♿</Text>
+            </View>
+            <Text style={styles.legendTextPrimary}>Wheelchair</Text>
+          </View>
+        )}
       </View>
 
       {/* Horizontal Scrollable Seating Chart */}
@@ -142,9 +188,69 @@ export default function SeatPicker({
         contentContainerStyle={styles.scrollChartContainer}
       >
         <View style={{ alignItems: 'center' }}>
-          {config.sections.map((section, sIdx) => {
+          {seatSections.map((section, sIdx) => {
             const { tier, borderColor } = getTierInfoForSection(section);
             const price = tier ? `$${(tier.priceCents / 100).toFixed(0)} AUD` : '';
+            const blocked = new Set(section.blocked || []);
+            const accessible = new Set(section.accessible || []);
+            const isTables = section.kind === 'TABLES';
+
+            const renderSeat = (rowName: string, seatNum: number, extraStyle?: object) => {
+              const plain = `${rowName}-${seatNum}`;
+              const seatKey = `${section.name}:${plain}`;
+              const isSelected = selectedSeats.includes(seatKey);
+              const isBooked = isBookedSeat(section.name, rowName, seatNum);
+              const isHeld = !isBooked && isHeldSeat(section.name, rowName, seatNum);
+              const isUnavailable = isBooked || isHeld;
+              const isAccessible = accessible.has(plain);
+              const seatLabel = isTables ? String(seatNum) : `${rowName}${seatNum}`;
+
+              return (
+                <TouchableOpacity
+                  key={plain}
+                  activeOpacity={0.7}
+                  disabled={isUnavailable || disabled}
+                  accessibilityLabel={`${section.name} ${formatSeatLabel(plain)}${isAccessible ? ', wheelchair space' : ''}`}
+                  onPress={() => {
+                    if (isUnavailable || disabled) return;
+                    if (tier) onToggleSeat(seatKey, tier.id);
+                  }}
+                  style={[
+                    styles.seatButton,
+                    extraStyle,
+                    {
+                      borderColor: isSelected
+                        ? '#F6C636'
+                        : isUnavailable
+                        ? '#1E293B'
+                        : isAccessible
+                        ? '#38BDF8'
+                        : borderColor,
+                      backgroundColor: isSelected
+                        ? '#F6C636'
+                        : isUnavailable
+                        ? '#161F30'
+                        : isAccessible
+                        ? 'rgba(14, 165, 233, 0.25)'
+                        : '#0F172A',
+                      opacity: isUnavailable ? 0.35 : 1,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.seatText,
+                      {
+                        color: isSelected ? '#0F172A' : isUnavailable ? '#475569' : '#F1F5F9',
+                        fontWeight: isSelected ? '900' : '700',
+                      },
+                    ]}
+                  >
+                    {isAccessible && !isSelected ? '♿' : seatLabel}
+                  </Text>
+                </TouchableOpacity>
+              );
+            };
 
             return (
               <View key={section.id || sIdx} style={styles.sectionBlock}>
@@ -159,104 +265,56 @@ export default function SeatPicker({
                   ) : null}
                 </View>
 
-                {/* Rows Grid */}
-                <View style={styles.rowsContainer}>
-                  {section.rows.map((rowName) => (
-                    <View key={rowName} style={styles.rowWrapper}>
-                      {/* Left Row Label */}
-                      <Text style={styles.rowLabel}>{rowName}</Text>
-
-                      {/* Seats in this row */}
-                      <View style={styles.seatsRow}>
-                        {Array.from({ length: section.seatsPerRow }, (_, i) => {
-                          const seatNum = i + 1;
-                          const seatKey = `${section.name}:${rowName}-${seatNum}`;
-                          const simpleKey = `${rowName}-${seatNum}`;
-
-                          const isSelected =
-                            selectedSeats.includes(seatKey) ||
-                            selectedSeats.includes(simpleKey);
-
-                          const isBooked = bookedSeats.some(
-                            (s) =>
-                              s === seatKey ||
-                              s === simpleKey ||
-                              s === `${rowName}-${seatNum}` ||
-                              s.endsWith(`:${rowName}-${seatNum}`) ||
-                              s.endsWith(`-${rowName}-${seatNum}`)
-                          );
-
-                          const isHeld = heldSeats.some(
-                            (s) =>
-                              s === seatKey ||
-                              s === simpleKey ||
-                              s === `${rowName}-${seatNum}` ||
-                              s.endsWith(`:${rowName}-${seatNum}`) ||
-                              s.endsWith(`-${rowName}-${seatNum}`)
-                          );
-
-                          const isUnavailable = isBooked || isHeld;
-                          const seatLabel = `${rowName}${seatNum}`;
-
-                          // Theater Parabolic curve
-                          const centerIndex = (section.seatsPerRow - 1) / 2;
-                          const distanceFromCenter = Math.abs(i - centerIndex);
-                          const curveOffset = Math.round(
-                            distanceFromCenter * distanceFromCenter * 0.7
-                          );
-
-                          return (
-                            <TouchableOpacity
-                              key={seatNum}
-                              activeOpacity={0.7}
-                              disabled={isUnavailable || disabled}
-                              onPress={() => {
-                                if (isUnavailable || disabled) return;
-                                if (tier) onToggleSeat(seatKey, tier.id);
-                              }}
-                              style={[
-                                styles.seatButton,
-                                {
-                                  marginTop: curveOffset,
-                                  borderColor: isSelected
-                                    ? '#F6C636'
-                                    : isUnavailable
-                                    ? '#1E293B'
-                                    : borderColor,
-                                  backgroundColor: isSelected
-                                    ? '#F6C636'
-                                    : isUnavailable
-                                    ? '#161F30'
-                                    : '#0F172A',
-                                  opacity: isUnavailable ? 0.35 : 1,
-                                },
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.seatText,
-                                  {
-                                    color: isSelected
-                                      ? '#0F172A'
-                                      : isUnavailable
-                                      ? '#475569'
-                                      : '#F1F5F9',
-                                    fontWeight: isSelected ? '900' : '700',
-                                  },
-                                ]}
-                              >
-                                {seatLabel}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
+                {isTables ? (
+                  /* Tables: chairs placed around each round table */
+                  <View style={styles.tablesWrap}>
+                    {section.rows.map((tableName) => {
+                      const chairs = section.seatsPerRow;
+                      return (
+                        <View key={tableName} style={styles.tableBox}>
+                          <View style={styles.tableTop}>
+                            <Text style={styles.tableLabel}>{tableName.replace(/^T/, 'Table ')}</Text>
+                          </View>
+                          {Array.from({ length: chairs }, (_, i) => {
+                            const seatNum = i + 1;
+                            if (blocked.has(`${tableName}-${seatNum}`)) return null;
+                            const angle = (2 * Math.PI * i) / chairs - Math.PI / 2;
+                            const center = TABLE_BOX / 2 - SEAT_SIZE / 2;
+                            return renderSeat(tableName, seatNum, {
+                              position: 'absolute',
+                              left: center + Math.cos(angle) * TABLE_RADIUS,
+                              top: center + Math.sin(angle) * TABLE_RADIUS,
+                            });
+                          })}
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  /* Rows Grid */
+                  <View style={styles.rowsContainer}>
+                    {section.rows.map((rowName) => (
+                      <View key={rowName} style={styles.rowWrapper}>
+                        <Text style={styles.rowLabel}>{rowName}</Text>
+                        <View style={styles.seatsRow}>
+                          {Array.from({ length: section.seatsPerRow }, (_, i) => {
+                            const seatNum = i + 1;
+                            // Theater parabolic curve
+                            const centerIndex = (section.seatsPerRow - 1) / 2;
+                            const distanceFromCenter = Math.abs(i - centerIndex);
+                            const curveOffset = Math.round(distanceFromCenter * distanceFromCenter * 0.7);
+                            if (blocked.has(`${rowName}-${seatNum}`)) {
+                              // Blocked seats (aisles, pillars) leave a gap
+                              return <View key={seatNum} style={styles.seatGap} />;
+                            }
+                            return renderSeat(rowName, seatNum, { marginTop: curveOffset });
+                          })}
+                        </View>
+                        <Text style={styles.rowLabel}>{rowName}</Text>
                       </View>
-
-                      {/* Right Row Label */}
-                      <Text style={styles.rowLabel}>{rowName}</Text>
-                    </View>
-                  ))}
-                </View>
+                    ))}
+                  </View>
+                )}
               </View>
             );
           })}
@@ -270,15 +328,11 @@ export default function SeatPicker({
             <Text style={styles.selectedCountText}>
               Selected Seats ({selectedSeats.length}):
             </Text>
-            <View style={styles.timerBadge}>
-              <Ionicons name="time-outline" size={13} color="#F59E0B" />
-              <Text style={styles.timerText}>{formatTimer(timeLeft)}</Text>
-            </View>
           </View>
 
           <View style={styles.chipsContainer}>
             {selectedSeats.map((key) => {
-              const label = key.includes(':') ? key.split(':')[1] : key;
+              const label = formatSeatLabel(key);
               return (
                 <View key={key} style={styles.seatChip}>
                   <Text style={styles.seatChipText}>{label}</Text>
@@ -361,6 +415,45 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E293B',
     borderColor: '#475569',
   },
+  legendAccessibleSwatch: {
+    backgroundColor: 'rgba(14, 165, 233, 0.35)',
+    borderColor: '#38BDF8',
+  },
+  seatGap: {
+    width: SEAT_SIZE,
+    height: SEAT_SIZE,
+  },
+  tablesWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+    maxWidth: TABLE_BOX * 3 + 24,
+  },
+  tableBox: {
+    width: TABLE_BOX,
+    height: TABLE_BOX,
+    position: 'relative',
+  },
+  tableTop: {
+    position: 'absolute',
+    left: TABLE_BOX / 2 - 26,
+    top: TABLE_BOX / 2 - 26,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#334155',
+    borderWidth: 1,
+    borderColor: '#475569',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tableLabel: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#E2E8F0',
+    textAlign: 'center',
+  },
   legendTextPrimary: {
     fontSize: 10,
     fontWeight: '800',
@@ -427,8 +520,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   seatButton: {
-    width: 32,
-    height: 32,
+    width: SEAT_SIZE,
+    height: SEAT_SIZE,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',

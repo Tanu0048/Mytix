@@ -9,6 +9,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLocationStore } from '@/store/useLocationStore';
 import { API_BASE, BACKEND_HOST } from '@/config/api';
+import { fetchWithAuth } from '@/lib/fetchWithAuth';
 
 export default function Navbar() {
   const router = useRouter();
@@ -70,9 +71,7 @@ export default function Navbar() {
     }
     async function fetchHolds() {
       try {
-        const res = await fetch(`${API_BASE}/holds`, {
-          credentials: 'include'
-        });
+        const res = await fetchWithAuth(`${API_BASE}/holds`, {}, { redirectOnFail: false });
         if (res.ok) {
           const data = await res.json();
           setActiveHolds(data.data || []);

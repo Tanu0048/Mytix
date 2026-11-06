@@ -24,7 +24,7 @@ import {
   Search,
   Flame
 } from "lucide-react";
-import api from "@/lib/api";
+import api, { fetchAllPages } from "@/lib/api";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -54,12 +54,12 @@ export default function EventsPage() {
     setIsLoading(true);
     try {
       const [eventsRes, trendingRes] = await Promise.allSettled([
-        api.get("/organiser/events"),
+        fetchAllPages("/organiser/events"),
         api.get("/admin/events/trending")
       ]);
 
       if (eventsRes.status === "fulfilled") {
-        const list = eventsRes.value.data.data || [];
+        const list: any[] = eventsRes.value;
         setEvents(list);
         const currentTime = Date.now();
         const upcoming = list.filter((e: any) => e.startsAt && new Date(e.startsAt).getTime() > currentTime).length;

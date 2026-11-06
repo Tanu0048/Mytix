@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "turbo": "latest"
+  },
+  "overrides": {
+    "react-native": "0.88.1"
   }
 }

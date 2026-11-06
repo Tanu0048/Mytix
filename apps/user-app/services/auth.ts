@@ -44,11 +44,14 @@ export function isTokenExpired(token: string): boolean {
   }
 }
 
-/**
- * Refresh the authentication token using stored refreshToken.
- * Never logs out user automatically on network error.
- */
-export async function refreshAuthSession(): Promise<string | null> {
+const SESSION_KEYS = ['user', 'token', 'refreshToken'];
+
+/** Clears the stored session so every screen shows the logged-out state. */
+async function clearSession(): Promise<void> {
+  await AsyncStorage.multiRemove(SESSION_KEYS).catch(() => {});
+}
+
+async function doRefresh(): Promise<string | null> {
   try {
     const refreshToken = await AsyncStorage.getItem('refreshToken');
     if (!refreshToken) return null;
@@ -63,6 +66,12 @@ export async function refreshAuthSession(): Promise<string | null> {
     });
 
     if (!res.ok) {
+      // 401/403 means the server rejected the session (expired, revoked or reused token):
+      // it can never recover, so log out instead of looking signed in while every call fails.
+      // Other statuses (5xx, Render cold start) are temporary, so keep the session.
+      if (res.status === 401 || res.status === 403) {
+        await clearSession();
+      }
       return null;
     }
 
@@ -77,14 +86,38 @@ export async function refreshAuthSession(): Promise<string | null> {
       await AsyncStorage.setItem('refreshToken', newRefreshToken);
     }
     if (data.user) {
-      await AsyncStorage.setItem('user', JSON.stringify(data.user));
+      // The refresh response only carries id/email/name/role, so merge instead of
+      // overwriting fields like phone that the full profile has.
+      const stored = await AsyncStorage.getItem('user');
+      const existing = stored ? JSON.parse(stored) : {};
+      await AsyncStorage.setItem('user', JSON.stringify({ ...existing, ...data.user }));
     }
 
     return newAccessToken || null;
   } catch (err) {
+    // Network error: keep the session, the next request can try again.
     console.warn('Silent token refresh failed:', err);
     return null;
   }
+}
+
+let refreshInFlight: Promise<string | null> | null = null;
+
+/**
+ * Refresh the authentication token using stored refreshToken.
+ *
+ * Only one refresh runs at a time. The backend rotates refresh tokens and treats a
+ * re-used (already rotated) token as theft, revoking the whole session. So parallel
+ * requests that all hit an expired token must share one refresh, not each send the
+ * same refresh token.
+ */
+export function refreshAuthSession(): Promise<string | null> {
+  if (!refreshInFlight) {
+    refreshInFlight = doRefresh().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
 }
 
 /**
@@ -100,6 +133,8 @@ export async function getValidAuthToken(): Promise<string | null> {
       if (refreshedToken) {
         return refreshedToken;
       }
+      // If the refresh was rejected the session was cleared; don't hand out the dead token.
+      return await AsyncStorage.getItem('token');
     }
 
     return token;
@@ -113,25 +148,24 @@ export async function getValidAuthToken(): Promise<string | null> {
  * Keeps user session persistent and alive indefinitely until explicit logout.
  */
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-  let token = await getValidAuthToken();
+  const token = await getValidAuthToken();
 
-  const headers: Record<string, string> = {
-    'x-client-platform': 'mobile',
-    ...(options.headers as Record<string, string>),
+  const buildHeaders = (bearer: string | null) => {
+    // Accepts any HeadersInit shape (object, array or Headers instance).
+    const headers = new Headers(options.headers);
+    headers.set('x-client-platform', 'mobile');
+    if (bearer) headers.set('Authorization', `Bearer ${bearer}`);
+    return headers;
   };
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+  let response = await fetch(url, { ...options, headers: buildHeaders(token) });
 
-  let response = await fetch(url, { ...options, headers });
-
-  // If 401 Unauthorized / Token Expired, attempt immediate refresh and retry once
-  if (response.status === 401) {
-    const refreshedToken = await refreshAuthSession();
-    if (refreshedToken) {
-      headers['Authorization'] = `Bearer ${refreshedToken}`;
-      response = await fetch(url, { ...options, headers });
+  // If 401 Unauthorized / Token Expired, refresh (or reuse a refresh another request already did) and retry once
+  if (response.status === 401 && token) {
+    const storedToken = await AsyncStorage.getItem('token');
+    const newToken = storedToken && storedToken !== token ? storedToken : await refreshAuthSession();
+    if (newToken) {
+      response = await fetch(url, { ...options, headers: buildHeaders(newToken) });
     }
   }
 
@@ -155,7 +189,7 @@ export async function logoutUser(): Promise<void> {
       }).catch(() => {});
     }
   } finally {
-    await AsyncStorage.multiRemove(['user', 'token', 'refreshToken']);
+    await clearSession();
   }
 }
 

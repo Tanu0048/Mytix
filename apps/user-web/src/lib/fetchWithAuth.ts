@@ -81,21 +81,25 @@ function forceLogout(redirect: boolean) {
   }
   useAuthStore.getState().setUser(null);
   useAuthStore.getState().setToken(null);
-  if (redirect && typeof window !== 'undefined' && !window.location.pathname.includes('/auth')) {
-    window.location.href = '/auth';
+  if (redirect && typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
+    const back = `${window.location.pathname}${window.location.search}`;
+    window.location.href = `/auth?redirect=${encodeURIComponent(back)}`;
   }
 }
 
 /**
- * Build the Authorization headers from the stored token.
+ * Build request headers: the caller's headers (any HeadersInit shape) plus the Bearer token.
  */
-function getAuthHeaders(extraHeaders?: Record<string, string>): Record<string, string> {
-  const headers: Record<string, string> = { ...extraHeaders };
-  const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (storedToken) {
-    headers['Authorization'] = `Bearer ${storedToken}`;
+function buildHeaders(extraHeaders: HeadersInit | undefined, token: string | null): Headers {
+  const headers = new Headers(extraHeaders);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
   }
   return headers;
+}
+
+function getStoredToken(): string | null {
+  return typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 }
 
 /**
@@ -118,13 +122,11 @@ export async function fetchWithAuth(
     url.includes('/auth/forgot-password') ||
     url.includes('/auth/reset-password');
 
-  const mergedOptions: RequestInit = {
+  const response = await fetch(url, {
     ...options,
     credentials: 'include',
-    headers: getAuthHeaders(options.headers as Record<string, string>),
-  };
-
-  const response = await fetch(url, mergedOptions);
+    headers: buildHeaders(options.headers, getStoredToken()),
+  });
 
   // If not a 401 or this is an auth endpoint, return as-is
   if (response.status !== 401 || isAuthEndpoint) {
@@ -141,15 +143,10 @@ export async function fetchWithAuth(
   }
 
   // Retry the original request with the new token
-  const retryHeaders = {
-    ...(options.headers as Record<string, string>),
-    Authorization: `Bearer ${newToken}`,
-  };
-
   const retryResponse = await fetch(url, {
     ...options,
     credentials: 'include',
-    headers: retryHeaders,
+    headers: buildHeaders(options.headers, newToken),
   });
 
   // If retry also fails with 401, force logout

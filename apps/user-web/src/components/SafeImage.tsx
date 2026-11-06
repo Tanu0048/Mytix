@@ -6,8 +6,8 @@ import { BACKEND_HOST } from '@/config/api';
 
 const FALLBACK_CONCERT_IMAGE = '/images/events/et00444235-xycckhvdak-portrait.webp';
 
-export function getFullImageUrl(path: string | undefined | null): string {
-  if (!path || path === 'null' || path === 'undefined') return FALLBACK_CONCERT_IMAGE;
+export function getFullImageUrl(path: string | undefined | null, fallback: string = FALLBACK_CONCERT_IMAGE): string {
+  if (!path || path === 'null' || path === 'undefined') return fallback;
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   if (path.startsWith('/banner/') || path.startsWith('/images/')) return path;
   
@@ -27,12 +27,12 @@ export default function SafeImage({
   className = '',
   ...props
 }: SafeImageProps) {
-  const [imgSrc, setImgSrc] = useState<string>(getFullImageUrl(src) || fallbackSrc);
+  const [imgSrc, setImgSrc] = useState<string>(getFullImageUrl(src, fallbackSrc));
   const [hasError, setHasError] = useState(false);
 
   // Update when src changes
   React.useEffect(() => {
-    setImgSrc(getFullImageUrl(src) || fallbackSrc);
+    setImgSrc(getFullImageUrl(src, fallbackSrc));
     setHasError(false);
   }, [src, fallbackSrc]);
 

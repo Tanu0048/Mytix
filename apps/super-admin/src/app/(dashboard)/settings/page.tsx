@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   User, 
   Lock, 
@@ -24,7 +24,10 @@ export default function SettingsPage() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
 
-  const [activeTab, setActiveTab] = useState<"profile" | "security" | "social">("profile");
+  type SettingsTab = "profile" | "security" | "social";
+  const [selectedTab, setActiveTab] = useState<SettingsTab>("profile");
+  // Non-admins only have the profile tab
+  const activeTab: SettingsTab = user?.role === "ADMIN" ? selectedTab : "profile";
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -54,19 +57,17 @@ export default function SettingsPage() {
   const [emailSuccessMsg, setEmailSuccessMsg] = useState("");
   const [emailErrorMsg, setEmailErrorMsg] = useState("");
 
-  useEffect(() => {
-    if (user) {
-      setFormData(prev => ({
-        ...prev,
-        name: user.name || "Aman Mirza",
-        email: user.email || "aman@mytix.com",
-        phone: user.phone || "+91 98112 69898",
-      }));
-      if (user.role !== "ADMIN" && activeTab !== "profile") {
-        setActiveTab("profile");
-      }
-    }
-  }, [user, activeTab]);
+  // Load the form from the real user record once per user (no fake fallbacks:
+  // empty fields must stay empty so we never save placeholder data).
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
+  if (user && user.id !== loadedUserId) {
+    setLoadedUserId(user.id);
+    setFormData({
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+    });
+  }
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,11 +77,11 @@ export default function SettingsPage() {
 
     try {
       const res = await api.patch("/me", {
-        name: formData.name,
-        phone: formData.phone
+        name: formData.name.trim(),
+        phone: formData.phone.trim()
       });
 
-      if (setUser && res.data) {
+      if (user && res.data) {
         setUser({ ...user, ...res.data });
       }
 
@@ -88,7 +89,7 @@ export default function SettingsPage() {
       setTimeout(() => setSuccessMsg(""), 3500);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.response?.data?.message || "Failed to update profile.");
+      setErrorMsg(err.response?.data?.error?.message || err.response?.data?.message || "Failed to update profile.");
     } finally {
       setIsSaving(false);
     }
@@ -100,8 +101,9 @@ export default function SettingsPage() {
       setErrorMsg("Please enter your current password.");
       return;
     }
-    if (passwords.newPassword.length < 8) {
-      setErrorMsg("New password must be at least 8 characters long.");
+    const pw = passwords.newPassword;
+    if (pw.length < 8 || !/[a-z]/.test(pw) || !/[A-Z]/.test(pw) || !/[0-9]/.test(pw) || !/[^a-zA-Z0-9]/.test(pw)) {
+      setErrorMsg("New password must be at least 8 characters and include uppercase, lowercase, a number and a special character.");
       return;
     }
     if (passwords.newPassword !== passwords.confirmPassword) {
@@ -114,7 +116,7 @@ export default function SettingsPage() {
     setErrorMsg("");
 
     try {
-      await api.post("/users/change-password", {
+      await api.post("/me/change-password", {
         currentPassword: passwords.currentPassword,
         newPassword: passwords.newPassword
       });
@@ -153,12 +155,12 @@ export default function SettingsPage() {
     setEmailErrorMsg("");
 
     try {
-      const res = await api.post("/users/change-email", {
+      const res = await api.post("/me/change-email", {
         newEmail: emailForm.newEmail.trim().toLowerCase(),
         currentPassword: emailForm.passwordConfirmation,
       });
 
-      if (res.data?.user) {
+      if (user && res.data?.user) {
         setUser({ ...user, ...res.data.user });
       }
       if (res.data?.accessToken) {
@@ -180,8 +182,9 @@ export default function SettingsPage() {
     }
   };
 
-  const initials = (formData.name || "Aman Mirza")
-    .split(" ")
+  const initials = (formData.name.trim() || user?.email || "U")
+    .split(/\s+/)
+    .filter(Boolean)
     .map(n => n[0])
     .join("")
     .substring(0, 2)
@@ -235,7 +238,7 @@ export default function SettingsPage() {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as SettingsTab)}
               className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold transition-all cursor-pointer shrink-0 ${
                 isActive
                   ? "bg-[#FFF9EB] text-amber-950 border border-amber-300/80 shadow-2xs font-extrabold"

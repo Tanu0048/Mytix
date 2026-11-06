@@ -1,16 +1,6 @@
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import * as authService from "./auth.service.js";
-import { env } from "../../config/env.js";
-
-const isProduction = env.NODE_ENV === "production";
-
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? "none" : "lax",
-  path: "/",
-  ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {})
-};
+import { AUTH_COOKIE_OPTIONS as COOKIE_OPTIONS } from "../../utils/authCookies.js";
 
 
 function attachAuthCookies(res, accessToken, refreshToken) {

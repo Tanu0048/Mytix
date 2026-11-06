@@ -1,5 +1,6 @@
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import * as userService from "./user.service.js";
+import { AUTH_COOKIE_OPTIONS } from "../../utils/authCookies.js";
 
 export const getProfile = asyncHandler(async (req, res) => {
   const profile = await userService.getUserProfile(req.user.id);
@@ -19,10 +20,7 @@ export const changePassword = asyncHandler(async (req, res) => {
   );
 
   res.cookie("refresh_token", result.newRefreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
+    ...AUTH_COOKIE_OPTIONS,
     maxAge: 30 * 24 * 60 * 60 * 1000
   });
 
@@ -37,10 +35,7 @@ export const changeEmail = asyncHandler(async (req, res) => {
   );
 
   res.cookie("access_token", result.accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
+    ...AUTH_COOKIE_OPTIONS,
     maxAge: 15 * 60 * 1000
   });
 

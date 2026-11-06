@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  Image,
   ActivityIndicator,
   StatusBar,
   RefreshControl,
@@ -17,8 +16,10 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import QRCode from 'react-qr-code';
 
 import { API_BASE } from '../../constants/api';
+import { formatSeatLabel } from '../../components/SeatPicker';
 import { fetchWithAuth, fetchFreshUserProfile } from '../../services/auth';
 
 export default function MyTicketsScreen() {
@@ -76,96 +77,6 @@ export default function MyTicketsScreen() {
         console.warn('Backend tickets fetch failed, falling back to Supabase:', e);
       }
 
-      // 2. Direct Supabase REST fallback if backend returned 0 tickets or no token
-      if (ticketMap.size === 0) {
-        try {
-          const SUPABASE_URL = 'https://kfcocpzuzxpinqgnzhsq.supabase.co';
-          const ANON_KEY =
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmY29jcHp1enhwaW5xZ256aHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODk2NjgsImV4cCI6MjEwNjc2NTY2OH0.tDVNBk_Pi88UHQoWFQZMgjADTZf6PhGYFWAuynzJfMk';
-
-          let resolvedUserId = parsedUser?.id;
-          const userEmail = (parsedUser?.email || '').toLowerCase().trim();
-
-          // Resolve userId from email if missing in stored user object
-          if (!resolvedUserId && userEmail) {
-            try {
-              const uRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/users?select=id&email=eq.${encodeURIComponent(userEmail)}`,
-                {
-                  headers: {
-                    apikey: ANON_KEY,
-                    Authorization: `Bearer ${ANON_KEY}`,
-                  },
-                }
-              );
-              if (uRes.ok) {
-                const uData = await uRes.json();
-                if (Array.isArray(uData) && uData.length > 0 && uData[0].id) {
-                  resolvedUserId = uData[0].id;
-                  parsedUser.id = resolvedUserId;
-                  await AsyncStorage.setItem('user', JSON.stringify(parsedUser));
-                  setUser(parsedUser);
-                }
-              }
-            } catch (err) {
-              console.warn('Supabase user resolution failed:', err);
-            }
-          }
-
-          // A) Fetch tickets by orders.user_id
-          if (resolvedUserId) {
-            try {
-              const sbRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/tickets?select=*,orders!inner(id,user_id,events(id,title,starts_at,venues(name,city)))&orders.user_id=eq.${resolvedUserId}&order=created_at.desc`,
-                {
-                  headers: {
-                    apikey: ANON_KEY,
-                    Authorization: `Bearer ${ANON_KEY}`,
-                  },
-                }
-              );
-              if (sbRes.ok) {
-                const sbData = await sbRes.json();
-                if (Array.isArray(sbData)) {
-                  sbData.forEach((t: any) => {
-                    if (t && t.id) ticketMap.set(String(t.id), t);
-                  });
-                }
-              }
-            } catch (err) {
-              console.warn('Supabase query by user_id failed:', err);
-            }
-          }
-
-          // B) Fetch tickets by attendee_email (e.g. if tickets assigned or purchased under this email)
-          if (userEmail) {
-            try {
-              const attRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/tickets?select=*,orders(id,user_id,events(id,title,starts_at,venues(name,city)))&attendee_email=eq.${encodeURIComponent(userEmail)}&order=created_at.desc`,
-                {
-                  headers: {
-                    apikey: ANON_KEY,
-                    Authorization: `Bearer ${ANON_KEY}`,
-                  },
-                }
-              );
-              if (attRes.ok) {
-                const attData = await attRes.json();
-                if (Array.isArray(attData)) {
-                  attData.forEach((t: any) => {
-                    if (t && t.id) ticketMap.set(String(t.id), t);
-                  });
-                }
-              }
-            } catch (err) {
-              console.warn('Supabase query by attendee_email failed:', err);
-            }
-          }
-        } catch (e) {
-          console.warn('Supabase direct tickets query failed:', e);
-        }
-      }
-
       fetchedTickets = Array.from(ticketMap.values());
       setTickets(fetchedTickets);
     } catch (err) {
@@ -212,9 +123,6 @@ export default function MyTicketsScreen() {
       : 'TBA';
 
     const qrData = item.qrTokenHash || item.qr_token_hash || item.id || 'MYTIX-PASS';
-    const qrUri = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=4&data=${encodeURIComponent(
-      qrData
-    )}`;
 
     const shortId = (item.id || 'PASS').slice(0, 8).toUpperCase();
 
@@ -240,19 +148,12 @@ export default function MyTicketsScreen() {
             })
           : 'TBA';
 
-        const attendee = ticketItem.attendeeName || ticketItem.attendee_name || user?.name || 'Attendee';
-        const rawRow = ticketItem.seatRow || ticketItem.seat_row;
-        const rawNum = ticketItem.seatNumber || ticketItem.seat_number;
-        const cleanRow = rawRow ? (rawRow.includes(':') ? rawRow.split(':')[1] : rawRow) : null;
-        const seatLabel = cleanRow && rawNum ? `Seat ${cleanRow}${rawNum}` : 'General Admission';
-        const passId = (ticketItem.id || 'PASS').slice(0, 8).toUpperCase();
-        const qrData = ticketItem.qrTokenHash || ticketItem.qr_token_hash || ticketItem.id || 'MYTIX-PASS';
-        const qrPassUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=4&data=${encodeURIComponent(qrData)}`;
-
-        const shareText = `🎟️ Mytix Verified Digital Entry Pass\n\nEvent: ${ev.title || 'Event'}\nAttendee: ${attendee}\nAccess: ${seatLabel}\nDate: ${fDate} at ${fTime}\nVenue: ${ven.name || 'Venue TBA'}, ${ven.city || 'Australia'}\nPass Ref: #${passId}\n\n📱 Entry QR Pass:\n${qrPassUrl}\n\nPresent this verified QR code at the turnstile gate for instant admission.`;
+        // Only event details are shared. The QR token is the ticket itself, so it never leaves
+        // the device (anyone holding it could get in at the gate).
+        const shareText = `🎟️ I'm going to ${ev.title || 'an event'}!\n\nDate: ${fDate} at ${fTime}\nVenue: ${ven.name || 'Venue TBA'}, ${ven.city || 'Australia'}\n\nGet your tickets on Mytix.`;
 
         await Share.share({
-          title: `Entry Pass: ${ev.title || 'Mytix Ticket'}`,
+          title: ev.title || 'Mytix event',
           message: shareText,
         });
       } catch (e) {
@@ -263,15 +164,19 @@ export default function MyTicketsScreen() {
     const rawRow = item.seatRow || item.seat_row;
     const rawNum = item.seatNumber || item.seat_number;
     const cleanRow = rawRow ? (rawRow.includes(':') ? rawRow.split(':')[1] : rawRow) : null;
-    const seatLabel = cleanRow && rawNum ? `${cleanRow}${rawNum}` : null;
+    // "A4" for rows, "Table 3 · Seat 2" for tables
+    const seatLabel = cleanRow && rawNum ? formatSeatLabel(`${cleanRow}-${rawNum}`) : null;
 
     return (
       <View style={styles.ticketCard}>
         {/* Top Section */}
         <View style={styles.ticketTop}>
           <View style={styles.statusBadgeRow}>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusBadgeText}>{item.status || 'CONFIRMED'}</Text>
+            {/* Only VALID tickets get in; USED/CANCELLED/REFUNDED are shown in red, never as "confirmed". */}
+            <View style={[styles.statusBadge, item.status !== 'VALID' && styles.statusBadgeInactive]}>
+              <Text style={[styles.statusBadgeText, item.status !== 'VALID' && styles.statusBadgeTextInactive]}>
+                {item.status || 'UNKNOWN'}
+              </Text>
             </View>
             {seatLabel ? (
               <View style={styles.seatBadge}>
@@ -349,7 +254,8 @@ export default function MyTicketsScreen() {
         {/* Bottom QR Section */}
         <View style={styles.ticketBottom}>
           <View style={styles.qrContainer}>
-            <Image source={{ uri: qrUri }} style={styles.qrImage} resizeMode="contain" />
+            {/* Drawn on the device: the QR token is the ticket, so it must never be sent to a third-party service. */}
+            <QRCode value={qrData} size={styles.qrImage.width} bgColor="#FFFFFF" fgColor="#0F172A" />
           </View>
           <View style={styles.scanBadge}>
             <Ionicons name="scan-outline" size={14} color="#0F172A" />
@@ -362,7 +268,7 @@ export default function MyTicketsScreen() {
             activeOpacity={0.8}
           >
             <Ionicons name="share-outline" size={15} color="#0F172A" />
-            <Text style={styles.sharePassButtonText}>Share Pass with Friend</Text>
+            <Text style={styles.sharePassButtonText}>Share Event with Friends</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -528,6 +434,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 20,
+  },
+  statusBadgeInactive: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  statusBadgeTextInactive: {
+    color: '#B91C1C',
   },
   statusBadgeText: {
     fontSize: 10,

@@ -78,7 +78,12 @@ export default function AuthPage() {
       // Session cookies are automatically stored by browser. Fetch authenticated user profile:
       await fetchUser();
       toast.success(isLogin ? 'Logged in successfully!' : 'Account created successfully!');
-      router.push('/');
+      // Send the user back to where they came from (only same-site paths, never "//evil.com").
+      const redirect = new URLSearchParams(window.location.search).get('redirect');
+      const safeRedirect = redirect && redirect.startsWith('/') && !redirect.startsWith('//') && !redirect.startsWith('/\\')
+        ? redirect
+        : '/';
+      router.push(safeRedirect);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

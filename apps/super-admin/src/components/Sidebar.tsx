@@ -12,7 +12,6 @@ import {
   BarChart3,
   Settings,
   Crown,
-  ArrowRight,
   LogOut,
   Image as ImageIcon,
   Users,
@@ -31,9 +30,13 @@ export default function Sidebar() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const { isCollapsed, toggleSidebar } = useSidebarStore();
+  const { isCollapsed: isCollapsedDesktop, toggleSidebar, isMobileOpen, setMobileOpen } = useSidebarStore();
+  // The mobile drawer always shows the full (expanded) menu
+  const isCollapsed = isCollapsedDesktop && !isMobileOpen;
+  const closeMobile = () => setMobileOpen(false);
 
   const handleLogout = async () => {
+    closeMobile();
     await logout();
     router.push("/login");
   };
@@ -67,10 +70,18 @@ export default function Sidebar() {
   const navItems = user?.role === "ADMIN" ? adminNavItems : organiserNavItems;
 
   return (
+    <>
+    {isMobileOpen && (
+      <div
+        className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[1px] lg:hidden"
+        onClick={closeMobile}
+        aria-hidden="true"
+      />
+    )}
     <aside
-      className={`fixed inset-y-0 left-0 z-50 border-r border-slate-100 bg-white hidden lg:flex lg:flex-col justify-between transition-all duration-300 ease-in-out ${
-        isCollapsed ? "w-20" : "w-64"
-      }`}
+      className={`fixed inset-y-0 left-0 z-50 border-r border-slate-100 bg-white flex flex-col justify-between transition-all duration-300 ease-in-out ${
+        isMobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+      } lg:translate-x-0 lg:shadow-none ${isCollapsed ? "w-20" : "w-64"}`}
     >
       <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
         {/* Logo & Header */}
@@ -99,7 +110,7 @@ export default function Sidebar() {
           </div>
         ) : (
           <div className="flex items-center justify-between px-6 pt-7 pb-6">
-            <Link href="/" className="flex items-center">
+            <Link href="/" onClick={closeMobile} className="flex items-center">
               <Image 
                 src="/mytix-logo.png" 
                 alt="Mytix" 
@@ -111,9 +122,9 @@ export default function Sidebar() {
             </Link>
 
             <button
-              onClick={toggleSidebar}
+              onClick={isMobileOpen ? closeMobile : toggleSidebar}
               className="p-2 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-400 hover:text-amber-700 transition-colors cursor-pointer"
-              title="Collapse sidebar"
+              title={isMobileOpen ? "Close menu" : "Collapse sidebar"}
             >
               <PanelLeftClose className="w-4 h-4" />
             </button>
@@ -161,6 +172,7 @@ export default function Sidebar() {
                   <Link
                     href={item.href}
                     scroll={false}
+                    onClick={closeMobile}
                     className={`group relative flex items-center rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-150 select-none ${
                       isActive
                         ? "bg-amber-50 text-amber-900 border border-amber-200/70"
@@ -225,5 +237,6 @@ export default function Sidebar() {
         </div>
       )}
     </aside>
+    </>
   );
 }

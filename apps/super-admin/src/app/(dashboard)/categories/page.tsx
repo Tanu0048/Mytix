@@ -10,9 +10,6 @@ export default function CategoriesPage() {
   const [newCat, setNewCat] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -24,6 +21,10 @@ export default function CategoriesPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();

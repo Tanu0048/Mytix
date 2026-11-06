@@ -66,7 +66,7 @@ export default function ProfilePage() {
         toast.success('Profile updated successfully!');
       } else {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.message || 'Failed to update profile');
+        toast.error(err.error?.message || err.message || 'Failed to update profile');
       }
     } catch {
       toast.error('Network error. Please try again.');
@@ -95,7 +95,7 @@ export default function ProfilePage() {
         router.push('/');
       } else {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.message || 'Failed to delete account.');
+        toast.error(err.error?.message || err.message || 'Failed to delete account.');
       }
     } catch {
       toast.error('Network error. Please try again.');

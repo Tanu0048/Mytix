@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { API_BASE } from '../constants/api';
 import { fetchWithAuth } from '../services/auth';
+import { formatSeatLabel } from '../components/SeatPicker';
 
 export default function OrderHistoryScreen() {
   const router = useRouter();
@@ -62,38 +63,6 @@ export default function OrderHistoryScreen() {
         }
       } catch (err) {
         console.warn('Backend orders fetch failed, falling back:', err);
-      }
-
-      // 2. Direct Supabase Fallback if backend returns 0 orders
-      if (orderMap.size === 0) {
-        try {
-          const SUPABASE_URL = 'https://kfcocpzuzxpinqgnzhsq.supabase.co';
-          const ANON_KEY =
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmY29jcHp1enhwaW5xZ256aHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODk2NjgsImV4cCI6MjEwNjc2NTY2OH0.tDVNBk_Pi88UHQoWFQZMgjADTZf6PhGYFWAuynzJfMk';
-
-          const resolvedUserId = parsedUser?.id;
-          if (resolvedUserId) {
-            const sbRes = await fetch(
-              `${SUPABASE_URL}/rest/v1/orders?select=*,events(id,title,starts_at,venues(name,city)),order_items(*,ticket_types(name))&user_id=eq.${resolvedUserId}&order=created_at.desc`,
-              {
-                headers: {
-                  apikey: ANON_KEY,
-                  Authorization: `Bearer ${ANON_KEY}`,
-                },
-              }
-            );
-            if (sbRes.ok) {
-              const sbData = await sbRes.json();
-              if (Array.isArray(sbData)) {
-                sbData.forEach((ord: any) => {
-                  if (ord && ord.id) orderMap.set(String(ord.id), ord);
-                });
-              }
-            }
-          }
-        } catch (e) {
-          console.warn('Supabase orders fallback failed:', e);
-        }
       }
 
       fetchedOrders = Array.from(orderMap.values());
@@ -158,7 +127,10 @@ export default function OrderHistoryScreen() {
     const ticketTotalAud = ((item.ticketTotalCents || item.totalCents || 0) / 100).toFixed(2);
     const buyerFeeAud = ((item.buyerFeeCents || 0) / 100).toFixed(2);
     const orderNum = item.orderNumber || item.order_number || item.id?.slice(0, 8).toUpperCase() || 'ORD-MYTIX';
-    const status = item.status || 'PAID';
+    const status: string = item.status || 'UNKNOWN';
+    // Only PAID is green; PENDING is amber; FAILED/EXPIRED/CANCELLED/REFUNDED/UNKNOWN are red.
+    const statusStyle = status === 'PAID' ? styles.statusPaid : status === 'PENDING' ? styles.statusPending : styles.statusCancelled;
+    const statusTextStyle = status === 'PAID' ? styles.statusPaidText : status === 'PENDING' ? styles.statusPendingText : styles.statusCancelledText;
 
     const itemsList = item.items || item.order_items || [];
 
@@ -172,13 +144,13 @@ export default function OrderHistoryScreen() {
               <View
                 style={[
                   styles.statusBadge,
-                  status === 'CANCELLED' ? styles.statusCancelled : styles.statusPaid,
+                  statusStyle,
                 ]}
               >
                 <Text
                   style={[
                     styles.statusBadgeText,
-                    status === 'CANCELLED' ? styles.statusCancelledText : styles.statusPaidText,
+                    statusTextStyle,
                   ]}
                 >
                   {status}
@@ -225,7 +197,7 @@ export default function OrderHistoryScreen() {
                   const unitPrice = ((orderItem.unitPriceCents || 0) / 100).toFixed(2);
                   const seats = orderItem.selectedSeats || orderItem.selected_seats;
                   const seatStr = Array.isArray(seats)
-                    ? seats.map((s: string) => (s.includes(':') ? s.split(':')[1] : s)).join(', ')
+                    ? seats.map((s: string) => formatSeatLabel(s)).join(', ')
                     : null;
 
                   return (
@@ -472,6 +444,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#166534',
     letterSpacing: 0.3,
+  },
+  statusPending: {
+    backgroundColor: '#FEF3C7',
+  },
+  statusPendingText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#92400E',
   },
   statusCancelled: {
     backgroundColor: '#FEE2E2',

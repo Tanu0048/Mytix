@@ -63,21 +63,18 @@ api.interceptors.response.use(
     const isLoginRequest = originalRequest?.url?.includes("/auth/login");
     const isStaffLoginRequest = originalRequest?.url?.includes("/auth/staff-login");
     const isRefreshRequest = originalRequest?.url?.includes("/auth/refresh");
+    const isLogoutRequest = originalRequest?.url?.includes("/auth/logout");
 
     if (
       error.response?.status !== 401 ||
       originalRequest._retry ||
       isLoginRequest ||
       isStaffLoginRequest ||
-      isRefreshRequest
+      isRefreshRequest ||
+      isLogoutRequest
     ) {
-      // If the refresh call itself failed with 401, force logout
-      if (error.response?.status === 401 && isRefreshRequest) {
-        useAuthStore.getState().logout();
-        if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
-          window.location.href = "/login";
-        }
-      }
+      // A failed refresh is handled (session cleared + redirect) by the
+      // catch block of the request that triggered it — nothing to do here.
       return Promise.reject(error);
     }
 
@@ -122,8 +119,12 @@ api.interceptors.response.use(
     } catch (refreshError) {
       // Refresh failed — session is truly expired, force logout
       processQueue(refreshError, null);
-      useAuthStore.getState().logout();
+      // Clear local session only — the server session is already invalid,
+      // so calling /auth/logout here would just fail again.
+      useAuthStore.getState().clearSession();
       if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+        // Full reload on purpose: drops all in-memory state of the expired session.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = "/login";
       }
       return Promise.reject(refreshError);
@@ -132,5 +133,32 @@ api.interceptors.response.use(
     }
   }
 );
+
+/**
+ * Fetches every page of a cursor-paginated list endpoint
+ * (`{ data, pagination: { hasNextPage, nextCursor } }`) and returns all rows.
+ * Stops after `maxPages` as a safety net against runaway loops.
+ */
+export async function fetchAllPages<T = unknown>(
+  url: string,
+  params: Record<string, string | number | undefined> = {},
+  maxPages = 50
+): Promise<T[]> {
+  const rows: T[] = [];
+  let cursor: string | null = null;
+
+  for (let page = 0; page < maxPages; page++) {
+    const res: { data: { data?: T[]; pagination?: { hasNextPage?: boolean; nextCursor?: string | null } } } =
+      await api.get(url, { params: { ...params, limit: 100, ...(cursor ? { cursor } : {}) } });
+    const body = res.data;
+    rows.push(...(Array.isArray(body?.data) ? body.data : []));
+
+    const next = body?.pagination?.hasNextPage ? body.pagination.nextCursor : null;
+    if (!next) break;
+    cursor = next;
+  }
+
+  return rows;
+}
 
 export default api;

@@ -96,7 +96,22 @@ export default function HomeScreen() {
     loadCachedHomeData();
   }, []);
 
+  // Latest home data, read by loadData without making it depend on (and re-run for) every state change.
+  // Depending on these states directly made loadData change after every fetch, which re-triggered
+  // the mount effect and fetched forever.
+  const latestDataRef = useRef({ banners, categories, featuredEvents, trendingEvents, allEvents, venues, availableCities });
+  latestDataRef.current = { banners, categories, featuredEvents, trendingEvents, allEvents, venues, availableCities };
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
+  }, []);
+
   const loadData = useCallback(async (isRetry = false) => {
+    const { banners, categories, featuredEvents, trendingEvents, allEvents, venues, availableCities } =
+      latestDataRef.current;
     try {
       const [bannersRes, homeRes, catRes, eventsRes, venuesRes] = await Promise.all([
         fetch(`${API_BASE}/banners`).catch(() => null),
@@ -219,7 +234,7 @@ export default function HomeScreen() {
         ).catch(() => {});
       } else if (banners.length === 0 && featuredEvents.length === 0 && allEvents.length === 0) {
         if (!isRetry) {
-          setTimeout(() => {
+          retryTimerRef.current = setTimeout(() => {
             loadData(true);
           }, 2500);
           return;
@@ -230,7 +245,7 @@ export default function HomeScreen() {
       console.error('Error loading home data:', err);
       if (banners.length === 0 && featuredEvents.length === 0) {
         if (!isRetry) {
-          setTimeout(() => {
+          retryTimerRef.current = setTimeout(() => {
             loadData(true);
           }, 2500);
           return;
@@ -241,8 +256,9 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [banners, categories, featuredEvents, trendingEvents, allEvents, venues, availableCities]);
+  }, []);
 
+  // Load once on mount; pull-to-refresh and the retry button call loadData explicitly.
   useEffect(() => {
     loadData();
   }, [loadData]);

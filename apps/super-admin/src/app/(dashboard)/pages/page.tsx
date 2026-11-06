@@ -146,9 +146,6 @@ export default function PagesCMSPage() {
   const [faq, setFaq] = useState<FaqData | null>(null);
   const [organiserReq, setOrganiserReq] = useState<OrganiserRequirementsData | null>(null);
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -169,6 +166,10 @@ export default function PagesCMSPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAll();
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
@@ -408,7 +409,7 @@ function AboutUsEditor({ data, onChange }: { data: AboutUsData; onChange: (d: Ab
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Core Values ({data.values.length})</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Each value is a card shown in the "What sets us apart" section.</p>
+            <p className="text-xs text-slate-500 mt-0.5">Each value is a card shown in the &ldquo;What sets us apart&rdquo; section.</p>
           </div>
           <button
             type="button"

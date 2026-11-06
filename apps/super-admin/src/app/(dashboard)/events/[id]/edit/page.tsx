@@ -2,9 +2,19 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save, Loader2, Plus, Trash2, Ticket } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Plus, Trash2, Ticket, Armchair } from "lucide-react";
 import api from "@/lib/api";
 import { useCategories } from "@/lib/useCategories";
+import SeatingBuilder from "@/components/SeatingBuilder";
+import {
+  type SeatingMode,
+  type SeatSection,
+  type SeatingTemplate,
+  capacityByTier,
+  fromApiConfig,
+  toApiConfig,
+  validateSeating,
+} from "@/lib/seating";
 
 function EditEventForm() {
   const router = useRouter();
@@ -28,6 +38,12 @@ function EditEventForm() {
 
   const [ticketTypes, setTicketTypes] = useState<any[]>([]);
 
+  // Seat map
+  const [seatingMode, setSeatingMode] = useState<SeatingMode>("GENERAL");
+  const [seatSections, setSeatSections] = useState<SeatSection[]>([]);
+  const [seatingTouched, setSeatingTouched] = useState(false);
+  const [legacyRows, setLegacyRows] = useState(false);
+
   useEffect(() => {
     if (!eventId) return;
     async function fetchEvent() {
@@ -43,6 +59,11 @@ function EditEventForm() {
           startsAt: data.startsAt ? new Date(data.startsAt).toISOString().slice(0, 16) : "",
           doorsOpenAt: data.doorsOpenAt ? new Date(data.doorsOpenAt).toISOString().slice(0, 16) : "",
         });
+
+        const seating = fromApiConfig(data.seatingType, data.seatingConfig);
+        setSeatingMode(seating.mode);
+        setSeatSections(seating.sections);
+        setLegacyRows(seating.customRows);
 
         // Populate ticket tiers
         if (data.ticketTypes && Array.isArray(data.ticketTypes)) {
@@ -76,25 +97,59 @@ function EditEventForm() {
 
   const handleTicketChange = (index: number, field: string, value: any) => {
     const updated = [...ticketTypes];
+    const oldName: string = updated[index].name || "";
     updated[index] = { ...updated[index], [field]: value };
     setTicketTypes(updated);
+    // Renaming a category keeps the seat map pointing at it (the server does the same)
+    if (field === "name" && oldName.trim()) {
+      setSeatSections((prev) =>
+        prev.map((sec) =>
+          sec.tierName.trim().toLowerCase() === oldName.trim().toLowerCase() ? { ...sec, tierName: String(value) } : sec
+        )
+      );
+    }
+  };
+
+  const anySold = ticketTypes.some((t) => (t.sold || 0) > 0);
+  const seatingLocked = anySold || legacyRows;
+  const seatingLockReason = anySold
+    ? "Tickets have already been sold, so the seat layout is locked to protect existing bookings. You can still change names and prices."
+    : "This event uses custom row names from an older version of the seat builder, so the layout is shown read-only.";
+
+  // Seated / standing categories get their quantity from the seat map
+  const mapCapacity = seatingMode === "GENERAL" ? new Map<string, number>() : capacityByTier(seatSections);
+  const mappedQuantity = (name: string) => mapCapacity.get(String(name || "").trim().toLowerCase());
+
+  const newTier = (name: string, priceCents = 5000) => ({
+    name,
+    priceCents,
+    quantity: 100,
+    sold: 0,
+    available: 100,
+    saleStartsAt: "",
+    saleEndsAt: "",
+    minPerOrder: 1,
+    maxPerOrder: 10
+  });
+
+  const addTierNamed = (suggested: string, priceCents = 5000) => {
+    const taken = new Set(ticketTypes.map((t) => String(t.name || "").trim().toLowerCase()));
+    let name = suggested.trim() || "New Category";
+    let n = 2;
+    while (taken.has(name.toLowerCase())) name = `${suggested.trim() || "New Category"} ${n++}`;
+    setTicketTypes((prev) => [...prev, newTier(name, priceCents)]);
+    return name;
+  };
+
+  const applyTemplateTiers = (tpl: SeatingTemplate) => {
+    setTicketTypes((prev) => {
+      const have = new Set(prev.map((t) => String(t.name || "").trim().toLowerCase()));
+      return [...prev, ...tpl.tiers.filter((t) => !have.has(t.name.toLowerCase())).map((t) => newTier(t.name, t.priceCents))];
+    });
   };
 
   const addTicketType = () => {
-    setTicketTypes([
-      ...ticketTypes,
-      {
-        name: "",
-        priceCents: 5000,
-        quantity: 100,
-        sold: 0,
-        available: 100,
-        saleStartsAt: "",
-        saleEndsAt: "",
-        minPerOrder: 1,
-        maxPerOrder: 10
-      }
-    ]);
+    setTicketTypes([...ticketTypes, newTier("")]);
   };
 
   const removeTicketType = (index: number) => {
@@ -118,6 +173,16 @@ function EditEventForm() {
     setError("");
 
     try {
+      const tierNames = ticketTypes.map((t) => String(t.name || "").trim());
+      if (new Set(tierNames.map((n) => n.toLowerCase())).size !== tierNames.length) {
+        throw new Error("Each ticket category needs a different name.");
+      }
+      const sendSeating = seatingTouched && !seatingLocked;
+      if (sendSeating) {
+        const problems = validateSeating(seatingMode, seatSections, tierNames);
+        if (problems.length > 0) throw new Error(problems[0]);
+      }
+
       const eventStartsIso = formData.startsAt ? new Date(formData.startsAt).toISOString() : undefined;
       const payload: any = {
         title: formData.title,
@@ -127,11 +192,15 @@ function EditEventForm() {
         ...(formData.posterPath && { posterPath: formData.posterPath }),
         ...(eventStartsIso && { startsAt: eventStartsIso }),
         ...(formData.doorsOpenAt && { doorsOpenAt: new Date(formData.doorsOpenAt).toISOString() }),
+        ...(sendSeating && {
+          seatingType: seatingMode === "GENERAL" ? "GENERAL" : "RESERVED",
+          seatingConfig: toApiConfig(seatingMode, seatSections),
+        }),
         ticketTypes: ticketTypes.map((t) => ({
           ...(t.id ? { id: t.id } : {}),
           name: t.name,
           priceCents: Number(t.priceCents),
-          quantity: Number(t.quantity),
+          quantity: Math.max(1, mappedQuantity(t.name) ?? Number(t.quantity)),
           saleStartsAt: t.saleStartsAt && eventStartsIso && new Date(t.saleStartsAt) < new Date(eventStartsIso) 
             ? new Date(t.saleStartsAt).toISOString() 
             : new Date().toISOString(),
@@ -146,7 +215,7 @@ function EditEventForm() {
       router.refresh();
     } catch (err: any) {
       console.error(err);
-      setError(err.response?.data?.message || "Failed to update event.");
+      setError(err.response?.data?.error?.message || err.response?.data?.message || err.message || "Failed to update event.");
     } finally {
       setIsSaving(false);
     }
@@ -268,6 +337,34 @@ function EditEventForm() {
           </div>
         </div>
 
+        {/* Seating & Layout Card */}
+        <div className="rounded-2xl bg-white p-8 shadow-[0_2px_14px_rgba(0,0,0,0.03)] border border-slate-100">
+          <div className="flex items-start gap-3 mb-6 border-b border-slate-100 pb-4">
+            <Armchair className="w-5 h-5 text-amber-600 mt-0.5" />
+            <div>
+              <h2 className="text-base font-extrabold text-slate-900">Seating & Layout</h2>
+              <p className="text-sm font-medium text-slate-400 mt-0.5">How people attend, and the seat map for seated events.</p>
+            </div>
+          </div>
+          <SeatingBuilder
+            mode={seatingMode}
+            onModeChange={(m) => {
+              setSeatingMode(m);
+              setSeatingTouched(true);
+            }}
+            sections={seatSections}
+            onSectionsChange={(next) => {
+              setSeatSections(next);
+              setSeatingTouched(true);
+            }}
+            tiers={ticketTypes}
+            onAddTier={addTierNamed}
+            onApplyTemplate={applyTemplateTiers}
+            locked={seatingLocked}
+            lockedReason={seatingLockReason}
+          />
+        </div>
+
         {/* Ticketing Tiers Card */}
         <div className="rounded-2xl bg-white p-8 shadow-[0_2px_14px_rgba(0,0,0,0.03)] border border-slate-100">
           <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
@@ -319,25 +416,30 @@ function EditEventForm() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Price (in cents)</label>
-                    <input 
-                      required 
-                      type="number" 
-                      value={ticket.priceCents} 
-                      onChange={(e) => handleTicketChange(index, "priceCents", e.target.value)} 
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400" 
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Price ($)</label>
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={Number(ticket.priceCents) / 100}
+                      onChange={(e) => handleTicketChange(index, "priceCents", Math.round(Number(e.target.value || 0) * 100))}
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400"
                     />
-                    <span className="text-[10px] text-slate-400 mt-1 block">${(ticket.priceCents / 100).toFixed(2)}</span>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Total Quantity</label>
-                    <input 
-                      required 
-                      type="number" 
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Total Quantity
+                      {mappedQuantity(ticket.name) !== undefined && <span className="ml-1 text-xs text-amber-700">· from seat map</span>}
+                    </label>
+                    <input
+                      required
+                      type="number"
                       min={ticket.sold || 1}
-                      value={ticket.quantity} 
-                      onChange={(e) => handleTicketChange(index, "quantity", e.target.value)} 
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400" 
+                      disabled={mappedQuantity(ticket.name) !== undefined}
+                      value={mappedQuantity(ticket.name) ?? ticket.quantity}
+                      onChange={(e) => handleTicketChange(index, "quantity", e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white py-2.5 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-amber-400 disabled:bg-amber-50/60 disabled:text-amber-900"
                     />
                     {ticket.sold > 0 && (
                       <span className="text-[10px] text-slate-400 mt-1 block">Min {ticket.sold} (already sold)</span>

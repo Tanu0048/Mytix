@@ -74,7 +74,10 @@ export default function AuthScreen() {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      // Render returns an HTML page while the server is waking up; don't surface "JSON Parse error".
+      const data = await res.json().catch(() => ({
+        message: `Server is not responding (${res.status}). Please try again in a moment.`,
+      }));
 
       if (!res.ok) {
         throw new Error(data.error?.message || data.message || 'Authentication failed');
@@ -83,6 +86,9 @@ export default function AuthScreen() {
       const token = data.tokens?.accessToken || data.token || '';
       const refreshToken = data.tokens?.refreshToken || data.refreshToken || '';
       const user = data.user || null;
+      if (!token) {
+        throw new Error('Sign-in did not complete. Please try again.');
+      }
 
       if (token) {
         await AsyncStorage.setItem('token', token);

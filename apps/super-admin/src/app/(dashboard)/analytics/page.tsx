@@ -16,7 +16,7 @@ import {
   User,
   Clock
 } from "lucide-react";
-import api from "@/lib/api";
+import api, { fetchAllPages } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export default function AnalyticsPage() {
@@ -25,6 +25,8 @@ export default function AnalyticsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  // Page-load timestamp (Date.now() must not be called during render)
+  const [now] = useState(() => Date.now());
 
   const user = useAuthStore((state) => state.user);
 
@@ -32,15 +34,16 @@ export default function AnalyticsPage() {
     setIsRefreshing(true);
     try {
       const [eventsRes, ordersRes] = await Promise.allSettled([
-        api.get("/organiser/events"),
-        api.get("/organiser/orders").catch(() => api.get("/admin/orders"))
+        fetchAllPages("/organiser/events"),
+        // /organiser/orders returns every order for ADMIN and only own orders for ORGANISER
+        fetchAllPages("/organiser/orders")
       ]);
 
       if (eventsRes.status === "fulfilled") {
-        setEvents(eventsRes.value.data.data || []);
+        setEvents(eventsRes.value as any[]);
       }
       if (ordersRes.status === "fulfilled") {
-        setOrders(ordersRes.value.data.data || []);
+        setOrders(ordersRes.value as any[]);
       }
     } catch (err) {
       console.error("Failed to load analytics data", err);
@@ -89,9 +92,8 @@ export default function AnalyticsPage() {
   }, [orders, totalRevenue, totalTicketsSold]);
 
   const liveEventsCount = useMemo(() => {
-    const now = Date.now();
     return events.filter((e) => e.status === "PUBLISHED" && (!e.startsAt || new Date(e.startsAt).getTime() > now)).length;
-  }, [events]);
+  }, [events, now]);
 
   // Ticket Tiers Distribution (Calculated 100% dynamically from events)
   const tierDistribution = useMemo(() => {

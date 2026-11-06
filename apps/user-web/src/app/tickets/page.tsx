@@ -45,18 +45,20 @@ export default function MyTicketsPage() {
   const handleShareTicket = async (ticket: any) => {
     const event = ticket.order?.event || {};
     const venue = event.venue || {};
-    const eventDate = new Date(event.startsAt);
-    const formattedDate = eventDate.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    const formattedTime = eventDate.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true });
-    const qrData = ticket.qrTokenHash || ticket.id;
-    const qrPassUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=4&data=${encodeURIComponent(qrData)}`;
+    const eventDate = event.startsAt ? new Date(event.startsAt) : null;
+    const when = eventDate
+      ? `${eventDate.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} at ${eventDate.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+      : 'Date TBA';
+    const eventUrl = event.slug && typeof window !== 'undefined' ? `${window.location.origin}/events/${event.slug}` : '';
 
-    const text = `🎟️ Mytix Verified Digital Entry Pass\n\nEvent: ${event.title}\nAttendee: ${ticket.attendeeName}\nDate: ${formattedDate} at ${formattedTime}\nVenue: ${venue.name || ''}, ${venue.city || 'Australia'}\nPass Ref: #${ticket.id.slice(0, 8).toUpperCase()}\n\n📱 View QR Pass:\n${qrPassUrl}`;
+    // Only event details are shared. The QR token is the ticket itself, so it never leaves this page
+    // (anyone holding it could get in at the gate).
+    const text = `🎟️ I'm going to ${event.title || 'an event'}!\n\nDate: ${when}\nVenue: ${[venue.name, venue.city].filter(Boolean).join(', ') || 'Australia'}${eventUrl ? `\n\nGet tickets on Mytix: ${eventUrl}` : ''}`;
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
-          title: `Mytix Pass: ${event.title}`,
+          title: event.title || 'Mytix event',
           text,
         });
         return;
@@ -67,7 +69,7 @@ export default function MyTicketsPage() {
 
     try {
       await navigator.clipboard.writeText(text);
-      toast.success('Ticket details & QR Pass link copied to clipboard!');
+      toast.success('Event details copied to clipboard!');
     } catch {
       toast.error('Could not copy pass');
     }
@@ -113,9 +115,15 @@ export default function MyTicketsPage() {
         ) : (
           <div className="space-y-8">
             {tickets.map((ticket) => {
-              const eventDate = new Date(ticket.order.event.startsAt);
-              const formattedDate = eventDate.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-              const formattedTime = eventDate.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true });
+              const event = ticket.order?.event || {};
+              const venue = event.venue || {};
+              const eventDate = event.startsAt ? new Date(event.startsAt) : null;
+              const formattedDate = eventDate
+                ? eventDate.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                : 'Date TBA';
+              const formattedTime = eventDate
+                ? eventDate.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })
+                : '';
 
               return (
                 <div key={ticket.id} className="relative bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden border border-gray-100 flex flex-col md:flex-row group transition-all hover:shadow-[0_15px_40px_rgb(0,0,0,0.1)] hover:-translate-y-1">
@@ -130,7 +138,7 @@ export default function MyTicketsPage() {
                     </div>
                     
                     <h2 className="text-2xl font-black text-gray-900 mb-5 pr-4 leading-tight">
-                      {ticket.order.event.title}
+                      {event.title || 'Event'}
                     </h2>
                     
                     <div className="space-y-4">
@@ -145,7 +153,7 @@ export default function MyTicketsPage() {
                       </div>
                       
                       <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([ticket.order.event.venue.name, ticket.order.event.venue.city, 'Australia'].filter(Boolean).join(', '))}`}
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([venue.name, venue.city, 'Australia'].filter(Boolean).join(', '))}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center text-gray-600 hover:text-amber-700 transition-colors group cursor-pointer"
@@ -155,10 +163,10 @@ export default function MyTicketsPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-gray-900 text-sm truncate max-w-48 sm:max-w-xs flex items-center gap-1.5">
-                            {ticket.order.event.venue.name}
+                            {venue.name || 'Venue TBA'}
                             <Navigation className="w-3 h-3 text-amber-600" />
                           </div>
-                          <div className="text-sm font-medium text-gray-500">{ticket.order.event.venue.city}</div>
+                          <div className="text-sm font-medium text-gray-500">{venue.city || ''}</div>
                         </div>
                       </a>
                       
@@ -207,7 +215,7 @@ export default function MyTicketsPage() {
                       className="w-full py-2.5 px-4 rounded-xl border border-gray-200 bg-white hover:bg-amber-50 hover:border-amber-300 text-xs font-bold text-gray-800 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                     >
                       <Share2 className="w-3.5 h-3.5 text-amber-600" />
-                      Share Pass with Friend
+                      Share Event with Friends
                     </button>
                   </div>
                 </div>

@@ -64,14 +64,18 @@ export async function generateTicketsForOrder(orderId, attendeesList = []) {
       if (Array.isArray(item.selectedSeats) && item.selectedSeats[i]) {
         const seatVal = item.selectedSeats[i];
         if (typeof seatVal === "string") {
-          const parts = seatVal.split("-");
-          if (parts.length === 2) {
-            seatRow = parts[0];
-            seatNumber = parts[1];
-          } else if (parts.length >= 3) {
-            sectionName = parts[0];
-            seatRow = parts[1];
-            seatNumber = parts[2];
+          // "Section:A-1" (web/mobile seat picker), "Section-A-1" or "A-1"
+          let rest = seatVal;
+          const colon = seatVal.indexOf(":");
+          if (colon !== -1) {
+            sectionName = seatVal.slice(0, colon);
+            rest = seatVal.slice(colon + 1);
+          }
+          const parts = rest.split("-");
+          if (parts.length >= 2) {
+            seatNumber = parts[parts.length - 1];
+            seatRow = parts[parts.length - 2];
+            if (!sectionName && parts.length > 2) sectionName = parts.slice(0, -2).join("-");
           }
         } else if (typeof seatVal === "object") {
           seatRow = seatVal.row || null;

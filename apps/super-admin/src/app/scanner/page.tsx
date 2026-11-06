@@ -21,14 +21,15 @@ import {
   ShieldCheck,
   Check
 } from "lucide-react";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuthStore, useAuthHydrated } from "@/store/useAuthStore";
 import api from "@/lib/api";
 import { Html5Qrcode } from "html5-qrcode";
 
 // Web Audio synthesizer for gate turnstile sounds (No external MP3 required)
 function playGateSound(type: "SUCCESS" | "ERROR") {
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioContext =
+      window.AudioContext || (window as unknown as { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
 
@@ -59,8 +60,23 @@ function playGateSound(type: "SUCCESS" | "ERROR") {
       osc.start();
       osc.stop(ctx.currentTime + 0.45);
     }
-  } catch (e) {
+  } catch {
     // Audio context may be restricted by autoplay policy until user gesture
+  }
+}
+
+/** Stable per-device identifier so scan logs can tell gate devices apart. */
+function getDeviceId(): string {
+  const KEY = "mytix-scanner-device-id";
+  try {
+    let id = localStorage.getItem(KEY);
+    if (!id) {
+      id = `web-${crypto.randomUUID()}`;
+      localStorage.setItem(KEY, id);
+    }
+    return id;
+  } catch {
+    return "web-unknown";
   }
 }
 
@@ -68,11 +84,12 @@ export default function MobileScannerPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const hydrated = useAuthHydrated();
 
   const [activeTab, setActiveTab] = useState<"SCAN" | "SEARCH">("SCAN");
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string>("");
-  const [gateName, setGateName] = useState<string>("Gate 1");
+  const gateName = user?.assignedGate || "Gate 1";
   const [stats, setStats] = useState<{
     checkedInCount: number;
     totalIssuedTickets: number;
@@ -98,26 +115,16 @@ export default function MobileScannerPage() {
   const [torchOn, setTorchOn] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scanLockRef = useRef<boolean>(false);
+  // Serialises camera start/stop so a new start never overlaps a pending stop
+  const cameraOpRef = useRef<Promise<void>>(Promise.resolve());
+  // Latest values for the QR callback (the camera keeps the callback it was started with)
+  const latestRef = useRef({ soundEnabled: true, gateName: "Gate 1", selectedEventId: "" });
 
   // Manual Search State
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [checkingInId, setCheckingInId] = useState<string | null>(null);
-
-  // 1. Initial Authentication & Events Load
-  useEffect(() => {
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    if (user.assignedGate) {
-      setGateName(user.assignedGate);
-    }
-
-    loadAccessibleEvents();
-  }, [user]);
 
   const loadAccessibleEvents = async () => {
     try {
@@ -140,66 +147,63 @@ export default function MobileScannerPage() {
       if (res.data?.data) {
         setStats(res.data.data);
       }
-    } catch (err) {
+    } catch {
       // Non-critical telemetry
     }
   };
 
-  // 2. Camera QR Scanner Initialization
-  useEffect(() => {
-    if (activeTab !== "SCAN" || !selectedEventId) {
-      stopCamera();
-      return;
-    }
+  const startCamera = () => {
+    cameraOpRef.current = cameraOpRef.current.then(async () => {
+      await stopCameraNow();
+      try {
+        setCameraError(null);
+        const html5QrCode = new Html5Qrcode("qr-camera-viewport");
+        scannerRef.current = html5QrCode;
 
-    startCamera();
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 15,
+            qrbox: { width: 260, height: 260 },
+            aspectRatio: 1.0
+          },
+          (decodedText) => {
+            void onQrCodeSuccess(decodedText);
+          },
+          () => {} // Ignore continuous non-detection frames
+        );
 
-    return () => {
-      stopCamera();
-    };
-  }, [activeTab, selectedEventId]);
-
-  const startCamera = async () => {
-    try {
-      setCameraError(null);
-      if (scannerRef.current) {
-        await stopCamera();
+        setIsScanning(true);
+      } catch (err) {
+        console.warn("Camera start error:", err);
+        setCameraError(
+          "Camera permission is required. Please tap 'Allow' when your browser asks for camera access."
+        );
+        setIsScanning(false);
       }
-
-      const html5QrCode = new Html5Qrcode("qr-camera-viewport");
-      scannerRef.current = html5QrCode;
-
-      await html5QrCode.start(
-        { facingMode: "environment" },
-        {
-          fps: 15,
-          qrbox: { width: 260, height: 260 },
-          aspectRatio: 1.0
-        },
-        onQrCodeSuccess,
-        () => {} // Ignore continuous non-detection frames
-      );
-
-      setIsScanning(true);
-    } catch (err: any) {
-      console.warn("Camera start error:", err);
-      setCameraError(
-        "Camera permission is required. Please tap 'Allow' when your browser asks for camera access."
-      );
-      setIsScanning(false);
-    }
+    });
+    return cameraOpRef.current;
   };
 
-  const stopCamera = async () => {
-    if (scannerRef.current && scannerRef.current.isScanning) {
+  // Only call from inside the cameraOpRef queue
+  const stopCameraNow = async () => {
+    const scanner = scannerRef.current;
+    scannerRef.current = null;
+    if (scanner) {
       try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
-      } catch (e) {
+        if (scanner.isScanning) await scanner.stop();
+        scanner.clear();
+      } catch {
         // Ignored
       }
     }
     setIsScanning(false);
+    setTorchOn(false);
+  };
+
+  const stopCamera = () => {
+    cameraOpRef.current = cameraOpRef.current.then(stopCameraNow);
+    return cameraOpRef.current;
   };
 
   const toggleTorch = async () => {
@@ -207,10 +211,10 @@ export default function MobileScannerPage() {
     try {
       const nextTorch = !torchOn;
       await scannerRef.current.applyVideoConstraints({
-        advanced: [{ torch: nextTorch } as any]
+        advanced: [{ torch: nextTorch } as MediaTrackConstraintSet]
       });
       setTorchOn(nextTorch);
-    } catch (err) {
+    } catch {
       alert("Flashlight/torch is not supported on this device's browser.");
     }
   };
@@ -219,12 +223,13 @@ export default function MobileScannerPage() {
   const onQrCodeSuccess = async (decodedText: string) => {
     if (scanLockRef.current) return; // Prevent double rapid firing
     scanLockRef.current = true;
+    const { soundEnabled, gateName, selectedEventId } = latestRef.current;
 
     try {
       const res = await api.post("/scan", {
         qrToken: decodedText,
         gate: gateName,
-        deviceId: "mobile-safari-chrome"
+        deviceId: getDeviceId()
       });
 
       const data = res.data?.data;
@@ -270,11 +275,12 @@ export default function MobileScannerPage() {
           scanLockRef.current = false;
         }, 3000);
       }
-    } catch (err: any) {
+    } catch (err) {
       if (soundEnabled) playGateSound("ERROR");
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
-      const errMessage = err.response?.data?.message || err.response?.data?.error?.message || "Invalid QR code format.";
+      const errData = (err as { response?: { data?: { message?: string; error?: { message?: string } } } }).response?.data;
+      const errMessage = errData?.message || errData?.error?.message || "Invalid QR code format.";
       setScanResult({
         status: "INVALID",
         granted: false,
@@ -288,6 +294,36 @@ export default function MobileScannerPage() {
       }, 3000);
     }
   };
+
+  // Keep the QR callback's view of state current
+  useEffect(() => {
+    latestRef.current = { soundEnabled, gateName, selectedEventId };
+  }, [soundEnabled, gateName, selectedEventId]);
+
+  // 1. Authentication guard & events load
+  const userId = user?.id;
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!userId) {
+      router.replace("/login");
+      return;
+    }
+    loadAccessibleEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, userId]);
+
+  // 2. Camera QR scanner lifecycle
+  useEffect(() => {
+    if (activeTab !== "SCAN" || !selectedEventId) {
+      stopCamera();
+      return;
+    }
+    startCamera();
+    return () => {
+      stopCamera();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedEventId]);
 
   // 4. Manual Search Handlers
   const handleSearch = async (e: React.FormEvent) => {
@@ -319,8 +355,9 @@ export default function MobileScannerPage() {
       } else {
         alert(res.data?.data?.message || "Failed to check in.");
       }
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Error checking in ticket.");
+    } catch (err) {
+      const errData = (err as { response?: { data?: { message?: string; error?: { message?: string } } } }).response?.data;
+      alert(errData?.error?.message || errData?.message || "Error checking in ticket.");
     } finally {
       setCheckingInId(null);
     }
@@ -328,9 +365,17 @@ export default function MobileScannerPage() {
 
   const handleLogout = async () => {
     await stopCamera();
-    logout();
+    await logout();
     router.push("/login");
   };
+
+  if (!hydrated || !user) {
+    return (
+      <div className="h-[100dvh] w-full bg-[#070b13] flex items-center justify-center">
+        <div className="h-8 w-8 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="h-[100dvh] max-h-[100dvh] w-full max-w-lg mx-auto bg-[#070b13] text-white flex flex-col justify-between relative select-none overflow-hidden touch-manipulation pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
@@ -600,7 +645,7 @@ export default function MobileScannerPage() {
                   <UserCheck className="w-8 h-8 mx-auto text-slate-600" />
                   <p className="text-xs font-bold text-slate-400">Search Attendees by Name or Order ID</p>
                   <p className="text-[11px] text-slate-600 max-w-xs mx-auto">
-                    Use this lookup if an attendee's phone battery died or their screen is cracked.
+                    Use this lookup if an attendee&apos;s phone battery died or their screen is cracked.
                   </p>
                 </div>
               ) : (

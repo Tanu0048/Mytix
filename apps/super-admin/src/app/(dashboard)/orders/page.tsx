@@ -21,7 +21,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import api from "@/lib/api";
+import api, { fetchAllPages } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export default function OrdersPage() {
@@ -42,17 +42,8 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     try {
       setIsRefreshing(true);
-      let res;
-      try {
-        res = await api.get("/organiser/orders");
-      } catch (err: any) {
-        if (err.response?.status === 404 || err.response?.status === 403) {
-          res = await api.get("/admin/orders");
-        } else {
-          throw err;
-        }
-      }
-      setOrders(res?.data?.data || []);
+      // /organiser/orders returns every order for ADMIN and only own orders for ORGANISER
+      setOrders(await fetchAllPages("/organiser/orders"));
     } catch (err) {
       console.error("Failed to fetch orders", err);
     } finally {
