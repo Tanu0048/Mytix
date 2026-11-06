@@ -578,12 +578,23 @@ export function fromApiConfig(
  * so seats never end up without a category the organiser can't see or fix.
  */
 export function healSections(sections: SeatSection[], tierNames: string[]): SeatSection[] {
-  const known = new Set(tierNames.map((n) => n.trim().toLowerCase()).filter(Boolean));
+  const names = tierNames.map((n) => n.trim()).filter(Boolean);
+  const known = new Set(names.map((n) => n.toLowerCase()));
+  // Prefer an obviously "regular" category (Normal / General / Standard…) for seats nobody picked
+  const regular = names.find((n) => /normal|general|standard|regular|basic|economy/i.test(n));
+  if (regular) {
+    names.splice(names.indexOf(regular), 1);
+    names.unshift(regular);
+  }
   let changed = false;
   const healed = sections.map((s) => {
     let next = s;
-    // A main category that no longer exists → seats become unassigned (grey) for the organiser to choose
-    if (s.tierName.trim() && !known.has(s.tierName.trim().toLowerCase())) next = { ...next, tierName: "" };
+    // Seats nobody picked a category for are sold as the section's main category.
+    // If that is missing (new section, or its category was deleted) use the first category.
+    if (!s.tierName.trim() || !known.has(s.tierName.trim().toLowerCase())) {
+      const fallback = s.kind === "STANDING" && !s.tierName.trim() ? s.tierName : names[0] || "";
+      if (fallback !== s.tierName) next = { ...next, tierName: fallback };
+    }
     const overrides = Object.entries(s.seatTiers || {});
     const kept = overrides.filter(([, t]) => known.has(t.trim().toLowerCase()));
     if (kept.length !== overrides.length) next = { ...next, seatTiers: Object.fromEntries(kept) };

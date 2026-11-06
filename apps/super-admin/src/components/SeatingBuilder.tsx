@@ -84,6 +84,8 @@ const TIER_COLORS = [
   { seat: "bg-fuchsia-400 text-slate-900", swatch: "bg-fuchsia-400" },
 ];
 const UNKNOWN_COLOR = { seat: "bg-slate-600 text-slate-200", swatch: "bg-slate-600" };
+/** Seats nobody picked a category for: sold as the section's main category, shown plain. */
+const PLAIN_SEAT = "bg-slate-300 text-slate-800";
 
 const MAX_PREVIEW_ROWS = 40;
 const MAX_PREVIEW_SEATS = 50;
@@ -191,7 +193,10 @@ function SeatMap({
       key={key}
       label={label}
       mark={markOf(s, key)}
-      colorCls={colorFor(tierOfSeat(s, key)).seat}
+      colorCls={
+        // Seats given their own category show its colour; the rest are plain (sold as the section's main category)
+        s.seatTiers?.[key] ? colorFor(s.seatTiers[key]).seat : colorFor(s.tierName) === UNKNOWN_COLOR ? UNKNOWN_COLOR.seat : PLAIN_SEAT
+      }
       selected={selected.has(key)}
       onToggle={() => !locked && onToggleSeat(key)}
       disabled={locked}
@@ -496,7 +501,7 @@ export default function SeatingBuilder({
                 {totalUnassigned > 0 && <span className="text-amber-700"> · {totalUnassigned} seats without a category</span>}
               </p>
             </div>
-            <p className="text-[13px] text-slate-500 mb-3">Create your categories here (e.g. VIP, Normal). Then select seats on the map and choose a category for them.</p>
+            <p className="text-[13px] text-slate-500 mb-3">Create your categories here (e.g. Normal, VIP). Seats you don't choose are sold as the main category; select seats on the map to give them another one.</p>
 
             <div className="space-y-2">
               {tiers.map((t, i) => {
@@ -736,6 +741,24 @@ export default function SeatingBuilder({
                         )}
                       </div>
 
+                      {/* Where seats nobody picked go */}
+                      {namedTiers.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-600">
+                          <span>Seats you don&apos;t choose are sold as</span>
+                          <select
+                            value={namedTiers.find((t) => t.name.toLowerCase() === sec.tierName.trim().toLowerCase())?.name ?? ""}
+                            disabled={locked}
+                            onChange={(e) => updateSection(idx, { ...sec, tierName: e.target.value })}
+                            className="rounded-md border border-slate-200 bg-white py-1 px-2 text-[13px] text-slate-900 outline-none focus:border-amber-400"
+                          >
+                            {namedTiers.map((t) => (
+                              <option key={t.index} value={t.name}>{t.name}</option>
+                            ))}
+                          </select>
+                          <span className="text-slate-400">— select seats on the map to give them a different category.</span>
+                        </div>
+                      )}
+
                       <SeatMap
                         section={sec}
                         selected={selected}
@@ -752,17 +775,21 @@ export default function SeatingBuilder({
 
                       {/* Legend */}
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                        {namedTiers.map((t) => (
-                          <span key={t.index} className="inline-flex items-center gap-1.5">
-                            <span className={`w-3 h-3 rounded-sm ${TIER_COLORS[t.index % TIER_COLORS.length].swatch}`} /> {t.name}
+                        {sec.tierName && (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="w-3 h-3 rounded-sm bg-slate-300 border border-slate-400" /> Plain = {sec.tierName}
                           </span>
-                        ))}
+                        )}
+                        {namedTiers
+                          .filter((t) => t.name.toLowerCase() !== sec.tierName.trim().toLowerCase())
+                          .map((t) => (
+                            <span key={t.index} className="inline-flex items-center gap-1.5">
+                              <span className={`w-3 h-3 rounded-sm ${TIER_COLORS[t.index % TIER_COLORS.length].swatch}`} /> {t.name}
+                            </span>
+                          ))}
                         <span className="inline-flex items-center gap-1.5">♿ Wheelchair</span>
                         <span className="inline-flex items-center gap-1.5">
                           <span className="w-3 h-3 rounded-sm border border-dashed border-slate-400" /> Not for sale
-                        </span>
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="w-3 h-3 rounded-sm bg-slate-600" /> No category yet
                         </span>
                       </div>
 
