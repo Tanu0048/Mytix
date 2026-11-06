@@ -35,10 +35,11 @@ export default function Sidebar() {
   const isCollapsed = isCollapsedDesktop && !isMobileOpen;
   const closeMobile = () => setMobileOpen(false);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     closeMobile();
-    await logout();
-    router.push("/login");
+    // Navigate first so the dashboard doesn't flash while the session clears
+    window.location.replace("/login");
+    logout();
   };
 
   const adminNavItems = [
@@ -67,7 +68,7 @@ export default function Sidebar() {
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
-  const navItems = user?.role === "ADMIN" ? adminNavItems : organiserNavItems;
+  const navItems = user?.role === "ADMIN" ? adminNavItems : user?.role === "ORGANISER" ? organiserNavItems : [];
 
   return (
     <>

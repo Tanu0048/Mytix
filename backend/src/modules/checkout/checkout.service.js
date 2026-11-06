@@ -3,6 +3,7 @@ import { prisma } from "../../lib/prisma.js";
 import { getPaymentProvider } from "../../providers/payment/index.js";
 import { calculateOrderPricing } from "./pricing.service.js";
 import { AppError } from "../../utils/errors.js";
+import { env } from "../../config/env.js";
 
 /**
  * Initiates the checkout pipeline for an active inventory hold.
@@ -131,8 +132,13 @@ export async function createCheckoutSession(userId, { holdId, attendees = [] }, 
       idempotencyKey
     });
   } catch (err) {
-    if (err.code === "PAYMENT_GATEWAY_NOT_CONFIGURED" || err.message.includes("PAYMENT_GATEWAY_NOT_CONFIGURED")) {
-      // Demo Mode: Mock the PaymentIntent and Fulfill immediately
+    const isGatewayNotConfigured =
+      err.code === "PAYMENT_GATEWAY_NOT_CONFIGURED" ||
+      (err.message && err.message.includes("PAYMENT_GATEWAY_NOT_CONFIGURED"));
+
+    // Strictly restrict demo-mode auto-fulfillment to non-production environments
+    if (isGatewayNotConfigured && env.NODE_ENV !== "production") {
+      // Demo Mode: Mock the PaymentIntent and Fulfill immediately (Development / Testing only)
       const { fulfillOrderAfterPayment } = await import("../payments/fulfillment.service.js");
       const { generateTicketsForOrder } = await import("../tickets/ticket.service.js");
       paymentIntent = {
@@ -152,6 +158,12 @@ export async function createCheckoutSession(userId, { holdId, attendees = [] }, 
       await fulfillOrderAfterPayment(paymentIntent);
       // Generate tickets synchronously in demo mode to avoid pgboss queue delays
       await generateTicketsForOrder(order.id, finalAttendees);
+    } else if (isGatewayNotConfigured) {
+      throw new AppError(
+        "PAYMENT_SERVICE_UNAVAILABLE",
+        503,
+        "Payment gateway is not configured or currently unavailable. Please try again later."
+      );
     } else {
       throw err;
     }

@@ -53,7 +53,7 @@ export const register = asyncHandler(async (req, res) => {
     },
     tokens: {
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken
+      ...(isMobile && { refreshToken: result.refreshToken })
     },
     token: result.accessToken
   };
@@ -75,7 +75,7 @@ export const login = asyncHandler(async (req, res) => {
     },
     tokens: {
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken
+      ...(isMobile && { refreshToken: result.refreshToken })
     },
     token: result.accessToken
   };
@@ -117,7 +117,7 @@ export const googleAuth = asyncHandler(async (req, res) => {
     },
     tokens: {
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken
+      ...(isMobile && { refreshToken: result.refreshToken })
     },
     token: result.accessToken
   };
@@ -140,7 +140,7 @@ export const refresh = asyncHandler(async (req, res) => {
     },
     tokens: {
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken
+      ...(isMobile && { refreshToken: result.refreshToken })
     },
     token: result.accessToken
   };

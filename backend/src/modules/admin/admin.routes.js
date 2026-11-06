@@ -102,3 +102,8 @@ adminRouter.put("/organiser-requirements", adminController.updateOrganiserRequir
 // TRENDING EVENTS (Super-Admin Observability)
 // ----------------------------------------------------
 adminRouter.get("/events/trending", adminController.getTrendingEvents);
+
+// ----------------------------------------------------
+// PLATFORM STATS & METRICS (Super-Admin Aggregates)
+// ----------------------------------------------------
+adminRouter.get("/stats", adminController.getStats);

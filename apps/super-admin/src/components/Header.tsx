@@ -10,9 +10,12 @@ export default function Header() {
   const user = useAuthStore((state) => state.user);
   const { isCollapsed, toggleSidebar, setMobileOpen } = useSidebarStore();
 
-  const displayName = user?.name?.trim() || user?.email || "User";
-  const displayRole = user?.role === "ADMIN" ? "Administrator" : "Organiser";
-  const initials = displayName.split(/\s+/).filter(Boolean).map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const roleLabel = user?.role === "ADMIN" ? "Administrator" : user?.role === "ORGANISER" ? "Organiser" : "";
+  const displayName = user?.name?.trim() || user?.email || roleLabel;
+  const displayRole = roleLabel;
+  const initials = displayName
+    ? displayName.split(/\s+/).filter(Boolean).map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    : "MY";
 
   return (
     <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100/80 px-4 sm:px-8 py-4 flex items-center justify-between">

@@ -27,13 +27,14 @@ export default function LoginPage() {
   const { login, staffLogin, isLoading, error } = useAuthStore();
   const router = useRouter();
 
-  // Switch role tab: clear error and the password (never carry a password across roles)
+  // Switch role tab: clear error and fields (never carry a password across roles)
   const switchLoginType = (type: "ADMIN" | "ORGANISER" | "STAFF") => {
     if (type === loginType) return;
     useAuthStore.setState({ error: null });
+    setEmail("");
+    setStaffId("");
     setPassword("");
     setShowPassword(false);
-    if (type === "STAFF") setStaffId("");
     setLoginType(type);
   };
 

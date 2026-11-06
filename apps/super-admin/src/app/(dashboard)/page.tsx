@@ -29,6 +29,7 @@ export default function Home() {
   const [events, setEvents] = useState<any[]>([]);
   const [adminOrganisers, setAdminOrganisers] = useState<any[]>([]);
   const [adminOrders, setAdminOrders] = useState<any[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // Page-load timestamp (Date.now() must not be called during render)
   const [currentTime] = useState(() => Date.now());
@@ -50,17 +51,30 @@ export default function Home() {
       setIsLoading(true);
       try {
         if (user?.role === "ORGANISER" || !user?.role) {
-          setEvents(await fetchAllPages("/organiser/events"));
+          const [eventsRes, statsRes] = await Promise.allSettled([
+            fetchAllPages("/organiser/events"),
+            api.get("/organiser/stats")
+          ]);
+          if (eventsRes.status === "fulfilled") {
+            setEvents(eventsRes.value);
+          }
+          if (statsRes.status === "fulfilled") {
+            setDashboardStats(statsRes.value.data.data || null);
+          }
         } else if (user?.role === "ADMIN") {
-          const [orgsRes, ordersRes] = await Promise.allSettled([
+          const [orgsRes, ordersRes, statsRes] = await Promise.allSettled([
             fetchAllPages("/admin/organisers"),
-            fetchAllPages("/admin/orders")
+            fetchAllPages("/admin/orders"),
+            api.get("/admin/stats")
           ]);
           if (orgsRes.status === "fulfilled") {
             setAdminOrganisers(orgsRes.value);
           }
           if (ordersRes.status === "fulfilled") {
             setAdminOrders(ordersRes.value);
+          }
+          if (statsRes.status === "fulfilled") {
+            setDashboardStats(statsRes.value.data.data || null);
           }
         }
       } catch (err) {
@@ -72,22 +86,30 @@ export default function Home() {
     loadData();
   }, [user]);
 
+  if (!user) {
+    return null;
+  }
+
   // ==========================================
   // ORGANISER VIEW
   // ==========================================
-  if (user?.role === "ORGANISER" || !user?.role || user?.role !== "ADMIN") {
-    const totalSales = events.reduce((sum, e) => {
-      const tierRev = e.ticketTypes?.reduce((s: number, t: any) => s + ((t.sold || 0) * (t.priceCents || 0) / 100), 0) || 0;
-      return sum + tierRev;
-    }, 0);
+  if (user.role === "ORGANISER") {
+    const totalSales = dashboardStats?.totalSalesCents !== undefined
+      ? dashboardStats.totalSalesCents / 100
+      : events.reduce((sum, e) => {
+          const tierRev = e.ticketTypes?.reduce((s: number, t: any) => s + ((t.sold || 0) * (t.priceCents || 0) / 100), 0) || 0;
+          return sum + tierRev;
+        }, 0);
 
-    const ticketsSold = events.reduce((sum, e) => {
-      const tierSold = e.ticketTypes?.reduce((s: number, t: any) => s + (t.sold || 0), 0) || 0;
-      return sum + tierSold;
-    }, 0);
+    const ticketsSold = dashboardStats?.totalTicketsSold !== undefined
+      ? dashboardStats.totalTicketsSold
+      : events.reduce((sum, e) => {
+          const tierSold = e.ticketTypes?.reduce((s: number, t: any) => s + (t.sold || 0), 0) || 0;
+          return sum + tierSold;
+        }, 0);
 
     const liveEvents = events.filter((e) => e.status === "PUBLISHED" && e.startsAt && new Date(e.startsAt).getTime() > currentTime).length;
-    const firstName = user?.name?.split(" ")[0] || "there";
+    const firstName = user?.name?.split(" ")[0] || "Organiser";
 
     // Filtering & Pagination for Organiser Events
     const filteredOrgEvents = events.filter((e) => {
@@ -370,22 +392,42 @@ export default function Home() {
   // ==========================================
   // ADMIN DASHBOARD VIEW
   // ==========================================
-  const adminTotalRevenue = adminOrders
-    .filter((o) => o.status === "PAID")
-    .reduce((sum, o) => sum + (o.totalCents || 0) / 100, 0);
+  const adminGrossRevenue = dashboardStats?.totalGrossRevenueCents !== undefined
+    ? dashboardStats.totalGrossRevenueCents / 100
+    : adminOrders
+        .filter((o) => o.status === "PAID")
+        .reduce((sum, o) => sum + (o.totalCents || 0) / 100, 0);
 
-  const adminTicketsSold = adminOrders
-    .filter((o) => o.status === "PAID")
-    .reduce((sum, o) => sum + (o._count?.tickets || o.tickets?.length || 1), 0);
+  const adminNetTicketSales = dashboardStats?.totalTicketRevenueCents !== undefined
+    ? dashboardStats.totalTicketRevenueCents / 100
+    : adminGrossRevenue;
+
+  const adminTicketsSold = dashboardStats?.totalTicketsSold !== undefined
+    ? dashboardStats.totalTicketsSold
+    : adminOrders
+        .filter((o) => o.status === "PAID")
+        .reduce((sum, o) => sum + (o._count?.tickets || o.tickets?.length || 1), 0);
+
+  const adminActiveOrgs = dashboardStats?.activeOrganisersCount !== undefined
+    ? dashboardStats.activeOrganisersCount
+    : adminOrganisers.length;
 
   const stats = [
     { 
       name: "Total Gross Revenue", 
-      value: `$${adminTotalRevenue.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+      value: `${adminGrossRevenue.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
       icon: Activity, 
       color: "text-amber-600", 
       bg: "bg-amber-50",
       border: "border-amber-200/70"
+    },
+    { 
+      name: "Net Ticket Sales", 
+      value: `${adminNetTicketSales.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+      icon: Ticket, 
+      color: "text-emerald-600", 
+      bg: "bg-emerald-50",
+      border: "border-emerald-200/70"
     },
     { 
       name: "Tickets Sold", 
@@ -397,11 +439,11 @@ export default function Home() {
     },
     { 
       name: "Active Organisers", 
-      value: adminOrganisers.length.toString(), 
+      value: adminActiveOrgs.toString(), 
       icon: Users, 
-      color: "text-emerald-600", 
-      bg: "bg-emerald-50",
-      border: "border-emerald-200/70"
+      color: "text-purple-600", 
+      bg: "bg-purple-50",
+      border: "border-purple-200/70"
     },
   ];
 
@@ -436,7 +478,7 @@ export default function Home() {
       </header>
 
       {/* Clean Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         {stats.map((stat) => (
           <div
             key={stat.name}
