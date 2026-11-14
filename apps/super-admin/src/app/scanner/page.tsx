@@ -61,6 +61,49 @@ function playGateSound(type: "SUCCESS" | "ERROR") {
   }
 }
 
+/** Computes SHA-256 hash of a string using Web Crypto API */
+async function hashQrToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token.trim());
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function getLocalManifest(eventId: string): Record<string, any> {
+  try {
+    const raw = localStorage.getItem(`mytix_manifest_${eventId}`);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLocalManifest(eventId: string, manifest: Record<string, any>) {
+  try {
+    localStorage.setItem(`mytix_manifest_${eventId}`, JSON.stringify(manifest));
+  } catch (err) {
+    console.warn("Failed to save manifest to localStorage", err);
+  }
+}
+
+function getOfflineQueue(eventId: string): any[] {
+  try {
+    const raw = localStorage.getItem(`mytix_offline_queue_${eventId}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveOfflineQueue(eventId: string, queue: any[]) {
+  try {
+    localStorage.setItem(`mytix_offline_queue_${eventId}`, JSON.stringify(queue));
+  } catch (err) {
+    console.warn("Failed to save offline queue", err);
+  }
+}
+
 /** Stable per-device identifier so scan logs can tell gate devices apart. */
 function getDeviceId(): string {
   const KEY = "mytix-scanner-device-id";
@@ -92,6 +135,12 @@ export default function MobileScannerPage() {
     checkInRatePercent: string;
   } | null>(null);
 
+  // Offline Caching & Background Sync State
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [offlineQueueCount, setOfflineQueueCount] = useState<number>(0);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const isSyncingRef = useRef<boolean>(false);
+
   // Scanner State
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -122,6 +171,63 @@ export default function MobileScannerPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [checkingInId, setCheckingInId] = useState<string | null>(null);
 
+  const preloadManifest = async (eventId: string) => {
+    if (!eventId) return;
+    try {
+      const res = await api.get(`/scan/manifest/${eventId}`);
+      const validTickets = res.data?.data?.manifest || [];
+      const manifestMap: Record<string, any> = {};
+
+      const existing = getLocalManifest(eventId);
+      validTickets.forEach((t: any) => {
+        manifestMap[t.qrTokenHash] = {
+          id: t.id,
+          attendeeName: t.attendeeName || "Attendee",
+          status: existing[t.qrTokenHash]?.status || t.status || "VALID",
+          usedAt: existing[t.qrTokenHash]?.usedAt,
+          usedGate: existing[t.qrTokenHash]?.usedGate
+        };
+      });
+
+      saveLocalManifest(eventId, manifestMap);
+    } catch {
+      // Manifest load failed (e.g. offline), retain existing cache
+    }
+  };
+
+  const syncOfflineQueue = async (targetEventId?: string) => {
+    const eventId = targetEventId || selectedEventId;
+    if (!eventId || isSyncingRef.current) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+
+    const queue = getOfflineQueue(eventId);
+    if (queue.length === 0) {
+      setOfflineQueueCount(0);
+      return;
+    }
+
+    try {
+      isSyncingRef.current = true;
+      setIsSyncing(true);
+
+      const res = await api.post("/scan/sync", {
+        eventId,
+        scans: queue
+      });
+
+      if (res.data?.status === "success" || res.status === 200) {
+        saveOfflineQueue(eventId, []);
+        setOfflineQueueCount(0);
+        loadStats(eventId);
+      }
+    } catch (err) {
+      console.warn("Background scan sync deferred:", err);
+    } finally {
+      isSyncingRef.current = false;
+      setIsSyncing(false);
+    }
+  };
+
   const loadAccessibleEvents = async () => {
     try {
       const res = await api.get("/scan/events");
@@ -130,6 +236,7 @@ export default function MobileScannerPage() {
         const initialId = user?.assignedEvent?.id || res.data.data[0].id;
         setSelectedEventId(initialId);
         loadStats(initialId);
+        preloadManifest(initialId);
       }
     } catch (err) {
       console.error(err);
@@ -215,75 +322,206 @@ export default function MobileScannerPage() {
     }
   };
 
-  // 3. Scan Execution & Result Handling
+  // 3. Scan Execution & Result Handling (Online with Seamless Offline Fallback)
   const onQrCodeSuccess = async (decodedText: string) => {
-    if (scanLockRef.current) return; // Prevent double rapid firing
+    if (scanLockRef.current) return;
     scanLockRef.current = true;
     const { soundEnabled, gateName, selectedEventId } = latestRef.current;
+    const trimmedToken = decodedText.trim();
 
-    try {
-      const res = await api.post("/scan", {
-        qrToken: decodedText,
-        gate: gateName,
-        deviceId: getDeviceId()
-      });
-
-      const data = res.data?.data;
-      if (data?.granted) {
-        if (soundEnabled) playGateSound("SUCCESS");
-        if (navigator.vibrate) navigator.vibrate([100]);
-
-        setScanResult({
-          status: "VALID",
-          granted: true,
-          title: "ENTRY GRANTED",
-          message: data.message || "Valid Ticket - Welcome!",
-          attendeeName: data.attendeeName,
-          ticketType: data.ticketTypeName,
-          seat: data.seat
+    // 1. If online, attempt live online check with 2.5s network timeout
+    if (typeof navigator !== "undefined" && navigator.onLine) {
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("NETWORK_TIMEOUT")), 2500)
+        );
+        const scanPromise = api.post("/scan", {
+          qrToken: trimmedToken,
+          gate: gateName,
+          deviceId: getDeviceId()
         });
 
-        // Update stats
-        if (selectedEventId) loadStats(selectedEventId);
+        const res = (await Promise.race([scanPromise, timeoutPromise])) as any;
+        const data = res.data?.data;
 
-        // Auto-dismiss valid card in 1.8 seconds for high-speed gate flow
-        setTimeout(() => {
-          setScanResult(null);
-          scanLockRef.current = false;
-        }, 1800);
-      } else {
+        if (data?.granted) {
+          if (soundEnabled) playGateSound("SUCCESS");
+          if (navigator.vibrate) navigator.vibrate([100]);
+
+          // Update local manifest
+          try {
+            const tokenHash = await hashQrToken(trimmedToken);
+            const manifest = getLocalManifest(selectedEventId);
+            if (manifest[tokenHash]) {
+              manifest[tokenHash].status = "USED";
+              manifest[tokenHash].usedAt = new Date().toISOString();
+              manifest[tokenHash].usedGate = gateName;
+              saveLocalManifest(selectedEventId, manifest);
+            }
+          } catch {
+            // Non-critical local update
+          }
+
+          setScanResult({
+            status: "VALID",
+            granted: true,
+            title: "ENTRY GRANTED",
+            message: data.message || "Valid Ticket - Welcome!",
+            attendeeName: data.attendeeName,
+            ticketType: data.ticketTypeName,
+            seat: data.seat
+          });
+
+          if (selectedEventId) loadStats(selectedEventId);
+
+          setTimeout(() => {
+            setScanResult(null);
+            scanLockRef.current = false;
+          }, 1800);
+        } else {
+          if (soundEnabled) playGateSound("ERROR");
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+          setScanResult({
+            status: data?.result === "ALREADY_USED" ? "ALREADY_USED" : "INVALID",
+            granted: false,
+            title: data?.result === "ALREADY_USED" ? "ALREADY CHECKED IN" : "ENTRY DENIED",
+            message: data?.message || "Invalid ticket or wrong event.",
+            attendeeName: data?.attendeeName,
+            previouslyUsedAt: data?.previouslyUsedAt,
+            previouslyUsedGate: data?.previouslyUsedGate
+          });
+
+          setTimeout(() => {
+            setScanResult(null);
+            scanLockRef.current = false;
+          }, 3000);
+        }
+        return;
+      } catch (err: any) {
+        const isNetworkProblem =
+          err?.message === "NETWORK_TIMEOUT" ||
+          !err?.response ||
+          err?.code === "ECONNABORTED" ||
+          err?.code === "ERR_NETWORK" ||
+          (err?.response && err.response.status >= 500);
+
+        if (!isNetworkProblem) {
+          // Explicit validation rejection from server
+          if (soundEnabled) playGateSound("ERROR");
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+          const errData = err.response?.data;
+          const errMessage = errData?.message || errData?.error?.message || "Invalid QR code format.";
+          setScanResult({
+            status: "INVALID",
+            granted: false,
+            title: "UNRECOGNIZED TICKET",
+            message: errMessage
+          });
+
+          setTimeout(() => {
+            setScanResult(null);
+            scanLockRef.current = false;
+          }, 3000);
+          return;
+        }
+        // If network problem, seamlessly fall through to local offline verification
+      }
+    }
+
+    // 2. Local Offline Verification Fallback
+    try {
+      const tokenHash = await hashQrToken(trimmedToken);
+      const manifest = getLocalManifest(selectedEventId);
+      const cachedTicket = manifest[tokenHash];
+
+      if (!cachedTicket) {
         if (soundEnabled) playGateSound("ERROR");
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
         setScanResult({
-          status: data?.result === "ALREADY_USED" ? "ALREADY_USED" : "INVALID",
+          status: "INVALID",
           granted: false,
-          title: data?.result === "ALREADY_USED" ? "ALREADY CHECKED IN" : "ENTRY DENIED",
-          message: data?.message || "Invalid ticket or wrong event.",
-          attendeeName: data?.attendeeName,
-          previouslyUsedAt: data?.previouslyUsedAt,
-          previouslyUsedGate: data?.previouslyUsedGate
+          title: "UNRECOGNIZED TICKET (OFFLINE)",
+          message: "Ticket not found in local gate manifest. Check connection or event."
         });
 
-        // Keep error visible for 3 seconds so staff can see reason
         setTimeout(() => {
           setScanResult(null);
           scanLockRef.current = false;
         }, 3000);
+        return;
       }
-    } catch (err) {
-      if (soundEnabled) playGateSound("ERROR");
-      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 
-      const errData = (err as { response?: { data?: { message?: string; error?: { message?: string } } } }).response?.data;
-      const errMessage = errData?.message || errData?.error?.message || "Invalid QR code format.";
+      if (cachedTicket.status === "USED") {
+        if (soundEnabled) playGateSound("ERROR");
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+        const usedTime = cachedTicket.usedAt
+          ? new Intl.DateTimeFormat("en-AU", { timeStyle: "medium" }).format(new Date(cachedTicket.usedAt))
+          : "earlier";
+
+        setScanResult({
+          status: "ALREADY_USED",
+          granted: false,
+          title: "ALREADY CHECKED IN",
+          message: `Already scanned offline at ${cachedTicket.usedGate || "this gate"} at ${usedTime}.`,
+          attendeeName: cachedTicket.attendeeName,
+          previouslyUsedAt: cachedTicket.usedAt,
+          previouslyUsedGate: cachedTicket.usedGate
+        });
+
+        setTimeout(() => {
+          setScanResult(null);
+          scanLockRef.current = false;
+        }, 3000);
+        return;
+      }
+
+      // Ticket is valid!
+      const nowIso = new Date().toISOString();
+      cachedTicket.status = "USED";
+      cachedTicket.usedAt = nowIso;
+      cachedTicket.usedGate = gateName;
+      saveLocalManifest(selectedEventId, manifest);
+
+      // Save to offline queue
+      const queue = getOfflineQueue(selectedEventId);
+      queue.push({
+        qrToken: trimmedToken,
+        gate: gateName,
+        deviceId: getDeviceId(),
+        scannedAt: nowIso
+      });
+      saveOfflineQueue(selectedEventId, queue);
+      setOfflineQueueCount(queue.length);
+
+      if (soundEnabled) playGateSound("SUCCESS");
+      if (navigator.vibrate) navigator.vibrate([100]);
+
+      setScanResult({
+        status: "VALID",
+        granted: true,
+        title: "ENTRY GRANTED (OFFLINE)",
+        message: "Validated locally • Queued for sync",
+        attendeeName: cachedTicket.attendeeName,
+        ticketType: "Valid Admission"
+      });
+
+      setTimeout(() => {
+        setScanResult(null);
+        scanLockRef.current = false;
+      }, 1800);
+    } catch (offlineErr) {
+      console.error("Offline scan error:", offlineErr);
+      if (soundEnabled) playGateSound("ERROR");
       setScanResult({
         status: "INVALID",
         granted: false,
-        title: "UNRECOGNIZED TICKET",
-        message: errMessage
+        title: "SCAN ERROR",
+        message: "Unable to process QR code."
       });
-
       setTimeout(() => {
         setScanResult(null);
         scanLockRef.current = false;
@@ -295,6 +533,43 @@ export default function MobileScannerPage() {
   useEffect(() => {
     latestRef.current = { soundEnabled, gateName, selectedEventId };
   }, [soundEnabled, gateName, selectedEventId]);
+
+  // 0. Automatic network monitoring and periodic sync
+  useEffect(() => {
+    setIsOnline(typeof navigator !== "undefined" ? navigator.onLine : true);
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      syncOfflineQueue();
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    const syncInterval = setInterval(() => {
+      if (typeof navigator !== "undefined" && navigator.onLine) {
+        syncOfflineQueue();
+      }
+    }, 15000);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      clearInterval(syncInterval);
+    };
+  }, [selectedEventId]);
+
+  useEffect(() => {
+    if (selectedEventId) {
+      const queue = getOfflineQueue(selectedEventId);
+      setOfflineQueueCount(queue.length);
+      preloadManifest(selectedEventId);
+    }
+  }, [selectedEventId]);
 
   // 1. Authentication guard & events load
   const userId = user?.id;
@@ -396,7 +671,30 @@ export default function MobileScannerPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Live Connection & Offline Queue Pill */}
+            {isSyncing ? (
+              <span className="px-2.5 py-1 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[11px] font-bold flex items-center gap-1">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                <span>Syncing</span>
+              </span>
+            ) : !isOnline || offlineQueueCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => syncOfflineQueue()}
+                className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition"
+                title="Tap to sync pending offline scans"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <span>{!isOnline ? "Offline" : "Queued"} ({offlineQueueCount})</span>
+              </button>
+            ) : (
+              <span className="px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Online</span>
+              </span>
+            )}
+
             <button
               onClick={handleLogout}
               className="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer flex items-center gap-1 text-[13px] font-semibold active:scale-95"

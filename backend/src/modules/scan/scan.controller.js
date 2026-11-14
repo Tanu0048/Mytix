@@ -22,7 +22,9 @@ export const exportManifestHandler = asyncHandler(async (req, res) => {
   const result = await scanService.exportEventManifest(
     req.params.eventId,
     req.user.id,
-    req.user.role
+    req.user.role,
+    req.user.organiserId,
+    req.user.eventId
   );
   res.status(200).json({
     status: "success",
@@ -35,7 +37,9 @@ export const syncOfflineScansHandler = asyncHandler(async (req, res) => {
     eventId: req.body.eventId,
     scans: req.body.scans,
     userId: req.user.id,
-    userRole: req.user.role
+    userRole: req.user.role,
+    staffOrganiserId: req.user.organiserId,
+    staffEventId: req.user.eventId
   });
   res.status(200).json({
     status: "success",
