@@ -205,8 +205,8 @@ export async function processOnlineScan({ qrToken, gate, deviceId, userId, userR
 /**
  * Exports encrypted offline manifest dataset for scanners before doors open.
  */
-export async function exportEventManifest(eventId, userId, userRole) {
-  await verifyOrganiserEventAccess(userId, userRole, eventId);
+export async function exportEventManifest(eventId, userId, userRole, staffOrganiserId, staffEventId) {
+  await verifyOrganiserEventAccess(userId, userRole, eventId, staffOrganiserId, staffEventId);
 
   const event = await prisma.event.findUnique({
     where: { id: eventId },
@@ -242,8 +242,8 @@ export async function exportEventManifest(eventId, userId, userRole) {
 /**
  * Resolves offline scans via first-scan-wins conflict resolution.
  */
-export async function syncOfflineScans({ eventId, scans, userId, userRole }) {
-  await verifyOrganiserEventAccess(userId, userRole, eventId);
+export async function syncOfflineScans({ eventId, scans, userId, userRole, staffOrganiserId, staffEventId }) {
+  await verifyOrganiserEventAccess(userId, userRole, eventId, staffOrganiserId, staffEventId);
 
   // Sort chronologically ascending so earlier scans win
   const sortedScans = [...scans].sort((a, b) => new Date(a.scannedAt) - new Date(b.scannedAt));

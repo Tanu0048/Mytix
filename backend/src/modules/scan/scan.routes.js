@@ -53,7 +53,7 @@ scanRouter.post(
 scanRouter.get(
   "/manifest/:eventId",
   authenticate,
-  authorize("ORGANISER", "ADMIN"),
+  authorize("ORGANISER", "ADMIN", "STAFF"),
   validate(manifestParamSchema),
   exportManifestHandler
 );
