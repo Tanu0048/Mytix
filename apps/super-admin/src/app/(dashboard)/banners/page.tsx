@@ -144,20 +144,14 @@ export default function BannersPage() {
         const formData = new FormData();
         formData.append("file", editImageFile);
         
-        const token = useAuthStore.getState().token;
-        const uploadRes = await fetch("http://localhost:5000/api/v1/uploads/image?folder=banners", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`
-          },
-          body: formData
+        const uploadRes = await api.post("/uploads/image?folder=banners", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
         
-        const uploadData = await uploadRes.json();
-        if (!uploadRes.ok) {
-          throw new Error(uploadData.error?.message || "Failed to upload image");
+        imageUrl = uploadRes.data?.data?.url || uploadRes.data?.url;
+        if (!imageUrl) {
+          throw new Error("Failed to get uploaded banner image URL");
         }
-        imageUrl = uploadData.data.url;
       }
 
       await api.patch(`/admin/banners/${editingBanner.id}`, {
@@ -189,21 +183,14 @@ export default function BannersPage() {
       const formData = new FormData();
       formData.append("file", imageFile);
       
-      const token = useAuthStore.getState().token;
-      const uploadRes = await fetch("http://localhost:5000/api/v1/uploads/image?folder=banners", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
+      const uploadRes = await api.post("/uploads/image?folder=banners", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok) {
-        throw new Error(uploadData.error?.message || "Failed to upload image");
+      const imageUrl = uploadRes.data?.data?.url || uploadRes.data?.url;
+      if (!imageUrl) {
+        throw new Error("Failed to get uploaded banner image URL");
       }
-      
-      const imageUrl = uploadData.data.url;
 
       await api.post("/admin/banners", {
         title,
